@@ -1,335 +1,411 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Biweekly Pay Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pay Calculator Cloud Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Basic styling to look good on iPhone */
-    body { font-family: system-ui, -apple-system, Arial, sans-serif; padding: 16px; background-color: #f9f9f9; }
-    h1 { font-size: 20px; margin-bottom: 8px; color: #333; }
-    h2 { font-size: 16px; margin-top: 18px; margin-bottom: 4px; color: #007aff; }
-    
-    /* Input and Table styling */
-    table { border-collapse: collapse; width: 100%; margin-top: 6px; background: white; }
-    th, td { border: 1px solid #ccc; padding: 8px 6px; font-size: 14px; text-align: right; }
-    th { background: #f0f0f0; font-weight: 600; }
-    td:first-child, th:first-child { text-align: left; }
-    
-    input[type="number"] { width: 90px; font-size: 16px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
-    input[type="date"] { padding: 6px; font-size: 16px; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
-    
-    /* Button styling */
-    button { 
-      margin-top: 10px; 
-      padding: 10px 15px; 
-      font-size: 15px; 
-      background-color: #007aff; 
-      color: white; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer;
+    :root {
+      --primary: #5856D6;
+      --secondary: #007AFF;
+      --success: #34C759;
+      --danger: #FF3B30;
+      --bg: #F2F2F7;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --text: #1C1C1E;
+      --text-muted: #8E8E93;
+      --border: rgba(0, 0, 0, 0.1);
+      --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     }
-    button:active { background-color: #005bb5; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; padding: 0; background-color: var(--bg); color: var(--text); line-height: 1.5; }
+    .container { max-width: 650px; margin: 0 auto; padding: 20px 16px 120px; }
+    header { padding: 20px 0; text-align: center; position: relative; }
+    h1 { font-size: 26px; font-weight: 800; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .card { background: var(--card-bg); backdrop-filter: blur(15px); border-radius: 20px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; }
+    h2 { font-size: 19px; font-weight: 700; margin-top: 0; margin-bottom: 18px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+    input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 16px; font-family: inherit; background: white; transition: all 0.2s; }
+    button { width: 100%; padding: 14px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+    button:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: var(--secondary); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+    .btn-small { padding: 8px 14px; font-size: 13px; width: auto; margin-top: 0; }
+    .tabs { display: flex; background: #E5E5EA; padding: 5px; border-radius: 14px; margin-bottom: 24px; }
+    .tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 700; border-radius: 10px; cursor: pointer; color: var(--text-muted); }
+    .tab.active { background: white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); color: var(--primary); }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; }
+    th { text-align: left; font-size: 11px; padding: 10px; border-bottom: 2px solid var(--border); color: var(--text-muted); text-transform: uppercase; }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
     
-    .small { font-size: 13px; color: #666; margin-top: 6px; }
-    .section { border: 1px solid #ddd; padding: 12px; margin-top: 12px; border-radius: 8px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    
-    /* Print styling */
-    @media print {
-      body { padding: 0; background: white; }
-      .section, button, h1 { display: none; } /* Hide entry forms */
-      #summarySection { display: block !important; margin: 0; border: none; box-shadow: none; }
-      #summaryTable { width: 100%; font-size: 12px; }
-      input { border: none; background: transparent; }
+    /* Layout for Batch Rows */
+    .discount-row, .batch-row { 
+      display: grid; 
+      grid-template-columns: 1fr 120px; 
+      gap: 10px; 
+      align-items: center; 
+      margin-bottom: 10px; 
+      padding: 10px 14px; 
+      background: rgba(0,0,0,0.03); 
+      border-radius: 12px; 
     }
+
+    /* Hide number input spinners (Up/Down arrows) */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button { 
+      -webkit-appearance: none; 
+      appearance: none;
+      margin: 0; 
+    }
+    input[type=number] { 
+      -moz-appearance: textfield; 
+      appearance: textfield;
+      text-align: right; 
+    }
+
+    .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: none; justify-content: center; align-items: center; border-radius: 20px; z-index: 10; }
+    .spinner { width: 28px; height: 28px; border: 3.5px solid var(--border); border-top: 3.5px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 28px; border-radius: 40px; opacity: 0; transition: 0.3s; z-index: 2000; font-weight: 600; text-align: center; }
+    .sync-status { font-size: 11px; text-align: center; margin-top: -12px; margin-bottom: 15px; color: var(--success); font-weight: 700; }
+    @media print { .card, button, .tabs, header, .no-print { display: none !important; } #summarySection { display: block !important; box-shadow: none; border: none; background: white; } }
   </style>
 </head>
 <body>
 
-<h1>Biweekly Pay Calculator</h1>
+<div class="container">
+  <header><h1>Pay Calculator Cloud</h1><div class="sync-status">● Cloud Sync Connected</div></header>
 
-<!-- SECTION 1: Set the Period -->
-<div class="section">
-  <h2>1. Select Period</h2>
-  <label>Start date:
-    <input type="date" id="startDate">
-  </label>
-  <button onclick="setBiweekly()">Set Biweekly Range</button>
-  <div id="periodInfo" class="small"></div>
-</div>
-
-<!-- SECTION 2: Daily Entry -->
-<div class="section">
-  <h2>2. Enter Daily Sales</h2>
-  <div class="small">Workers: Tammy, Linh, Van, ThuyLee, Tuyen</div>
-  <label style="display:block; margin-top:10px;">Select Date to Enter:
-    <input type="date" id="entryDate">
-  </label>
-  <button onclick="loadDay()">Load Date</button>
-
-  <table style="margin-top:15px;">
-    <thead>
-      <tr>
-        <th>Worker</th>
-        <th>Income</th>
-        <th>Work?</th>
-      </tr>
-    </thead>
-    <tbody id="dailyRows">
-      <!-- Rows are inserted here by JavaScript -->
-    </tbody>
-  </table>
-
-  <div style="margin-top: 15px;">
-    <label>Daily Discount:
-      <input type="number" id="dailyDiscount" step="0.01" value="0">
-    </label>
+  <div class="card">
+    <h2>📅 1. Select Period</h2>
+    <div style="display:flex; gap:12px;">
+      <div style="flex:1;"><label>Start Date</label><input type="date" id="startDate" onchange="generatePeriod()"></div>
+      <div style="display:flex; align-items:flex-end;"><button class="btn-primary" onclick="generatePeriod()" style="margin-top:0; width:auto;">Load</button></div>
+    </div>
+    <div id="periodInfo" style="margin-top:12px; font-weight:700; color:var(--primary);"></div>
   </div>
-  
-  <div id="dailyTotals" class="small" style="font-weight:bold; margin-top:10px;"></div>
-  
-  <button onclick="saveDay()" style="width:100%; background-color: #34c759;">Save This Day</button>
-</div>
 
-<!-- SECTION 3: Report & W2 -->
-<div class="section">
-  <h2>3. Biweekly Summary</h2>
-  <button onclick="generateReport()">Generate Report</button>
-  
-  <div id="summarySection" style="display:none; margin-top:15px;">
-    <h3 style="margin:0 0 10px 0;">Pay Report</h3>
-    <div id="reportPeriod" class="small" style="margin-bottom:10px;"></div>
+  <div class="tabs no-print">
+    <div class="tab active" id="tabDay" onclick="switchTab('day')">Daily Entry</div>
+    <div class="tab" id="tabWorker" onclick="switchTab('worker')">Batch Sales</div>
+    <div class="tab" id="tabBatchLoyalty" onclick="switchTab('batchLoyalty')">Batch Loyalty</div>
+  </div>
 
+  <!-- DAILY -->
+  <div id="viewDay" class="card">
+    <div class="loading-overlay" id="loading-day"><div class="spinner"></div></div>
+    <h2>☀️ Daily Entry</h2>
+    <input type="date" id="entryDate" onchange="loadDayFromCloud()">
+    <table><thead><tr><th>Worker</th><th style="text-align:right;">Sale</th></tr></thead><tbody id="dailyRows"></tbody></table>
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <div style="flex:1;"><label>Daily Disc</label><input type="number" id="dailyDiscount" step="0.01" value="0"></div>
+      <div style="flex:1;"><label>Loyalty Disc</label><input type="number" id="loyaltyDiscount" step="0.01" value="0"></div>
+    </div>
+    <button class="btn-success" id="btnSaveDay" onclick="saveDayToCloud()">Save Daily to Cloud</button>
+    <div style="margin-top:24px; padding-top:15px; border-top: 1px dashed var(--border);">
+      <label style="font-size:11px;">Add New Worker</label>
+      <div style="display:flex; gap:10px;"><input type="text" id="newWorkerName" placeholder="Name..."><button class="btn-primary btn-small" onclick="addWorker()">Add</button></div>
+    </div>
+  </div>
+
+  <!-- BATCH WORKER -->
+  <div id="viewWorker" class="card" style="display:none;">
+    <div class="loading-overlay" id="loading-worker"><div class="spinner"></div></div>
+    <h2>👤 Batch Worker Sales</h2>
+    <label>Select Worker</label><select id="workerSelect" onchange="loadWorkerBatch()"></select>
+    <div id="batchInputs" style="margin-top:20px; max-height:400px; overflow-y:auto;"></div>
+    <button class="btn-success" id="btnSaveWorker" onclick="saveWorkerBatchToCloud()">Save All Days for Worker</button>
+  </div>
+
+  <!-- BATCH LOYALTY -->
+  <div id="viewBatchLoyalty" class="card" style="display:none;">
+    <div class="loading-overlay" id="loading-batch-discounts"><div class="spinner"></div></div>
+    <h2>🏷️ Batch Loyalty Discount</h2>
+    <div style="margin-bottom:20px; padding:15px; background:rgba(88, 86, 214, 0.05); border-radius:12px;">
+      <label>Bulk Paste Loyalty (14 Numbers)</label>
+      <textarea id="bulkLoyaltyArea" placeholder="Paste 14 numbers here..." style="height:60px;"></textarea>
+      <button class="btn-outline btn-small" onclick="distributeLoyaltyBulk()" style="margin-top:10px;">Autofill Loyalty</button>
+    </div>
+    <div id="discountBatchInputs" style="max-height:400px; overflow-y:auto;"></div>
+    <button class="btn-success" id="btnSaveLoyalty" onclick="saveDiscountBatchToCloud()">Save All Discounts to Cloud</button>
+  </div>
+
+  <div class="card no-print">
+    <h2>📊 3. Biweekly Summary</h2>
+    <div style="margin-bottom:15px;"><label>Select Period Start Date</label><input type="date" id="summaryStartDate" onchange="updateMainDate(this.value)"></div>
+    <button class="btn-secondary" id="btn-gen-report" onclick="generateReportFromSummary()">Generate Final Report</button>
+  </div>
+
+  <div id="summarySection" class="card" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+      <div><h3>Pay Report</h3><span id="reportPeriodText" style="font-size:14px; font-weight:600; color:var(--text-muted);"></span></div>
+      <button class="btn-outline btn-small no-print" onclick="window.print()">Print</button>
+    </div>
     <table id="summaryTable">
-      <thead>
-        <tr>
-          <th>Worker</th>
-          <th>Sales</th>
-          <th>Days</th>
-          <th>Pay (55%)</th>
-          <th>Owner (45%)</th>
-          <th>$/Day</th>
-          <th>W2 Input</th>
-          <th>Cash</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Worker</th><th style="text-align:right;">Sales</th><th style="text-align:right;">Days</th><th style="text-align:right;">Pay</th><th style="text-align:right;">W2</th><th style="text-align:right;">Cash</th></tr></thead>
       <tbody id="summaryBody"></tbody>
-      <tfoot>
-        <tr style="font-weight:bold; background:#eef;">
-          <th>TOTAL</th>
-          <th id="totSales"></th>
-          <th id="totDays"></th>
-          <th id="totPay"></th>
-          <th id="totOwner"></th>
-          <th></th>
-          <th id="totW2"></th>
-          <th id="totCash"></th>
-        </tr>
-      </tfoot>
+      <tfoot><tr style="font-weight:800; background: #F2F2F7;"><td>TOTAL</td><td id="totSales" style="text-align:right;">0</td><td id="totDays" style="text-align:right;">0</td><td id="totPay" style="text-align:right;">0</td><td id="totW2" style="text-align:right;">0</td><td id="totCash" style="text-align:right;">0</td></tr></tfoot>
     </table>
-
-    <button onclick="window.print()" style="background-color: #5856d6; margin-top:20px;">Print / Save as PDF</button>
   </div>
 </div>
+
+<div id="toast" class="toast">Data Synced!</div>
 
 <script>
-  // -- CONFIGURATION --
-  const workers = ["Tammy","Linh","Van","ThuyLee","Tuyen"];
+  const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+  const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-  // Data storage: { "YYYY-MM-DD": { incomes: {name: number}, discount: number } }
-  const daysData = {};
+  let workers = JSON.parse(localStorage.getItem('savedWorkers')) || ["Tammy", "Linh", "Van", "ThuyLee", "Tuyen"];
+  let periodStart = localStorage.getItem('periodStart') || "";
+  let currentPeriodDates = [];
+  let cloudCache = {}; 
 
-  // -- INITIALIZATION --
+  window.onload = () => {
+    refreshWorkerUI();
+    document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+    if (periodStart) { 
+      document.getElementById('startDate').value = periodStart; document.getElementById('summaryStartDate').value = periodStart;
+      generatePeriod(); 
+    }
+  };
+
+  function updateMainDate(val) { document.getElementById('startDate').value = val; generatePeriod(); }
+
+  function refreshWorkerUI() {
+    localStorage.setItem('savedWorkers', JSON.stringify(workers));
+    renderDailyRows();
+    const ws = document.getElementById('workerSelect'); ws.innerHTML = '<option value="">-- Worker --</option>';
+    workers.forEach(w => { let opt = document.createElement('option'); opt.value = w; opt.textContent = w; ws.appendChild(opt); });
+  }
+
+  function addWorker() {
+    let name = document.getElementById('newWorkerName').value.trim();
+    if (!name || workers.includes(name)) return;
+    workers.push(name); document.getElementById('newWorkerName').value = "";
+    refreshWorkerUI(); showToast("Added " + name);
+  }
+
   function renderDailyRows() {
-    const tbody = document.getElementById('dailyRows');
-    tbody.innerHTML = "";
-    workers.forEach(name => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:left; font-weight:500;">${name}</td>
-        <td><input type="number" step="0.01" data-worker="${name}" class="incomeInput" placeholder="0"></td>
-        <td class="dayCell" style="text-align:center; color:#888;">0</td>
-      `;
+    const tbody = document.getElementById('dailyRows'); tbody.innerHTML = "";
+    workers.forEach(w => {
+      let tr = document.createElement('tr');
+      tr.innerHTML = `<td style="font-weight:600;">${w}</td><td style="text-align:right;"><input type="number" step="0.01" class="income-input" data-worker="${w}" placeholder="0.00"></td>`;
       tbody.appendChild(tr);
     });
   }
-  renderDailyRows();
 
-  // -- FUNCTIONS --
-
-  function setBiweekly() {
-    const start = document.getElementById('startDate').value;
-    if (!start) { alert("Please select a start date first."); return; }
-    const sd = new Date(start);
-    const ed = new Date(sd);
-    ed.setDate(sd.getDate() + 13); // Add 13 days to cover a 14-day period
-    const info = `Period: ${sd.toLocaleDateString()} to ${ed.toLocaleDateString()}`;
-    document.getElementById('periodInfo').textContent = info;
-    document.getElementById('reportPeriod').textContent = info;
-  }
-
-  function loadDay() {
-    const dateStr = document.getElementById('entryDate').value;
-    if (!dateStr) { alert("Please select a date to load."); return; }
-    
-    const day = daysData[dateStr] || { incomes: {}, discount: 0 };
-    
-    document.querySelectorAll('.incomeInput').forEach(inp => {
-      const w = inp.dataset.worker;
-      const val = day.incomes[w] != null ? day.incomes[w] : "";
-      inp.value = val;
-      
-      // Update the "Work?" column (1 or 0)
-      const dayCell = inp.parentElement.nextElementSibling;
-      dayCell.textContent = parseFloat(val || "0") > 0 ? "1" : "0";
-    });
-    
-    document.getElementById('dailyDiscount').value = day.discount || 0;
-    updateDailyTotals();
-  }
-
-  function saveDay() {
-    const dateStr = document.getElementById('entryDate').value;
-    if (!dateStr) { alert("Please select a date."); return; }
-    
-    const incomes = {};
-    let hasData = false;
-    
-    document.querySelectorAll('.incomeInput').forEach(inp => {
-      const w = inp.dataset.worker;
-      const v = parseFloat(inp.value || "0");
-      if (v > 0) hasData = true;
-      incomes[w] = v;
-      
-      // Update UI while saving
-      const dayCell = inp.parentElement.nextElementSibling;
-      dayCell.textContent = v > 0 ? "1" : "0";
-    });
-    
-    const disc = parseFloat(document.getElementById('dailyDiscount').value || "0");
-    
-    // Save to memory
-    if (!hasData && disc === 0) {
-      delete daysData[dateStr]; // Clean up empty entries
-    } else {
-      daysData[dateStr] = { incomes, discount: disc };
+  function generatePeriod() {
+    let start = document.getElementById('startDate').value; if (!start) return;
+    periodStart = start; localStorage.setItem('periodStart', start);
+    currentPeriodDates = []; let sd = new Date(start + "T00:00:00");
+    for (let i = 0; i < 14; i++) {
+      let d = new Date(sd); d.setDate(sd.getDate() + i);
+      currentPeriodDates.push(d.toISOString().split('T')[0]);
     }
-    
-    updateDailyTotals();
-    alert("Saved data for " + dateStr);
+    let ed = new Date(sd); ed.setDate(sd.getDate() + 13);
+    document.getElementById('periodInfo').textContent = `Range: ${sd.toLocaleDateString()} - ${ed.toLocaleDateString()}`;
+    document.getElementById('reportPeriodText').textContent = `${sd.toLocaleDateString()} - ${ed.toLocaleDateString()}`;
+    prefetchPeriodData();
   }
 
-  function updateDailyTotals() {
-    let total = 0;
-    document.querySelectorAll('.incomeInput').forEach(inp => {
-      total += parseFloat(inp.value || "0");
-    });
-    const disc = parseFloat(document.getElementById('dailyDiscount').value || "0");
-    const after = total - disc;
-    
-    document.getElementById('dailyTotals').textContent =
-      `Total: $${total.toFixed(2)} | After Discount: $${after.toFixed(2)}`;
-  }
-
-  // Auto-update "Work?" column and totals as you type
-  document.addEventListener('input', function(e) {
-    if (e.target.classList.contains('incomeInput') || e.target.id === 'dailyDiscount') {
-      if (e.target.classList.contains('incomeInput')) {
-        const v = parseFloat(e.target.value || "0");
-        const dayCell = e.target.parentElement.nextElementSibling;
-        dayCell.textContent = v > 0 ? "1" : "0";
-      }
-      updateDailyTotals();
+  async function prefetchPeriodData() {
+    if (!currentPeriodDates.length) return;
+    const { data, error } = await supabaseClient.from('sales_records').select('*').in('entry_date', currentPeriodDates);
+    if (error) { console.error("Cloud Error:", error); return; }
+    cloudCache = {};
+    if (data) {
+      data.forEach(row => {
+        if (!cloudCache[row.entry_date]) cloudCache[row.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
+        cloudCache[row.entry_date].incomes[row.worker_name] = parseFloat(row.amount);
+        cloudCache[row.entry_date].discount = parseFloat(row.discount);
+        cloudCache[row.entry_date].loyalty = parseFloat(row.loyalty_discount || 0);
+      });
     }
-  });
+    loadDayFromCloud();
+  }
+
+  function switchTab(mode) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tabDay').classList.toggle('active', mode === 'day');
+    document.getElementById('tabWorker').classList.toggle('active', mode === 'worker');
+    document.getElementById('tabBatchLoyalty').classList.toggle('active', mode === 'batchLoyalty');
+    document.getElementById('viewDay').style.display = mode === 'day' ? 'block' : 'none';
+    document.getElementById('viewWorker').style.display = mode === 'worker' ? 'block' : 'none';
+    document.getElementById('viewBatchLoyalty').style.display = mode === 'batchLoyalty' ? 'block' : 'none';
+    if (mode === 'worker') loadWorkerBatch();
+    if (mode === 'batchLoyalty') loadDiscountBatch();
+  }
+
+  async function loadDayFromCloud() {
+    let date = document.getElementById('entryDate').value;
+    let data = cloudCache[date] || { incomes: {}, discount: 0, loyalty: 0 };
+    document.querySelectorAll('.income-input').forEach(inp => inp.value = (data.incomes[inp.dataset.worker] !== undefined) ? data.incomes[inp.dataset.worker] : "");
+    document.getElementById('dailyDiscount').value = data.discount || 0;
+    document.getElementById('loyaltyDiscount').value = data.loyalty || 0;
+  }
+
+  async function saveDayToCloud() {
+    let date = document.getElementById('entryDate').value; if (!date) return;
+    document.getElementById('loading-day').style.display = 'flex';
+    let records = workers.map(w => ({
+      entry_date: date, worker_name: w, 
+      amount: parseFloat(document.querySelector(`input[data-worker="${w}"]`).value) || 0,
+      discount: parseFloat(document.getElementById('dailyDiscount').value) || 0,
+      loyalty_discount: parseFloat(document.getElementById('loyaltyDiscount').value) || 0
+    }));
+    const { error } = await supabaseClient.from('sales_records').upsert(records, { onConflict: 'entry_date, worker_name' });
+    if (error) { alert("Save Error: " + error.message); } else {
+      if (!cloudCache[date]) cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+      records.forEach(r => cloudCache[date].incomes[r.worker_name] = r.amount);
+      cloudCache[date].discount = records[0].discount; cloudCache[date].loyalty = records[0].loyalty_discount;
+      showToast("Day Saved!");
+    }
+    document.getElementById('loading-day').style.display = 'none';
+  }
+
+  async function loadWorkerBatch() {
+    let w = document.getElementById('workerSelect').value; if (!w || !currentPeriodDates.length) return;
+    document.getElementById('loading-worker').style.display = 'flex';
+    await prefetchPeriodData();
+    const container = document.getElementById('batchInputs'); container.innerHTML = "";
+    currentPeriodDates.forEach(date => {
+      let val = (cloudCache[date] && cloudCache[date].incomes[w] !== undefined) ? cloudCache[date].incomes[w] : "";
+      let label = new Date(date + "T00:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      let div = document.createElement('div'); div.className = "batch-row";
+      div.innerHTML = `<label style="font-weight:600; font-size:14px;">${label}</label><input type="number" class="w-batch-input" data-date="${date}" value="${val}" placeholder="0.00">`;
+      container.appendChild(div);
+    });
+    document.getElementById('loading-worker').style.display = 'none';
+  }
+
+  async function saveWorkerBatchToCloud() {
+    let w = document.getElementById('workerSelect').value; if (!w) return;
+    document.getElementById('loading-worker').style.display = 'flex';
+    let records = Array.from(document.querySelectorAll('.w-batch-input')).map(inp => ({
+      entry_date: inp.dataset.date, worker_name: w, amount: parseFloat(inp.value) || 0,
+      discount: (cloudCache[inp.dataset.date] && cloudCache[inp.dataset.date].discount) || 0,
+      loyalty_discount: (cloudCache[inp.dataset.date] && cloudCache[inp.dataset.date].loyalty) || 0
+    }));
+    const { error } = await supabaseClient.from('sales_records').upsert(records, { onConflict: 'entry_date, worker_name' });
+    if (error) { alert("Batch Worker Error: " + error.message); } else {
+      records.forEach(r => { if (!cloudCache[r.entry_date]) cloudCache[r.entry_date] = { incomes: {}, discount: 0, loyalty: 0 }; cloudCache[r.entry_date].incomes[w] = r.amount; });
+      showToast("Worker Sales Saved!");
+    }
+    document.getElementById('loading-worker').style.display = 'none';
+  }
+
+  async function loadDiscountBatch() {
+    const container = document.getElementById('discountBatchInputs'); container.innerHTML = "";
+    if (!currentPeriodDates.length) return;
+    document.getElementById('loading-batch-discounts').style.display = 'flex';
+    await prefetchPeriodData();
+    currentPeriodDates.forEach(date => {
+      let data = cloudCache[date] || { discount: 0, loyalty: 0 };
+      let label = new Date(date + "T00:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      let div = document.createElement('div'); div.className = "discount-row";
+      div.innerHTML = `<span style="font-weight:600; font-size:14px;">${label}</span><input type="number" class="l-batch-val" data-date="${date}" value="${data.loyalty}">`;
+      container.appendChild(div);
+    });
+    document.getElementById('loading-batch-discounts').style.display = 'none';
+  }
+
+  async function saveDiscountBatchToCloud() {
+    let btn = document.getElementById('btnSaveLoyalty');
+    btn.disabled = true;
+    document.getElementById('loading-batch-discounts').style.display = 'flex';
+    await prefetchPeriodData();
+    let records = []; 
+    currentPeriodDates.forEach(date => {
+        let lInp = document.querySelector(`.l-batch-val[data-date="${date}"]`);
+        let lVal = lInp ? parseFloat(lInp.value) || 0 : 0;
+        let dVal = (cloudCache[date] && cloudCache[date].discount) || 0; 
+        workers.forEach(w => {
+            records.push({
+                entry_date: date, worker_name: w,
+                amount: (cloudCache[date] && cloudCache[date].incomes[w]) || 0,
+                discount: dVal, loyalty_discount: lVal
+            });
+        });
+        if (!cloudCache[date]) cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+        cloudCache[date].loyalty = lVal;
+    });
+    const { error } = await supabaseClient.from('sales_records').upsert(records, { onConflict: 'entry_date, worker_name' });
+    if (error) { alert("Loyalty Save Error: " + error.message); } else {
+      showToast("Loyalty Updated!");
+    }
+    document.getElementById('loading-batch-discounts').style.display = 'none';
+    btn.disabled = false;
+  }
+
+  function distributeLoyaltyBulk() {
+    let raw = document.getElementById('bulkLoyaltyArea').value;
+    let vals = raw.split(/[,\s\t\n]+/).map(v => parseFloat(v)).filter(v => !isNaN(v));
+    let inputs = document.querySelectorAll('.l-batch-val');
+    vals.forEach((v, i) => { if (i < inputs.length) inputs[i].value = v; });
+    showToast(`Filled ${Math.min(vals.length, inputs.length)} days!`);
+  }
+
+  async function generateReportFromSummary() {
+    const start = document.getElementById('summaryStartDate').value;
+    if (!start) { alert("Please select a date."); return; }
+    const btn = document.getElementById('btn-gen-report');
+    btn.disabled = true; btn.textContent = "Fetching Cloud Data...";
+    document.getElementById('startDate').value = start; generatePeriod();
+    await prefetchPeriodData();
+    btn.disabled = false; btn.textContent = "Generate Final Report";
+    generateReport();
+  }
 
   function generateReport() {
-    // 1. Reset totals
-    const totals = {};
-    const days = {};
-    workers.forEach(w => { totals[w] = 0; days[w] = 0; });
-
-    // 2. Sum up all data currently in memory
-    Object.keys(daysData).forEach(dateStr => {
-      const d = daysData[dateStr];
-      workers.forEach(w => {
-        const income = d.incomes[w] || 0;
-        totals[w] += income;
-        if (income > 0) days[w] += 1;
+    if (!currentPeriodDates.length) return;
+    const body = document.getElementById('summaryBody'); body.innerHTML = "";
+    workers.forEach(w => {
+      let s=0, d=0, ded=0;
+      currentPeriodDates.forEach(date => {
+        let entry = cloudCache[date] || { incomes: {}, discount: 0, loyalty: 0 };
+        let inc = entry.incomes[w] || 0; s += inc; 
+        if (inc > 0) { 
+          d++; 
+          let dailyWorkedCount = Object.values(entry.incomes).filter(v => v > 0).length || workers.length;
+          ded += ((entry.discount || 0) + (entry.loyalty || 0)) / dailyWorkedCount; 
+        }
       });
+      let pay = Math.round(Math.max(0, s - ded) * 0.55);
+      let tr = document.createElement('tr');
+      tr.innerHTML = `<td style="font-weight:700;">${w}</td><td style="text-align:right;">${s.toFixed(2)}</td><td style="text-align:right;">${d}</td>
+        <td style="text-align:right; font-weight:700; color:var(--secondary);">$${pay.toFixed(2)}</td>
+        <td style="text-align:right;"><input type="number" class="w2-entry" value="0" style="width:60px; text-align:right;" oninput="updateFoot()"></td>
+        <td style="text-align:right; font-weight:700; color:var(--success);" class="c-cell">$${pay.toFixed(2)}</td>`;
+      body.appendChild(tr);
     });
-
-    // 3. Build the table
-    const tbody = document.getElementById('summaryBody');
-    tbody.innerHTML = "";
-
-    let totSales = 0, totDays = 0, totPay = 0, totOwner = 0;
-
-    workers.forEach((w, idx) => {
-      const sales = totals[w];
-      const dCount = days[w];
-      const pay = Math.round(sales * 0.55); // Rule: 55% to worker
-      const owner = sales - pay;           // Rule: 45% to owner
-      const perDay = dCount > 0 ? (pay / dCount) : 0;
-
-      totSales += sales;
-      totDays += dCount;
-      totPay += pay;
-      totOwner += owner;
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:left; font-weight:500;">${w}</td>
-        <td>${sales.toFixed(2)}</td>
-        <td>${dCount}</td>
-        <td style="font-weight:bold; color:#007aff;">${pay.toFixed(2)}</td>
-        <td style="color:#555;">${owner.toFixed(2)}</td>
-        <td>${perDay.toFixed(2)}</td>
-        <td><input type="number" step="0.01" value="0" class="w2Input" style="width:70px;"></td>
-        <td class="cashCell" style="font-weight:bold; color:#34c759;">${pay.toFixed(2)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    // 4. Update Footer Totals
-    document.getElementById('totSales').textContent = totSales.toFixed(2);
-    document.getElementById('totDays').textContent = totDays;
-    document.getElementById('totPay').textContent = totPay.toFixed(2);
-    document.getElementById('totOwner').textContent = totOwner.toFixed(2);
-    document.getElementById('totW2').textContent = "0.00";
-    document.getElementById('totCash').textContent = totPay.toFixed(2); // Initially Cash = Pay
-
-    // 5. Show Section
-    document.getElementById('summarySection').style.display = "block";
-
-    // 6. Attach Listeners for W2 inputs to auto-calculate Cash
-    tbody.querySelectorAll('.w2Input').forEach((inp, idx) => {
-      inp.addEventListener('input', () => {
-        const payCell = tbody.rows[idx].cells[3]; // Pay column
-        const payVal = parseFloat(payCell.textContent || "0");
-        const w2Val = parseFloat(inp.value || "0");
-        
-        // Logic: Cash = Pay - W2
-        const cash = payVal - w2Val;
-        
-        // Update Cash cell
-        const cashCell = tbody.rows[idx].querySelector('.cashCell');
-        cashCell.textContent = cash.toFixed(2);
-
-        // Re-sum W2 and Cash totals
-        let sumW2 = 0, sumCash = 0;
-        tbody.querySelectorAll('.w2Input').forEach((i2, j) => {
-          const w2v = parseFloat(i2.value || "0");
-          const cashv = parseFloat(tbody.rows[j].querySelector('.cashCell').textContent || "0");
-          sumW2 += w2v;
-          sumCash += cashv;
-        });
-        document.getElementById('totW2').textContent = sumW2.toFixed(2);
-        document.getElementById('totCash').textContent = sumCash.toFixed(2);
-      });
-    });
+    updateFoot(); document.getElementById('summarySection').style.display = "block";
+    document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
   }
-</script>
 
+  function updateFoot() {
+    let s=0, d=0, p=0, w=0, c=0;
+    Array.from(document.getElementById('summaryBody').rows).forEach(r => {
+      s += parseFloat(r.cells[1].textContent) || 0; d += parseInt(r.cells[2].textContent) || 0;
+      let pay = parseFloat(r.cells[3].textContent.replace('$','')) || 0; p += pay;
+      let w2 = parseFloat(r.querySelector('.w2-entry').value) || 0; w += w2;
+      let cash = pay - w2; r.querySelector('.c-cell').textContent = "$"+cash.toFixed(2); c += cash;
+    });
+    document.getElementById('totSales').textContent = "$"+s.toFixed(2);
+    document.getElementById('totDays').textContent = d;
+    document.getElementById('totPay').textContent = "$"+p.toFixed(2);
+    document.getElementById('totW2').textContent = "$"+w.toFixed(2);
+    document.getElementById('totCash').textContent = "$"+c.toFixed(2);
+  }
+
+  function showToast(m) { let t = document.getElementById('toast'); t.textContent = m; t.style.opacity = "1"; setTimeout(() => t.style.opacity = "0", 3000); }
+</script>
 </body>
 </html>
