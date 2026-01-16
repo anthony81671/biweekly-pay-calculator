@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Sales Entry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #5856d6;
+            --secondary: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --background: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #8e8e93;
+            --border: #d1d1d6;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            padding: 20px;
+            color: var(--text-main);
+            margin: 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sync-status {
+            font-size: 11px;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+
+        /* Form Elements */
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            margin-top: 15px;
+        }
+
+        input[type="date"], input[type="number"] {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            box-sizing: border-box;
+            font-family: inherit;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        input[type="date"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(88, 86, 214, 0.1);
+        }
+
+        /* Hide number input spinners */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Worker List */
+        .worker-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .worker-row:last-child {
+            border-bottom: none;
+        }
+
+        .worker-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .currency-input {
+            position: relative;
+            width: 140px;
+        }
+
+        .currency-input span {
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .currency-input input {
+            padding-left: 28px;
+            text-align: right;
+            width: 100%;
+        }
+
+        /* Totals Section */
+        .summary-box {
+            background: linear-gradient(135deg, rgba(88, 86, 214, 0.08), rgba(0, 122, 255, 0.08));
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(88, 86, 214, 0.2);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 15px;
+            color: var(--text-main);
+        }
+
+        .summary-row.total {
+            font-weight: 800;
+            border-top: 2px solid var(--primary);
+            padding-top: 12px;
+            margin-top: 8px;
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        /* Button */
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 700;
+            border-radius: 14px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(88, 86, 214, 0.4);
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 2000;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .currency-input {
+                width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📅 Daily Sales Entry</h1>
+        <div class="sync-status">● Cloud Sync Connected</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-btn" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border-color: var(--primary);">🏠 Dashboard</a>
+            <a href="index.html" class="nav-btn">⚙️ Full App</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📆 Select Date</h2>
+        <input type="date" id="entryDate" onchange="loadDayData()">
+    </div>
+
+    <div class="quick-stats" id="quickStats" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-label">Period Start</div>
+            <div class="stat-value" id="periodStart">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Period End</div>
+            <div class="stat-value" id="periodEnd">-</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Days Left</div>
+            <div class="stat-value" id="daysLeft">-</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>👥 Worker Income</h2>
+        <div id="workersList"></div>
+    </div>
+
+    <div class="card">
+        <label>🏷️ Daily Discount</label>
+        <div class="currency-input" style="width: 100%;">
+            <span>$</span>
+            <input type="number" id="dailyDiscount" placeholder="0.00" step="0.01" oninput="calculateTotal()">
+        </div>
+
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>Gross Total:</span>
+                <span id="grossTotal">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>- Discount:</span>
+                <span id="discountDisplay" style="color: var(--danger);">$0.00</span>
+            </div>
+            <div class="summary-row total">
+                <span>Net Pay:</span>
+                <span id="netTotal">$0.00</span>
+            </div>
+        </div>
+
+        <button class="save-btn" onclick="saveDay()">💾 Save Day to Cloud</button>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="toast" id="toast">Saved!</div>
+
+    <script>
+        // Supabase Configuration
+        const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        const ANCHOR_DATE = new Date("2026-01-01T00:00:00");
+        const DEFAULT_WORKERS = ["Tammy", "Linh", "Van", "ThuyLee", "Tuyen", "Kim"];
+
+        let workers = JSON.parse(localStorage.getItem("savedWorkers")) || DEFAULT_WORKERS;
+        let currentPeriodDates = [];
+
+        // Ensure Kim is always last
+        const ensureKimLast = (list) => {
+            const kimIndex = list.findIndex(w => w.toLowerCase() === 'kim');
+            if (kimIndex > -1 && kimIndex < list.length - 1) {
+                const kim = list.splice(kimIndex, 1)[0];
+                list.push(kim);
+            }
+            return list;
+        };
+
+        workers = ensureKimLast(workers);
+
+        // Initialize app
+        document.addEventListener("DOMContentLoaded", () => {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDate').value = today;
+
+            // Build worker list
+            buildWorkerList();
+
+            // Load data for today
+            loadDayData();
+
+            // Calculate period info
+            calculatePeriodInfo(today);
+        });
+
+        function buildWorkerList() {
+            const listContainer = document.getElementById("workersList");
+            listContainer.innerHTML = "";
+
+            workers.forEach(name => {
+                const row = document.createElement("div");
+                row.className = "worker-row";
+                row.innerHTML = `
+                    <span class="worker-name">${name}</span>
+                    <div class="currency-input">
+                        <span>$</span>
+                        <input type="number" class="income-input" data-worker="${name}" placeholder="0" step="0.01" oninput="calculateTotal()">
+                    </div>
+                `;
+                listContainer.appendChild(row);
+            });
+        }
+
+        function calculatePeriodInfo(dateStr) {
+            const date = new Date(dateStr + "T00:00:00");
+            const periodStart = getAutoPeriodStart(date);
+            const sd = new Date(periodStart + "T00:00:00");
+            const ed = new Date(sd);
+            ed.setDate(sd.getDate() + 13);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const daysLeft = Math.max(0, Math.ceil((ed - today) / (1000 * 60 * 60 * 24)));
+
+            document.getElementById('periodStart').textContent = formatShortDate(sd);
+            document.getElementById('periodEnd').textContent = formatShortDate(ed);
+            document.getElementById('daysLeft').textContent = daysLeft;
+            document.getElementById('quickStats').style.display = 'grid';
+        }
+
+        function formatShortDate(date) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getAutoPeriodStart(targetDate) {
+            const t = new Date(targetDate);
+            t.setHours(0, 0, 0, 0);
+            const diff = t - ANCHOR_DATE;
+            const daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let periodIndex = Math.floor(daysSince / 14);
+            if (periodIndex < 0) periodIndex = 0;
+            const start = new Date(ANCHOR_DATE);
+            start.setDate(start.getDate() + periodIndex * 14);
+            return start.toISOString().split("T")[0];
+        }
+
+        async function loadDayData() {
+            const date = document.getElementById('entryDate').value;
+            if (!date) return;
+
+            showLoading(true);
+            calculatePeriodInfo(date);
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("sales_records")
+                    .select("*")
+                    .eq("entry_date", date);
+
+                if (error) throw error;
+
+                // Reset all inputs
+                document.querySelectorAll('.income-input').forEach(input => {
+                    input.value = '';
+                });
+                document.getElementById('dailyDiscount').value = '';
+
+                // Populate with saved data
+                if (data && data.length > 0) {
+                    data.forEach(record => {
+                        const input = document.querySelector(`.income-input[data-worker="${record.worker_name}"]`);
+                        if (input && record.amount) {
+                            input.value = parseFloat(record.amount).toFixed(2);
+                        }
+
+                        // Set discount (same for all workers on that day)
+                        if (record.discount) {
+                            document.getElementById('dailyDiscount').value = parseFloat(record.discount).toFixed(2);
+                        }
+                    });
+                }
+
+                calculateTotal();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showToast('Error loading data');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function calculateTotal() {
+            let gross = 0;
+
+            // Sum all worker inputs
+            const inputs = document.querySelectorAll('.income-input');
+            inputs.forEach(input => {
+                const val = parseFloat(input.value);
+                if (!isNaN(val)) gross += val;
+            });
+
+            // Get discount
+            let discount = parseFloat(document.getElementById('dailyDiscount').value);
+            if (isNaN(discount)) discount = 0;
+
+            const net = gross - discount;
+
+            // Update display
+            document.getElementById('grossTotal').innerText = '$' + gross.toFixed(2);
+            document.getElementById('discountDisplay').innerText = '-$' + discount.toFixed(2);
+            document.getElementById('netTotal').innerText = '$' + net.toFixed(2);
+
+            return { gross, discount, net };
+        }
+
+        async function saveDay() {
+            const date = document.getElementById('entryDate').value;
+            if (!date) {
+                showToast('Please select a date');
+                return;
+            }
+
+            const totals = calculateTotal();
+            const discount = parseFloat(document.getElementById('dailyDiscount').value) || 0;
+
+            showLoading(true);
+
+            try {
+                // Fetch existing records to preserve loyalty_discount
+                const { data: existingData } = await supabaseClient
+                    .from("sales_records")
+                    .select("worker_name, loyalty_discount")
+                    .eq("entry_date", date);
+
+                let loyaltyMap = {};
+                if (existingData) {
+                    existingData.forEach(r => loyaltyMap[r.worker_name] = r.loyalty_discount || 0);
+                }
+
+                // Build records for each worker
+                let records = [];
+                document.querySelectorAll('.income-input').forEach(input => {
+                    const workerName = input.dataset.worker;
+                    const amount = parseFloat(input.value) || 0;
+
+                    records.push({
+                        entry_date: date,
+                        worker_name: workerName,
+                        amount: amount,
+                        discount: discount,
+                        loyalty_discount: loyaltyMap[workerName] || 0
+                    });
+                });
+
+                // Save to Supabase
+                const { error } = await supabaseClient
+                    .from("sales_records")
+                    .upsert(records, { onConflict: "entry_date, worker_name" });
+
+                if (error) throw error;
+
+                showToast(`✓ Saved! Net: $${totals.net.toFixed(2)}`);
+            } catch (error) {
+                console.error('Error saving:', error);
+                showToast('❌ Error saving data');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
