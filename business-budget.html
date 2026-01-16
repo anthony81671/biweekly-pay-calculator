@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K&T Nails Expense Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+        }
+
+        .header p {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .lifetime-badge {
+            background: #eef2ff;
+            border: 1px solid #e0e7ff;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+        }
+
+        .lifetime-badge .label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #818cf8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .lifetime-badge .amount {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #4338ca;
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-btn {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .nav-btn.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn:not(.active) {
+            background: white;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .nav-btn:not(.active):hover {
+            background: #f1f5f9;
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form Section */
+        .form-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.25rem;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+            border-color: #4f46e5;
+            background: white;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .amount-wrapper {
+            position: relative;
+        }
+
+        .amount-wrapper .currency {
+            position: absolute;
+            left: 1rem;
+            top: 0.75rem;
+            color: #94a3b8;
+            font-weight: 700;
+        }
+
+        .form-input[type="number"] {
+            padding-left: 2rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #4f46e5;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #4338ca;
+        }
+
+        .submit-btn.success {
+            background: #10b981;
+        }
+
+        /* List Section */
+        .list-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .list-card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .expense-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border: 1px solid #f1f5f9;
+        }
+
+        .expense-item:hover {
+            background: #f1f5f9;
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        /* Hide number input spinners */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .expense-category {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .expense-details {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        .expense-amount {
+            font-size: 1.125rem;
+            font-weight: 900;
+            color: #334155;
+            margin-right: 1rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #cbd5e1;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 1rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* Report View */
+        .report-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .report-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .report-title h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+        }
+
+        .year-select {
+            padding: 0.5rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+            font-size: 1rem;
+        }
+
+        .report-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .report-btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-export {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #047857;
+        }
+
+        .btn-reset {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .btn-reset:hover {
+            background: #fee2e2;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-amount {
+            font-size: 1.5rem;
+            font-weight: 900;
+        }
+
+        .stat-blue {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        .stat-blue .stat-label {
+            color: #2563eb;
+        }
+
+        .stat-blue .stat-amount {
+            color: #1e3a8a;
+        }
+
+        .stat-purple {
+            background: #f3e8ff;
+            border-color: #e9d5ff;
+        }
+
+        .stat-purple .stat-label {
+            color: #9333ea;
+        }
+
+        .stat-purple .stat-amount {
+            color: #581c87;
+        }
+
+        .stat-dark {
+            background: #1f2937;
+        }
+
+        .stat-dark .stat-label {
+            color: #9ca3af;
+        }
+
+        .stat-dark .stat-amount {
+            color: white;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            font-size: 0.875rem;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 1rem;
+            color: #94a3b8;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        thead th:not(:first-child) {
+            text-align: right;
+        }
+
+        tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .section-row {
+            background: #f3f4f6 !important;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-row.blue {
+            background: #eff6ff !important;
+            color: #1e40af;
+        }
+
+        .section-row.purple {
+            background: #f3e8ff !important;
+            color: #6b21a8;
+        }
+
+        .data-cell {
+            text-align: right;
+            color: #64748b;
+        }
+
+        .data-cell-total {
+            font-weight: 700;
+            background: #f8fafc;
+        }
+
+        .monthly-total-row {
+            background: #f1f5f9;
+            font-weight: 900;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .monthly-total-row td:last-child {
+            color: #4f46e5;
+            font-size: 1rem;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 28rem;
+            width: 100%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-icon {
+            width: 4rem;
+            height: 4rem;
+            background: #fee2e2;
+            color: #dc2626;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .modal h3 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal p {
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .modal-btn {
+            padding: 0.75rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.cancel {
+            background: transparent;
+            color: #64748b;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #f1f5f9;
+        }
+
+        .modal-btn.confirm {
+            background: #dc2626;
+            color: white;
+            box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+        }
+
+        .modal-btn.confirm:hover {
+            background: #b91c1c;
+        }
+
+        .success-message {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #10b981;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 40;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>K&T Nails and Spa</h1>
+                <p>Expense Management System</p>
+            </div>
+            <div class="lifetime-badge">
+                <div class="label">Lifetime Expenses</div>
+                <div class="amount" id="lifetimeAmount">$0.00</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-buttons">
+            <button class="nav-btn active">📊 Grid Entry Mode</button>
+            <button class="nav-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+            <div id="cloudStatus" style="margin-left: auto; font-size: 0.75rem; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                <span id="syncIndicator" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></span>
+                <span id="syncText">Checking Cloud...</span>
+            </div>
+        </div>
+
+        <!-- Unified View -->
+        <div class="main-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
+            <!-- Report/Entry Card -->
+            <div class="report-card" style="margin-bottom: 0;">
+                <div class="report-header">
+                    <div class="report-title">
+                        <h2>Tax Summary & Entry</h2>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <select id="yearSelect" class="year-select" onchange="updateReport()"></select>
+                            <button onclick="addNewYear()" class="report-btn" style="padding: 0.5rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.75rem;">
+                                ➕ New Year
+                            </button>
+                        </div>
+                    </div>
+                    <div class="report-buttons">
+                        <div style="position: relative; display: inline-block;">
+                            <input type="file" id="pdfUpload" accept=".pdf" style="display: none;" onchange="handlePdfUpload(this)">
+                            <button onclick="document.getElementById('pdfUpload').click()" class="report-btn" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                📄 Scan PDF
+                            </button>
+                        </div>
+                        <button class="report-btn" onclick="saveLocalFeedback()" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">
+                            💾 Save Local
+                        </button>
+                        <button id="saveCloudBtn" class="report-btn" onclick="saveToCloud()" style="background: #4f46e5; color: white;">
+                            ☁️ Save to Cloud
+                        </button>
+                        <button class="report-btn" onclick="clearCurrentYear()" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">
+                            🧹 Clear Year
+                        </button>
+                        <button class="report-btn btn-export" onclick="exportReport()">📥 Export</button>
+                        <button class="report-btn btn-reset" onclick="showResetConfirm()">⚠️ Reset All</button>
+                    </div>
+                </div>
+
+                <div id="scanStatus" style="display: none; margin-bottom: 1.5rem; padding: 1rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600; animation: slideIn 0.3s ease-out;">
+                    Scanning Status...
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                        <div class="stat-label">Employee Costs</div>
+                        <div class="stat-amount" id="empTotal">$0</div>
+                    </div>
+                    <div class="stat-card stat-purple">
+                        <div class="stat-label">Operating Expenses</div>
+                        <div class="stat-amount" id="opTotal">$0</div>
+                    </div>
+                    <div class="stat-card stat-dark">
+                        <div class="stat-label">Total Tax Deductible</div>
+                        <div class="stat-amount" id="grandTotal">$0</div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-wrapper">
+                    <style>
+                        .grid-input {
+                            width: 100%;
+                            border: none;
+                            background: transparent;
+                            text-align: right;
+                            font-family: inherit;
+                            font-size: 0.8125rem;
+                            color: #475569;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            transition: all 0.2s;
+                            font-weight: 500;
+                        }
+                        .grid-input:hover {
+                            background: rgba(79, 70, 229, 0.05);
+                        }
+                        .grid-input:focus {
+                            outline: none;
+                            background: white;
+                            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+                            color: #4f46e5;
+                            font-weight: 700;
+                        }
+                        .grid-input.unsaved {
+                            border-right: 3px solid #f59e0b;
+                            background: rgba(254, 243, 199, 0.3);
+                        }
+                        .grid-input.updated {
+                            background: #dcfce7;
+                            color: #15803d;
+                            animation: highlight 2s ease-out;
+                        }
+                        @keyframes highlight {
+                            0% { background: #dcfce7; }
+                            100% { background: transparent; }
+                        }
+                        .data-cell {
+                            padding: 2px !important;
+                            min-width: 70px;
+                        }
+                    </style>
+                    <table id="expenseTable">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 200px;">Category</th>
+                                <th>Jan</th>
+                                <th>Feb</th>
+                                <th>Mar</th>
+                                <th>Apr</th>
+                                <th>May</th>
+                                <th>Jun</th>
+                                <th>Jul</th>
+                                <th>Aug</th>
+                                <th>Sep</th>
+                                <th>Oct</th>
+                                <th>Nov</th>
+                                <th>Dec</th>
+                                <th style="background: #f8fafc;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; font-style: italic;">
+                    * Amounts are saved automatically when you finish typing or paste.
+                </div>
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="resetModal" class="modal-backdrop">
+        <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-icon">⚠️</div>
+            <h3 id="modal-title">Clear all data?</h3>
+            <p>This action is permanent and cannot be undone. Please export your data first.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeResetConfirm()">Cancel</button>
+                <button class="modal-btn confirm" onclick="resetAllData()">Delete All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="success-message">✓ Expense added successfully!</div>
+
+    <script>
+        const categories = {
+            'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'],
+            'Operating Expenses': ['Salon Lease', 'Business License/LLC/City License', 'CNA Insurance/Workers Comp', 
+                                  'Chase Merchant Charges & Fee', 'Seasonal Decorations', 'Donations', 'Gift', 'Supply'],
+            'Income Sources': ['Venmo', 'Zelle', 'Credit Card Deposit']
+        };
+
+        const fmt = (num) => '$' + (num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        let hasUnsavedChanges = false;
+
+        // Supabase Init
+        const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+        const TABLE_NAME = 'expenses'; 
+
+        // Initialize
+        async function init() {
+            // Load from Local Storage first for speed
+            try {
+                const stored = localStorage.getItem('expenses');
+                expenses = stored ? JSON.parse(stored) : [];
+                
+                // Seed sample data if empty (user requested)
+                if (expenses.length === 0) {
+                    const currentYear = new Date().getFullYear();
+                    expenses = [
+                        { id: 'seed-1', date: `${currentYear}-01-01`, category: 'Employee Costs', subcategory: 'Wages', amount: 12700, description: 'Sample' },
+                        { id: 'seed-2', date: `${currentYear}-02-01`, category: 'Employee Costs', subcategory: 'Wages', amount: 14020, description: 'Sample' },
+                        { id: 'seed-3', date: `${currentYear}-03-01`, category: 'Employee Costs', subcategory: 'Wages', amount: 22150, description: 'Sample' }
+                    ];
+                    saveExpenses(true);
+                }
+            } catch (e) {
+                console.error('Error loading local expenses:', e);
+                expenses = [];
+            }
+
+            populateYearSelect();
+            renderExpenses();
+            updateReport();
+
+            // Then fetch from Cloud
+            await loadFromCloud();
+        }
+
+        async function loadFromCloud() {
+            setSyncStatus('syncing', 'Updating from Cloud...');
+            try {
+                const { data, error } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('*');
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    expenses = data.map(d => ({
+                        id: d.id,
+                        date: d.date,
+                        category: d.category,
+                        subcategory: d.subcategory,
+                        amount: parseFloat(d.amount),
+                        description: d.description || 'Cloud Entry'
+                    }));
+                    saveExpenses(false); // Update local cache
+                    updateReport();
+                    renderExpenses();
+                    setSyncStatus('synced', 'Cloud Synced');
+                } else {
+                    setSyncStatus('synced', 'Cloud Connected (No Data)');
+                }
+            } catch (err) {
+                console.error('Cloud load error:', err);
+                setSyncStatus('error', 'Cloud Offline');
+            }
+        }
+
+        function setSyncStatus(type, text) {
+            const indicator = document.getElementById('syncIndicator');
+            const statusText = document.getElementById('syncText');
+            if (statusText) statusText.textContent = text;
+            if (!indicator) return;
+            
+            indicator.style.animation = 'none';
+            if (type === 'syncing') {
+                indicator.style.background = '#3b82f6';
+                indicator.style.animation = 'pulse 1s infinite alternate';
+            } else if (type === 'synced') {
+                indicator.style.background = '#22c55e';
+            } else if (type === 'error') {
+                indicator.style.background = '#ef4444';
+            } else if (type === 'unsaved') {
+                indicator.style.background = '#f59e0b';
+                indicator.style.animation = 'pulse 1s infinite alternate';
+            }
+        }
+
+        function populateYearSelect(selectYear = null) {
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            const startYear = 2020;
+            
+            // Seed years from 2020 to next year
+            const seededYears = [];
+            for (let y = startYear; y <= currentYear + 1; y++) {
+                seededYears.push(y);
+            }
+            
+            // Get all unique years from data plus our seeded range
+            const years = [...new Set([
+                ...seededYears,
+                ...expenses.map(e => new Date(e.date + 'T12:00:00').getFullYear())
+            ])].sort((a, b) => b - a);
+            
+            const prevVal = selectYear || yearSelect.value || currentYear;
+            yearSelect.innerHTML = '';
+            
+            years.forEach(y => {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = y;
+                yearSelect.appendChild(option);
+            });
+
+            // Restore selection
+            if ([...yearSelect.options].some(o => o.value == prevVal)) {
+                yearSelect.value = prevVal;
+            } else {
+                yearSelect.value = currentYear;
+            }
+        }
+
+        function addNewYear() {
+            const lastYear = parseInt(document.getElementById('yearSelect').options[0].value);
+            const nextYear = lastYear + 1;
+            const year = prompt("Enter the year you want to add:", nextYear);
+            
+            if (year && !isNaN(year)) {
+                populateYearSelect(year);
+                updateReport();
+                renderExpenses();
+            }
+        }
+
+        // Deprecated but kept for safety if needed
+        function updateSubcategories() {}
+
+        function addExpense() {
+            // No longer used in grid mode but kept logic for internal creation
+        }
+
+        // New Grid Update Logic
+        function updateMonthlyExpense(year, monthIndex, subcategory, amount) {
+            const category = categories['Employee Costs'].includes(subcategory) ? 'Employee Costs' : 'Operating Expenses';
+            const monthStr = (monthIndex + 1).toString().padStart(2, '0');
+            const date = `${year}-${monthStr}-01`;
+
+            const newAmt = parseFloat(amount) || 0;
+            
+            // Find existing
+            const existing = expenses.find(e => {
+                const d = new Date(e.date + 'T12:00:00');
+                return d.getFullYear() === year && d.getMonth() === monthIndex && e.subcategory === subcategory;
+            });
+
+            if (existing && existing.amount === newAmt) return;
+
+            expenses = expenses.filter(e => {
+                const d = new Date(e.date + 'T12:00:00');
+                return !(d.getFullYear() === year && d.getMonth() === monthIndex && e.subcategory === subcategory);
+            });
+
+            if (newAmt > 0) {
+                expenses.push({
+                    id: existing ? existing.id : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    date,
+                    category,
+                    subcategory,
+                    amount: newAmt,
+                    description: 'Grid Entry'
+                });
+            }
+
+            hasUnsavedChanges = true;
+            document.getElementById('saveCloudBtn').style.boxShadow = '0 0 15px rgba(79, 70, 229, 0.4)';
+            setSyncStatus('unsaved', 'Unsaved Changes');
+
+            saveExpenses(); 
+            // Surgical update instead of full re-render to preserve focus/tabbing
+            updateReport(false); 
+            renderExpenses(); // Update history list
+        }
+
+        async function saveToCloud() {
+            const btn = document.getElementById('saveCloudBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saving...';
+            setSyncStatus('syncing', 'Saving to Cloud...');
+
+            try {
+                // Upsert to Supabase
+                const { error } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .upsert(expenses.map(e => ({
+                        id: e.id,
+                        date: e.date,
+                        category: e.category,
+                        subcategory: e.subcategory,
+                        amount: e.amount,
+                        description: e.description
+                    })), { onConflict: 'id' });
+
+                if (error) throw error;
+
+                hasUnsavedChanges = false;
+                btn.style.boxShadow = 'none';
+                setSyncStatus('synced', 'All Saved to Cloud');
+                
+                // Show success message
+                const msg = document.getElementById('successMessage');
+                msg.textContent = '✓ Data synchronized with Supabase!';
+                msg.classList.add('show');
+                setTimeout(() => msg.classList.remove('show'), 3000);
+            } catch (err) {
+                console.error('Cloud save error:', err);
+                alert('Cloud Sync Failed: ' + (err.message || 'Unknown error'));
+                setSyncStatus('error', 'Sync Failed');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function renderExpenses() {
+            const list = document.getElementById('expenseList');
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+            
+            // Filter history to current selected year to matching the context
+            const filtered = expenses.filter(e => new Date(e.date + 'T12:00:00').getFullYear() === selectedYear);
+            const sorted = [...filtered].reverse().slice(0, 10);
+
+            if (sorted.length === 0) {
+                list.innerHTML = '<div class="empty-state">No history.</div>';
+                return;
+            }
+
+            list.innerHTML = sorted.map(e => {
+                const d = new Date(e.date + 'T12:00:00');
+                const dateStr = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                
+                return `
+                <div class="expense-item" style="padding: 0.75rem;">
+                    <div class="expense-info">
+                        <div class="expense-category" style="font-size: 0.8125rem;">${e.subcategory}</div>
+                        <div class="expense-details" style="font-size: 0.6875rem;">${dateStr}</div>
+                    </div>
+                    <div class="expense-amount" style="font-size: 0.875rem;">$${e.amount.toFixed(2)}</div>
+                    <button class="delete-btn" onclick="deleteExpense('${e.id}')" title="Delete">🗑️</button>
+                </div>
+            `}).join('');
+        }
+
+        async function handlePdfUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('scanStatus');
+            status.style.display = 'block';
+            status.textContent = '⏳ Analyzing PDF structure...';
+            status.style.background = '#eff6ff';
+            status.style.color = '#1d4ed8';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let fullText = '';
+                const maxPages = pdf.numPages;
+                
+                for (let i = 1; i <= maxPages; i++) {
+                    status.textContent = `⏳ Scanning Page ${i} of ${maxPages}...`;
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    
+                    // Sort items by Y (top to bottom) then by X (left to right)
+                    // transform[5] is Y, transform[4] is X
+                    const items = textContent.items.sort((a, b) => {
+                        if (Math.abs(a.transform[5] - b.transform[5]) > 5) {
+                            return b.transform[5] - a.transform[5];
+                        }
+                        return a.transform[4] - b.transform[4];
+                    });
+
+                    let lastY;
+                    let pageText = '';
+                    for (const item of items) {
+                        if (lastY !== undefined && Math.abs(item.transform[5] - lastY) > 5) {
+                            pageText += '\n';
+                        }
+                        pageText += item.str + ' ';
+                        lastY = item.transform[5];
+                    }
+                    fullText += pageText + '\n\n';
+                }
+
+                console.log('--- EXTRACTED PDF TEXT ---');
+                console.log(fullText);
+                console.log('--------------------------');
+
+                if (!fullText.trim()) {
+                    throw new Error('No text found. This might be a scanned image PDF.');
+                }
+
+                extractDataFromText(fullText);
+
+                status.textContent = '✓ Data Extracted! Please verify details.';
+                status.style.background = '#f0fdf4';
+                status.style.color = '#15803d';
+                setTimeout(() => status.style.display = 'none', 5000);
+
+            } catch (err) {
+                console.error(err);
+                status.textContent = '❌ ' + (err.message || 'Failed to read PDF.');
+                status.style.background = '#fef2f2';
+                status.style.color = '#dc2626';
+            } finally {
+                input.value = ''; 
+            }
+        }
+
+        function extractDataFromText(text) {
+            const lowerText = text.toLowerCase();
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+            
+            // 1. Extract Date (Month)
+            const datePatterns = [
+                /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?,?\s+(\d{4})\b/i,
+                /\b(\d{1,2})[\/\-](\d{4})\b/
+            ];
+
+            const fullDatePatterns = [
+                /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/,
+                /\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/,
+                /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})\b/i
+            ];
+
+            let foundMonthIdx = null;
+            let foundYear = selectedYear;
+
+            // Prioritize searching near "Date" keyword
+            const dateIndex = lowerText.indexOf('date');
+            if (dateIndex !== -1) {
+                const snippet = text.substring(dateIndex, dateIndex + 50);
+                for (const pattern of [...fullDatePatterns, ...datePatterns]) {
+                    const match = snippet.match(pattern);
+                    if (match) {
+                        const d = new Date(match[0]);
+                        if (!isNaN(d.getTime())) {
+                            foundMonthIdx = d.getMonth();
+                            foundYear = d.getFullYear();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (foundMonthIdx === null) {
+                for (const pattern of fullDatePatterns) {
+                    const match = text.match(pattern);
+                    if (match) {
+                        const d = new Date(match[0]);
+                        if (!isNaN(d.getTime())) {
+                            foundMonthIdx = d.getMonth();
+                            foundYear = d.getFullYear();
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (foundMonthIdx === null) {
+                 for (const pattern of datePatterns) {
+                    const match = text.match(pattern);
+                    if (match) {
+                        const d = new Date(match[0]);
+                        if (!isNaN(d.getTime())) {
+                            foundMonthIdx = d.getMonth();
+                            foundYear = d.getFullYear();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Sync year select if different
+            if (foundYear !== selectedYear) {
+                const yearSel = document.getElementById('yearSelect');
+                if ([...yearSel.options].some(o => parseInt(o.value) === foundYear)) {
+                    yearSel.value = foundYear;
+                }
+            }
+
+            // 2. Extract Amount
+            const totalKeywords = ['total', 'amount due', 'balance due', 'payment amount', 'amount paid', 'grand total', 'net amount', 'total amount'];
+            let bestAmount = 0;
+            let foundByKeyword = false;
+
+            for (const kw of totalKeywords) {
+                const index = lowerText.lastIndexOf(kw);
+                if (index !== -1) {
+                    const snippet = text.substring(index, index + 60);
+                    const amountMatch = snippet.match(/(\d{1,3}(,[0-9]{3})*(\.[0-9]{2}))/);
+                    if (amountMatch) {
+                        const val = parseFloat(amountMatch[1].replace(/,/g, ''));
+                        if (val > 0 && val < 100000) {
+                            bestAmount = val;
+                            foundByKeyword = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!foundByKeyword) {
+                const amountPattern = /\$?([0-9]{1,3}(,[0-9]{3})*(\.[0-9]{2}))/g;
+                const matches = [...text.matchAll(amountPattern)];
+                let maxAmount = 0;
+                matches.forEach(m => {
+                    const val = parseFloat(m[1].replace(/,/g, ''));
+                    const isYearLike = (val >= 2020 && val <= 2030 && Number.isInteger(val));
+                    if (!isNaN(val) && val > maxAmount && val < 50000 && !isYearLike) { 
+                        maxAmount = val;
+                    }
+                });
+                bestAmount = maxAmount;
+            }
+
+            // 3. Vendor / Category Recognition
+            const vendorMap = [
+                { name: 'So Cal Gas', keywords: ['so cal gas', 'southern california gas'], sub: 'So Cal Gas' },
+                { name: 'So Cal Edison', keywords: ['edison', 'sce.com', 'southern california edison'], sub: 'So Cal Edison' },
+                { name: 'Golden State Water', keywords: ['golden state water', 'gswater'], sub: 'Golden State Water' },
+                { name: 'Spectrum', keywords: ['spectrum', 'time warner', 'charter communications'], sub: 'Time Warner (Phone/Internet)' },
+                { name: 'T-Mobile', keywords: ['t-mobile', 'tmobile'], sub: 'T-Mobile (Business Phone)' },
+                { name: 'Intuit', keywords: ['intuit', 'quickbooks', 'payroll'], sub: 'Intuit/Payroll' },
+                { name: 'CNA Insurance', keywords: ['cna insurance', 'workers comp', 'state fund'], sub: 'CNA Insurance/Workers Comp' },
+                { name: 'IRS (Federal Tax)', keywords: ['internal revenue service', 'irs.gov', 'form 941', 'form 944', 'form 940'], sub: 'Federal Taxes (941/943/944)' },
+                { name: 'EDD (State Tax)', keywords: ['employment development department', 'edd.ca.gov', 'sui/ett', 'pit/sdi'], sub: 'CA SUI/ETT' },
+                { name: 'Salon Lease', keywords: ['lease', 'rent', 'property management'], sub: 'Salon Lease' },
+                { name: 'Chase Merchant', keywords: ['chase merchant', 'merchant fee', 'service charge', 'interchange'], sub: 'Chase Merchant Charges & Fee' }
+            ];
+
+            let identifiedSub = null;
+            for (const v of vendorMap) {
+                if (v.keywords.some(kw => lowerText.includes(kw))) {
+                    identifiedSub = v.sub;
+                    break;
+                }
+            }
+
+            if (foundMonthIdx !== null && bestAmount > 0 && identifiedSub) {
+                updateMonthlyExpense(foundYear, foundMonthIdx, identifiedSub, bestAmount);
+                
+                // Visual feedback in grid
+                setTimeout(() => {
+                    const inputId = `input-${foundMonthIdx}-${identifiedSub.replace(/\s+/g, '-')}`;
+                    const el = document.getElementById(inputId);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('updated');
+                        setTimeout(() => el.classList.remove('updated'), 3000);
+                    }
+                }, 100);
+            } else if (bestAmount > 0) {
+                alert(`Extracted $${bestAmount.toFixed(2)} but could not determine category or month automatically. Please enter manually.`);
+            }
+        }
+
+        async function updateReport(fullRender = true) {
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+            const months = Array.from({ length: 12 }, () => ({
+                employeeCosts: 0,
+                operatingExpenses: 0,
+                total: 0,
+                incomeTotal: 0,
+                breakdown: {}
+            }));
+
+            let empTotal = 0, opTotal = 0, yTotal = 0, runTotal = 0, yIncomeTotal = 0;
+
+            expenses.forEach(e => {
+                const eDate = new Date(e.date + 'T12:00:00');
+                const eYear = eDate.getFullYear();
+                const eMonth = eDate.getMonth();
+                const amt = e.amount;
+
+                runTotal += amt;
+
+                if (eYear === selectedYear) {
+                    if (categories['Income Sources'].includes(e.subcategory)) {
+                        months[eMonth].incomeTotal += amt;
+                        yIncomeTotal += amt;
+                    } else {
+                        yTotal += amt;
+                        if (categories['Employee Costs'].includes(e.subcategory)) {
+                            months[eMonth].employeeCosts += amt;
+                            empTotal += amt;
+                        } else {
+                            months[eMonth].operatingExpenses += amt;
+                            opTotal += amt;
+                        }
+                        months[eMonth].total += amt;
+                    }
+                    months[eMonth].breakdown[e.subcategory] = (months[eMonth].breakdown[e.subcategory] || 0) + amt;
+                }
+            });
+
+            // Fast Update: Just update totals if not a full render
+            if (!fullRender) {
+                // Update Row Totals
+                Object.keys(categories).forEach(cat => {
+                    categories[cat].forEach(sub => {
+                        let subTotal = 0;
+                        for(let i=0; i<12; i++) subTotal += (months[i].breakdown[sub] || 0);
+                        const el = document.getElementById(`total-row-${sub.replace(/\s+/g, '-')}`);
+                        if(el) el.textContent = fmt(subTotal);
+                    });
+                });
+
+                // Update Sector Totals
+                months.forEach((m, i) => {
+                    const empEl = document.getElementById(`subtotal-emp-${i}`);
+                    if(empEl) empEl.textContent = fmt(m.employeeCosts);
+                    const opEl = document.getElementById(`subtotal-op-${i}`);
+                    if(opEl) opEl.textContent = fmt(m.operatingExpenses);
+                    const dayEl = document.getElementById(`total-month-${i}`);
+                    if(dayEl) dayEl.textContent = fmt(m.total);
+                    const incomeEl = document.getElementById(`total-income-${i}`);
+                    if(incomeEl) incomeEl.textContent = fmt(m.incomeTotal);
+                    const profitEl = document.getElementById(`profit-month-${i}`);
+                    if(profitEl) {
+                        const p = m.incomeTotal - m.total;
+                        profitEl.textContent = fmt(p);
+                        profitEl.style.color = p >= 0 ? '#15803d' : '#dc2626';
+                    }
+                });
+
+                // Update Stats
+                document.getElementById('empTotal').textContent = fmt(empTotal);
+                document.getElementById('opTotal').textContent = fmt(opTotal);
+                document.getElementById('grandTotal').textContent = fmt(empTotal + opTotal);
+                document.getElementById('lifetimeAmount').textContent = fmt(runTotal);
+                
+                // Update Year Total Column
+                document.getElementById('grand-total-emp').textContent = fmt(empTotal);
+                document.getElementById('grand-total-op').textContent = fmt(opTotal);
+                document.getElementById('grand-total-year').textContent = fmt(yTotal);
+                document.getElementById('grand-total-income').textContent = fmt(yIncomeTotal);
+                const grandProfit = yIncomeTotal - yTotal;
+                const grandProfitEl = document.getElementById('grand-total-profit');
+                grandProfitEl.textContent = fmt(grandProfit);
+                grandProfitEl.style.color = grandProfit >= 0 ? '#15803d' : '#dc2626';
+                return;
+            }
+
+            // Full Render Update stats
+            document.getElementById('empTotal').textContent = fmt(empTotal);
+            document.getElementById('opTotal').textContent = fmt(opTotal);
+            document.getElementById('grandTotal').textContent = fmt(empTotal + opTotal);
+            document.getElementById('lifetimeAmount').textContent = fmt(runTotal);
+
+            // Build table structure
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const createInputCell = (sub, monthIdx, customColor = null) => {
+                const val = months[monthIdx].breakdown[sub] || 0;
+                const displayVal = val > 0 ? val.toFixed(2) : '';
+                const colorStyle = customColor ? `style="color: ${customColor}; font-weight: 700;"` : '';
+                return `
+                    <td class="data-cell">
+                        <input type="number" step="0.01" value="${displayVal}" 
+                               class="grid-input ${hasUnsavedChanges ? 'unsaved' : ''}" 
+                               id="input-${monthIdx}-${sub.replace(/\s+/g, '-')}"
+                               ${colorStyle}
+                               onblur="updateMonthlyExpense(${selectedYear}, ${monthIdx}, '${sub}', this.value)"
+                               onkeydown="if(event.key==='Enter') this.blur();"
+                               placeholder="—">
+                    </td>
+                `;
+            };
+
+            // Employee Costs Section
+            tbody.innerHTML += `<tr class="section-row blue"><td colspan="15">Employee Costs</td></tr>`;
+            categories['Employee Costs'].forEach(sub => {
+                let total = 0;
+                let row = `<tr><td>${sub}</td>`;
+                for (let i = 0; i < 12; i++) {
+                    total += (months[i].breakdown[sub] || 0);
+                    row += createInputCell(sub, i);
+                }
+                const subId = sub.replace(/\s+/g, '-');
+                row += `<td class="data-cell-total" id="total-row-${subId}">${fmt(total)}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+            tbody.innerHTML += `<tr class="section-total-row">
+                <td style="font-weight: 700; color: #1e40af;">Total Employee Costs</td>
+                ${months.map((m, i) => `<td class="data-cell" id="subtotal-emp-${i}" style="text-align: right; padding: 4px 8px; font-weight: 700; color: #1e40af; background: rgba(239, 246, 255, 0.5);">${fmt(m.employeeCosts)}</td>`).join('')}
+                <td style="font-weight: 800; color: #1e40af; background: rgba(239, 246, 255, 0.5);" id="grand-total-emp">${fmt(empTotal)}</td>
+            </tr>`;
+
+            // Operating Expenses Section
+            tbody.innerHTML += `<tr class="section-row purple"><td colspan="15">Operating Expenses</td></tr>`;
+            categories['Operating Expenses'].forEach(sub => {
+                let total = 0;
+                let row = `<tr><td>${sub}</td>`;
+                for (let i = 0; i < 12; i++) {
+                    total += (months[i].breakdown[sub] || 0);
+                    row += createInputCell(sub, i);
+                }
+                const subId = sub.replace(/\s+/g, '-');
+                row += `<td class="data-cell-total" id="total-row-${subId}">${fmt(total)}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+            tbody.innerHTML += `<tr class="section-total-row">
+                <td style="font-weight: 700; color: #7e22ce;">Total Operating Expenses</td>
+                ${months.map((m, i) => `<td class="data-cell" id="subtotal-op-${i}" style="text-align: right; padding: 4px 8px; font-weight: 700; color: #7e22ce; background: rgba(250, 245, 255, 0.5);">${fmt(m.operatingExpenses)}</td>`).join('')}
+                <td style="font-weight: 800; color: #7e22ce; background: rgba(250, 245, 255, 0.5);" id="grand-total-op">${fmt(opTotal)}</td>
+            </tr>`;
+
+            // Monthly Total Row (EXPENSES)
+            tbody.innerHTML += `<tr class="monthly-total-row" style="background: #fef2f2; border-top: 2px solid #fee2e2;">
+                <td style="font-weight: 800; color: #991b1b;">MONTHLY EXPENSE TOTAL</td>
+                ${months.map((m, i) => `<td class="data-cell" id="total-month-${i}" style="text-align: right; padding: 4px 8px; font-weight: 800; color: #dc2626;">${fmt(m.total)}</td>`).join('')}
+                <td id="grand-total-year" style="font-weight: 900; background: #fee2e2; color: #991b1b;">${fmt(yTotal)}</td>
+            </tr>`;
+
+            // NEW Income Breakdown Section (Venmo, Zelle, CC)
+            categories['Income Sources'].forEach(sub => {
+                let total = 0;
+                let row = `<tr style="background: #f0fdf4; border-bottom: 1px solid #dcfce7;">
+                    <td style="font-weight: 600; color: #166534;">${sub}</td>`;
+                for (let i = 0; i < 12; i++) {
+                    total += (months[i].breakdown[sub] || 0);
+                    row += createInputCell(sub, i, '#166534'); // Pass green for these rows
+                }
+                const subId = sub.replace(/\s+/g, '-');
+                row += `<td class="data-cell-total" id="total-row-${subId}" style="color: #15803d; font-weight: 700;">${fmt(total)}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+
+            // Monthly Sales Row (Sum of Venmo, Zelle, CC)
+            tbody.innerHTML += `<tr style="background: #dcfce7; border-top: 2px solid #bbf7d0;">
+                <td style="font-weight: 800; color: #14532d;">TOTAL MONTHLY INCOME</td>
+                ${months.map((m, i) => `<td class="data-cell" id="total-income-${i}" style="text-align: right; padding: 4px 8px; font-weight: 800; color: #166534;">${fmt(m.incomeTotal)}</td>`).join('')}
+                <td id="grand-total-income" style="font-weight: 900; background: #bbf7d0; color: #14532d;">${fmt(yIncomeTotal)}</td>
+            </tr>`;
+
+            // Net Profit Row
+            tbody.innerHTML += `<tr style="background: #f1f5f9;">
+                <td style="font-weight: 900; color: #0f172a;">NET PROFIT / LOSS</td>
+                ${months.map((m, i) => {
+                    const p = m.incomeTotal - m.total;
+                    return `<td class="data-cell" id="profit-month-${i}" style="text-align: right; padding: 4px 8px; font-weight: 900; color: ${p >= 0 ? '#15803d' : '#dc2626'};">${fmt(p)}</td>`;
+                }).join('')}
+                <td id="grand-total-profit" style="font-weight: 900; color: ${yIncomeTotal - yTotal >= 0 ? '#15803d' : '#dc2626'}; background: #e2e8f0;">${fmt(yIncomeTotal - yTotal)}</td>
+            </tr>`;
+        }
+
+        function switchView(view) {
+            // Deprecated - always showing unified view
+        }
+
+        function exportReport() {
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            let csv = 'Category,' + monthNames.join(',') + ',Total\n';
+
+            const months = Array.from({ length: 12 }, () => ({ breakdown: {} }));
+            expenses.forEach(e => {
+                const eDate = new Date(e.date);
+                if (eDate.getFullYear() === selectedYear) {
+                    const eMonth = eDate.getMonth();
+                    months[eMonth].breakdown[e.subcategory] = (months[eMonth].breakdown[e.subcategory] || 0) + e.amount;
+                }
+            });
+
+            const addSection = (title, subs) => {
+                csv += `${title.toUpperCase()}\n`;
+                subs.forEach(sub => {
+                    let rowTotal = 0;
+                    const values = months.map(m => {
+                        const val = m.breakdown[sub] || 0;
+                        rowTotal += val;
+                        return val.toFixed(2);
+                    });
+                    csv += `"${sub}",${values.join(',')},${rowTotal.toFixed(2)}\n`;
+                });
+            };
+
+            addSection('Employee Costs', categories['Employee Costs']);
+            addSection('Operating Expenses', categories['Operating Expenses']);
+
+            const empTotal = [...new Set(expenses.filter(e => categories['Employee Costs'].includes(e.subcategory) && new Date(e.date).getFullYear() === selectedYear).map(e => e.amount))].reduce((a, b) => a + b, 0);
+            
+            let empSum = 0, opSum = 0;
+            expenses.forEach(e => {
+                if (new Date(e.date).getFullYear() === selectedYear) {
+                    if (categories['Employee Costs'].includes(e.subcategory)) empSum += e.amount;
+                    else opSum += e.amount;
+                }
+            });
+
+            csv += `\nSUMMARY\nEmployee Costs Total,,${empSum.toFixed(2)}\n`;
+            csv += `Operating Expenses Total,,${opSum.toFixed(2)}\n`;
+            csv += `Grand Total,,${(empSum + opSum).toFixed(2)}\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `KT_Nails_Report_${selectedYear}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function saveExpenses(markAsUnsaved = true) {
+            try {
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+                if (markAsUnsaved) {
+                    hasUnsavedChanges = true;
+                    setSyncStatus('unsaved', 'Unsaved Changes');
+                    document.getElementById('saveCloudBtn').style.boxShadow = '0 0 15px rgba(79, 70, 229, 0.4)';
+                }
+            } catch (e) {
+                console.error('Failed to save local expenses:', e);
+            }
+        }
+
+        function saveLocalFeedback() {
+            saveExpenses(true);
+            const msg = document.getElementById('successMessage');
+            msg.textContent = '✓ Saved to browser cache!';
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+        }
+
+        function clearCurrentYear() {
+            const year = parseInt(document.getElementById('yearSelect').value);
+            if (confirm(`Are you sure you want to clear ALL entries for ${year}? This only affects your screen and browser cache until you click 'Save to Cloud'.`)) {
+                expenses = expenses.filter(e => {
+                    const d = new Date(e.date + 'T12:00:00');
+                    return d.getFullYear() !== year;
+                });
+                hasUnsavedChanges = true;
+                saveExpenses(true);
+                updateReport();
+                
+                const msg = document.getElementById('successMessage');
+                msg.textContent = `✓ Data for ${year} cleared locally!`;
+                msg.classList.add('show');
+                setTimeout(() => msg.classList.remove('show'), 3000);
+            }
+        }
+
+        function showResetConfirm() {
+            document.getElementById('resetModal').classList.add('active');
+        }
+
+        function closeResetConfirm() {
+            document.getElementById('resetModal').classList.remove('active');
+        }
+
+        function resetAllData() {
+            expenses = [];
+            saveExpenses(true);
+            updateReport();
+            closeResetConfirm();
+            
+            const msg = document.getElementById('successMessage');
+            msg.textContent = '✓ All data reset locally!';
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
