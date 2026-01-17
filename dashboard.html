@@ -6,11 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Pay Calculator - Dashboard</title>
+    <title>Pay Calculator Cloud Pro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -20,506 +20,880 @@
         --secondary: #007aff;
         --success: #34c759;
         --danger: #ff3b30;
-        --warning: #ff9500;
         --background: #f2f2f7;
         --card-bg: #ffffff;
         --text-main: #1a1a1a;
-        --text-muted: #8e8e93;
+        --text-muted: #4a4a4a;
         --border: #d1d1d6;
         --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
       }
-
       * {
         box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+        -webkit-tap-highlight-color: transparent;
       }
-
       body {
         font-family: "Inter", -apple-system, sans-serif;
+        margin: 0;
+        padding: 0;
         background-color: var(--background);
         color: var(--text-main);
         line-height: 1.5;
-        overflow-x: hidden;
       }
-
-      .dashboard-container {
-        padding: 24px;
-        max-width: 1400px;
+      .container {
+        max-width: 650px;
         margin: 0 auto;
+        padding: 20px 16px 120px;
       }
-
-      /* Header */
-      .dashboard-header {
-        margin-bottom: 32px;
+      header {
+        padding: 20px 0;
         text-align: center;
+        position: relative;
       }
-
-      .dashboard-header h1 {
-        font-size: 34px;
-        font-weight: 900;
-        margin-bottom: 20px;
+      h1 {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0;
         background: linear-gradient(135deg, var(--primary), var(--secondary));
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
       }
-
-      /* Stats Grid */
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 32px;
-      }
-
-      .stat-card {
+      .card {
         background: var(--card-bg);
+        backdrop-filter: blur(15px);
         border-radius: 20px;
         padding: 24px;
-        box-shadow: var(--shadow);
+        margin-bottom: 24px;
         border: 1px solid var(--border);
-        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: var(--shadow);
+        position: relative;
       }
-
-      .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      h2 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 18px;
       }
-
-      .stat-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-      }
-
-      .stat-value {
-        font-size: 36px;
-        font-weight: 900;
-        margin-bottom: 4px;
-      }
-
-      .stat-change {
+      label {
+        display: block;
         font-size: 14px;
         font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-muted);
       }
-
-      .stat-change.positive {
-        color: var(--success);
-      }
-
-      .stat-change.negative {
-        color: var(--danger);
-      }
-
-      /* Chart Section */
-      .charts-section {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 20px;
-        margin-bottom: 32px;
-      }
-
-      .chart-card {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 24px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-      }
-
-      .chart-card h3 {
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 20px;
-      }
-
-
-      /* Calendar Grid */
-      .calendar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-
-      .month-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--primary);
-      }
-
-      .month-nav {
-        display: flex;
-        gap: 10px;
-      }
-
-      .month-nav button {
-        padding: 8px 16px;
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        font-size: 16px;
+        font-family: inherit;
         background: white;
-        border: 2px solid var(--primary);
-        color: var(--primary);
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
         transition: all 0.2s;
       }
-
-      .month-nav button:hover {
+      button {
+        width: 100%;
+        padding: 14px;
+        border-radius: 14px;
+        border: none;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: 0.2s;
+      }
+      button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      button:active {
+        transform: scale(0.97);
+      }
+      .btn-primary {
         background: var(--primary);
         color: white;
       }
-
-      .weekday-headers {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 8px;
+      .btn-secondary {
+        background: var(--secondary);
+        color: white;
       }
-
-      .weekday-header {
+      .btn-success {
+        background: var(--success);
+        color: white;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+      }
+      .btn-small {
+        padding: 8px 14px;
+        font-size: 13px;
+        width: auto;
+        margin-top: 0;
+      }
+      .tabs {
+        display: flex;
+        background: #e5e5ea;
+        padding: 5px;
+        border-radius: 14px;
+        margin-bottom: 24px;
+      }
+      .tab {
+        flex: 1;
+        padding: 10px;
         text-align: center;
         font-size: 12px;
         font-weight: 700;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--text-muted);
+      }
+      .tab.active {
+        background: white;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        color: var(--primary);
+      }
+      
+      /* Daily View Specific Styles */
+      .worker-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+      .worker-name { font-weight: 600; font-size: 14px; }
+      .currency-input { position: relative; width: 120px; }
+      .currency-input span { position: absolute; left: 10px; top: 10px; color: #888; font-size: 14px; }
+      .currency-input input { padding-left: 20px; text-align: right; width: 100%; padding-right: 10px; }
+      .summary-box { background: #e5f1ff; border-radius: 12px; padding: 15px; margin-top: 20px; }
+      .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+      .summary-row.total { font-weight: 800; border-top: 1px solid #cbdceb; padding-top: 10px; margin-top: 5px; font-size: 16px; color: var(--primary); }
+      
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 15px;
+      }
+      th {
+        text-align: left;
+        font-size: 11px;
+        padding: 10px;
+        border-bottom: 2px solid var(--border);
         color: var(--text-muted);
         text-transform: uppercase;
-        padding: 8px;
+      }
+      td {
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--border);
       }
 
-      .calendar-grid {
+      /* Layout for Batch Rows */
+      .discount-row,
+      .batch-row,
+      .daily-row-grid {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        padding-bottom: 20px;
-      }
-
-      .day-cell {
-        background: rgba(88, 86, 214, 0.05);
-        border-radius: 12px;
-        padding: 12px 8px;
-        text-align: center;
-        border: 2px solid transparent;
-        transition: all 0.2s;
-        cursor: pointer;
-        min-height: 80px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-
-      .day-cell:hover {
-        border-color: var(--primary);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(88, 86, 214, 0.2);
-      }
-
-      .day-cell.other-month {
-        opacity: 0.3;
-        background: rgba(0, 0, 0, 0.02);
-      }
-
-      .day-cell.has-sales {
-        background: linear-gradient(135deg, rgba(88, 86, 214, 0.15), rgba(0, 122, 255, 0.15));
-        border-color: rgba(88, 86, 214, 0.3);
-      }
-
-      .day-cell.in-period {
-        background: linear-gradient(135deg, rgba(52, 199, 89, 0.1), rgba(52, 199, 89, 0.05));
-        border-color: rgba(52, 199, 89, 0.4);
-      }
-
-      .day-cell.in-period.has-sales {
-        background: linear-gradient(135deg, rgba(88, 86, 214, 0.25), rgba(0, 122, 255, 0.25));
-        border-color: var(--primary);
-      }
-
-      .day-cell.selected {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-      }
-
-      .day-number {
-        font-size: 18px;
-        font-weight: 900;
-        margin-bottom: 6px;
-      }
-
-      .day-amount {
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--success);
-      }
-
-      .day-cell.selected .day-amount {
-        color: white;
-      }
-
-      .day-cell.no-sales .day-amount {
-        color: var(--text-muted);
-        font-size: 10px;
-      }
-
-      .day-cell.other-month .day-amount {
-        display: none;
-      }
-
-      /* Yearly Sales Tracker */
-      .yearly-sales {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 24px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-      }
-
-      .yearly-sales h3 {
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 20px;
-      }
-
-      .year-item {
-        display: flex;
+        grid-template-columns: 1fr 120px;
+        gap: 10px;
         align-items: center;
-        justify-content: space-between;
-        padding: 16px;
-        margin-bottom: 12px;
-        background: linear-gradient(135deg, rgba(88, 86, 214, 0.05), rgba(0, 122, 255, 0.05));
+        margin-bottom: 10px;
+        padding: 10px 14px;
+        background: rgba(0, 0, 0, 0.03);
         border-radius: 12px;
-        border: 1px solid rgba(88, 86, 214, 0.2);
       }
 
-      .year-label {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-main);
+      /* Hide number input spinners (Up/Down arrows) */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
       }
-
-      .year-stats {
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
         text-align: right;
       }
 
-      .year-sales {
-        font-size: 24px;
-        font-weight: 900;
-        color: var(--primary);
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        border-radius: 20px;
+        z-index: 10;
       }
-
-      .year-profit {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--success);
-        margin-top: 4px;
-      }
-
-      .year-projection {
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--text-muted);
-        margin-top: 6px;
-        padding-top: 6px;
-        border-top: 1px dashed rgba(0, 0, 0, 0.1);
-      }
-
-      /* Loading */
-      .loading {
-        text-align: center;
-        padding: 60px;
-        color: var(--text-muted);
-      }
-
       .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid var(--border);
-        border-top: 4px solid var(--primary);
+        width: 28px;
+        height: 28px;
+        border: 3.5px solid var(--border);
+        border-top: 3.5px solid var(--primary);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
-        margin: 0 auto 16px;
       }
-
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
-
-      /* Quick Actions */
-      .quick-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-      }
-
-      .action-btn {
-        padding: 12px 24px;
-        border-radius: 12px;
-        border: none;
-        font-size: 15px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-decoration: none;
-        display: inline-block;
-      }
-
-      .action-btn.primary {
-        background: var(--primary);
+      .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
         color: white;
+        padding: 12px 28px;
+        border-radius: 40px;
+        opacity: 0;
+        transition: 0.3s;
+        z-index: 2000;
+        font-weight: 600;
+        text-align: center;
       }
-
-      .action-btn.secondary {
-        background: white;
-        color: var(--primary);
-        border: 2px solid var(--primary);
+      .sync-status {
+        font-size: 11px;
+        text-align: center;
+        margin-top: -12px;
+        margin-bottom: 15px;
+        color: var(--success);
+        font-weight: 700;
       }
-
-      .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      .action-btn:active {
-        transform: scale(0.98);
-      }
-
-      /* Responsive */
-      @media (max-width: 1024px) {
-        .charts-section {
-          grid-template-columns: 1fr;
+      @media print {
+        .card,
+        button,
+        .tabs,
+        header,
+        .no-print {
+          display: none !important;
         }
-
-        .stats-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-
-      @media (max-width: 768px) {
-        .stats-grid {
-          grid-template-columns: 1fr;
+        #summarySection {
+          display: block !important;
+          box-shadow: none;
+          border: none;
+          background: white;
         }
       }
     </style>
   </head>
   <body>
-    <div class="dashboard-container">
-      <div class="dashboard-header">
-        <h1>📊 Pay Calculator Dashboard</h1>
-        <div class="quick-actions">
-          <a href="daily-entry.html" class="action-btn primary">📅 Quick Entry</a>
-          <a href="business-budget.html" class="action-btn primary">💰 Budget</a>
-          <a href="index.html" class="action-btn primary">⚙️ Full App</a>
-          <button class="action-btn secondary" onclick="refreshDashboard()">🔄 Refresh</button>
+    <div class="container">
+      <header>
+        <h1>Pay Calculator Cloud</h1>
+        <div class="sync-status">● Cloud Sync Connected</div>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+          <a href="index.html" style="padding: 8px 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: 2px solid var(--primary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 8px rgba(88, 86, 214, 0.3);">🏠 Dashboard</a>
+          <a href="daily-entry.html" style="padding: 8px 16px; background: white; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📅 Quick Entry</a>
+          <a href="business-budget.html" style="padding: 8px 16px; background: white; border: 2px solid var(--success); color: var(--success); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">💰 Budget</a>
+        </div>
+      </header>
+
+      <div class="card">
+        <h2>📅 1. Pay Period</h2>
+        <div
+          style="
+            background: rgba(88, 86, 214, 0.05);
+            padding: 16px;
+            border-radius: 15px;
+            border: 1px solid var(--primary);
+          "
+        >
+          <div style="margin-bottom: 12px">
+            <label>Select Date within Period</label>
+            <input
+              type="date"
+              id="periodPicker"
+              onchange="handleDateSelect(this.value)"
+              style="border-color: var(--primary)"
+            />
+          </div>
+          <div
+            style="
+              text-align: center;
+              padding: 10px;
+              background: white;
+              border-radius: 10px;
+              box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            "
+          >
+            <div
+              id="periodLabel"
+              style="font-weight: 800; color: var(--primary); font-size: 16px"
+            >
+              Loading Period...
+            </div>
+            <div
+              id="periodDatesSub"
+              style="
+                font-size: 13px;
+                color: var(--text-muted);
+                font-weight: 700;
+              "
+            ></div>
+          </div>
+        </div>
+        <input type="hidden" id="startDate" />
+        <div style="text-align: center; margin-top: 10px">
+          <button
+            class="btn-outline btn-small"
+            onclick="resetToCurrentPeriod()"
+            style="font-size: 10px; padding: 4px 8px; opacity: 0.7"
+          >
+            Back to Current Period
+          </button>
         </div>
       </div>
 
-      <!-- Key Stats -->
-      <div class="stats-grid">
-        <div class="stat-card" style="border-left: 4px solid var(--primary);">
-          <div class="stat-label">Gross Sales</div>
-          <div class="stat-value" id="statGrossSales">$0</div>
-          <div class="stat-change" id="statGrossChange">YTD: $0</div>
+      <div class="tabs no-print">
+        <div class="tab" id="tabDaily" onclick="switchTab('daily')">
+          Daily Entry
         </div>
-
-        <div class="stat-card" style="border-left: 4px solid var(--success);">
-          <div class="stat-label">Net Income</div>
-          <div class="stat-value" id="statNetIncome">$0</div>
-          <div class="stat-change" id="statNetChange">YTD: $0</div>
+        <div class="tab active" id="tabWorker" onclick="switchTab('worker')">
+          Batch Sales
         </div>
-
-        <div class="stat-card" style="border-left: 4px solid var(--secondary);">
-          <div class="stat-label">Total Staff Pay</div>
-          <div class="stat-value" id="statStaffPay">$0</div>
-          <div class="stat-change" id="statStaffChange">YTD: $0</div>
-        </div>
-
-        <div class="stat-card" style="border-left: 4px solid var(--warning);">
-          <div class="stat-label">Active Workers</div>
-          <div class="stat-value" id="statActiveWorkers">0</div>
-          <div class="stat-change" id="statTotalDays">0 working days</div>
+        <div
+          class="tab"
+          id="tabBatchLoyalty"
+          onclick="switchTab('batchLoyalty')"
+        >
+          Batch Loyalty
         </div>
       </div>
 
-      <!-- Charts Section -->
-      <div class="charts-section">
-        <div class="chart-card">
-          <div class="calendar-header">
-            <div class="month-title" id="monthTitle">Loading...</div>
-            <div class="month-nav">
-              <button onclick="changeMonth(-1)">← Prev</button>
-              <button onclick="changeMonth(0)">Today</button>
-              <button onclick="changeMonth(1)">Next →</button>
-            </div>
-          </div>
-          <div class="weekday-headers">
-            <div class="weekday-header">Sun</div>
-            <div class="weekday-header">Mon</div>
-            <div class="weekday-header">Tue</div>
-            <div class="weekday-header">Wed</div>
-            <div class="weekday-header">Thu</div>
-            <div class="weekday-header">Fri</div>
-            <div class="weekday-header">Sat</div>
-          </div>
-          <div class="calendar-grid" id="calendarGrid">
-            <div class="loading">
-              <div class="spinner"></div>
-              Loading calendar data...
-            </div>
-          </div>
+      <!-- DAILY ENTRY VIEW -->
+      <div id="viewDaily" class="card" style="display: none">
+        <div class="loading-overlay" id="loading-daily">
+          <div class="spinner"></div>
+        </div>
+        <h2>📅 Daily Sales Entry</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <label>Select Date</label>
+            <input type="date" id="dailyEntryDate" onchange="loadDailyData()">
         </div>
 
-        <div class="yearly-sales">
-          <h3>📊 Yearly Sales Tracker</h3>
-          <div id="yearlySales">
-            <div class="loading">
-              <div class="spinner"></div>
-              Loading...
+        <div id="dailyWorkerList">
+            <!-- Workers populated here -->
+        </div>
+
+        <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 20px;">
+            <label>Daily Discount</label>
+            <div class="currency-input" style="width: 100%;">
+                <span>$</span>
+                <input type="number" id="dailyDiscountTotal" placeholder="0.00" oninput="calculateDailyTotal()">
             </div>
-          </div>
+
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span>Gross Total:</span>
+                    <span id="grossTotal">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>- Discount:</span>
+                    <span id="discountDisplay" style="color: var(--danger);">$0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Net Pay:</span>
+                    <span id="netTotal">$0.00</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="saveDailyBatch()" style="margin-top: 20px;">Save Daily Entry</button>
         </div>
       </div>
 
+      <!-- BATCH WORKER -->
+      <div id="viewWorker" class="card">
+        <div class="loading-overlay" id="loading-worker">
+          <div class="spinner"></div>
+        </div>
+        <h2>👤 Batch Worker Sales</h2>
+
+        <div
+          style="
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed var(--border);
+          "
+        >
+          <label style="font-size: 11px">Add New Worker</label>
+          <div style="display: flex; gap: 8px">
+            <input
+              type="text"
+              id="newWorkerName"
+              placeholder="Name..."
+              style="flex: 1"
+            />
+            <button class="btn-outline btn-small" onclick="addWorker()">
+              Add
+            </button>
+          </div>
+          <div id="workerListManage" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
+        </div>
+
+        <label>Select Worker</label
+        ><select id="workerSelect" onchange="loadWorkerBatch()"></select>
+        <div
+          id="batchHeader"
+          style="
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 10px;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+          "
+        >
+          <span>Date</span><span>Gross Sale</span>
+        </div>
+        <div
+          id="batchInputs"
+          style="margin-top: 0; max-height: 400px; overflow-y: auto"
+        ></div>
+        <div
+          style="
+            margin-top: 15px;
+            padding: 12px 14px;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 800;
+            font-size: 15px;
+          "
+        >
+          <span>Running Total:</span>
+          <span id="batchRunningTotal">$0.00</span>
+        </div>
+        <button
+          class="btn-success"
+          id="btnSaveWorker"
+          onclick="saveWorkerBatchToCloud()"
+          style="margin-top: 15px"
+        >
+          Save All Days for Worker
+        </button>
+      </div>
+
+      <!-- BATCH LOYALTY -->
+      <div id="viewBatchLoyalty" class="card" style="display: none">
+        <div class="loading-overlay" id="loading-batch-discounts">
+          <div class="spinner"></div>
+        </div>
+        <h2>🏷️ Batch Loyalty Discount</h2>
+        <div
+          style="
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(88, 86, 214, 0.05);
+            border-radius: 12px;
+          "
+        >
+          <label>Bulk Paste Loyalty (14 Numbers)</label>
+          <textarea
+            id="bulkLoyaltyArea"
+            placeholder="Paste 14 numbers here..."
+            style="height: 60px"
+          ></textarea>
+          <button
+            class="btn-outline btn-small"
+            onclick="distributeLoyaltyBulk()"
+            style="margin-top: 10px"
+          >
+            Autofill Loyalty
+          </button>
+        </div>
+        <div
+          id="discountBatchInputs"
+          style="max-height: 400px; overflow-y: auto"
+        ></div>
+        <button
+          class="btn-success"
+          id="btnSaveLoyalty"
+          onclick="saveDiscountBatchToCloud()"
+        >
+          Save All Discounts to Cloud
+        </button>
+      </div>
+
+      <div class="card no-print">
+        <h2>📊 3. Biweekly Summary</h2>
+        <div style="margin-bottom: 15px">
+          <label>Select Date within Period</label>
+          <input
+            type="date"
+            id="summaryPeriodPicker"
+            onchange="handleSummaryDateSelect(this.value)"
+          />
+        </div>
+        <button
+          class="btn-secondary"
+          id="btn-gen-report"
+          onclick="generateReportFromSummary()"
+        >
+          Generate Final Report
+        </button>
+      </div>
+
+      <div id="summarySection" class="card" style="display: none">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+          "
+        >
+          <div>
+            <h3>Pay Report</h3>
+            <span
+              id="reportPeriodText"
+              style="
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-muted);
+              "
+            ></span>
+          </div>
+          <button
+            class="btn-outline btn-small no-print"
+            onclick="window.print()"
+          >
+            Print
+          </button>
+        </div>
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th>Worker</th>
+              <th style="text-align: right">Total Sales</th>
+              <th style="text-align: right">Days</th>
+              <th style="text-align: right">Pay</th>
+              <th style="text-align: right">W2</th>
+              <th style="text-align: right">Cash</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody"></tbody>
+          <tfoot>
+            <tr style="font-weight: 800; background: #f2f2f7">
+              <td>TOTAL</td>
+              <td id="totGross" style="text-align: right">0</td>
+              <td id="totDays" style="text-align: right">0</td>
+              <td id="totPay" style="text-align: right">0</td>
+              <td id="totW2" style="text-align: right">0</td>
+              <td id="totCash" style="text-align: right">0</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div
+          style="
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+          "
+        >
+          <h3
+            style="
+              margin-top: 0;
+              font-size: 16px;
+              border-bottom: 1px solid var(--border);
+              padding-bottom: 10px;
+            "
+          >
+            📉 Financial Summary
+          </h3>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              font-size: 11px;
+              font-weight: 700;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              margin-bottom: 10px;
+              padding: 0 5px;
+            "
+          >
+            <span>Metric</span><span style="text-align: right">Biweekly</span
+            ><span style="text-align: right">YTD TOTAL</span>
+          </div>
+
+          <!-- Total Sales -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              margin-bottom: 8px;
+              padding: 0 5px;
+            "
+          >
+            <span>Total Sales:</span>
+            <span id="finTotalSale" style="text-align: right; font-weight: 700"
+              >$0</span
+            >
+            <span
+              id="ytdTotalSale"
+              style="text-align: right; font-weight: 700; opacity: 0.8"
+              >$0</span
+            >
+          </div>
+
+          <!-- Discounts -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              margin-bottom: 8px;
+              padding: 0 5px;
+            "
+          >
+            <span>- Discounts:</span>
+            <span
+              id="finDiscounts"
+              style="text-align: right; font-weight: 700; color: var(--danger)"
+              >$0</span
+            >
+            <span
+              id="ytdDiscounts"
+              style="
+                text-align: right;
+                font-weight: 700;
+                color: var(--danger);
+                opacity: 0.8;
+              "
+              >$0</span
+            >
+          </div>
+
+          <!-- Gross Sale -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              margin-bottom: 12px;
+              padding: 8px 5px 0;
+              border-top: 1px solid var(--border);
+            "
+          >
+            <span style="font-weight: 800">= Gross Sale:</span>
+            <span
+              id="finGrossSale"
+              style="text-align: right; font-weight: 800; color: var(--primary)"
+              >$0</span
+            >
+            <span
+              id="ytdGrossSale"
+              style="
+                text-align: right;
+                font-weight: 800;
+                color: var(--primary);
+                opacity: 0.8;
+              "
+              >$0</span
+            >
+          </div>
+
+          <!-- Staff Pay -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              margin-bottom: 8px;
+              padding: 0 5px;
+            "
+          >
+            <span>- Total Staff Pay:</span>
+            <span
+              id="finTotalPay"
+              style="text-align: right; font-weight: 700; color: var(--danger)"
+              >$0</span
+            >
+            <span
+              id="ytdTotalPay"
+              style="
+                text-align: right;
+                font-weight: 700;
+                color: var(--danger);
+                opacity: 0.8;
+              "
+              >$0</span
+            >
+          </div>
+
+          <!-- Net Sale -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 100px 120px;
+              gap: 10px;
+              padding: 10px 5px 0;
+              border-top: 2px solid var(--primary);
+              font-size: 16px;
+            "
+          >
+            <span style="font-weight: 900">NET SALE:</span>
+            <span
+              id="finNetSale"
+              style="text-align: right; font-weight: 900; color: var(--success)"
+              >$0</span
+            >
+            <span
+              id="ytdNetSale"
+              style="text-align: right; font-weight: 900; color: var(--success)"
+              >$0</span
+            >
+          </div>
+
+          <div
+            style="
+              margin-top: 15px;
+              padding-top: 10px;
+              border-top: 1px dashed var(--border);
+              font-size: 14px;
+              opacity: 0.8;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+              "
+            >
+              <span>Projected Annual Sales:</span
+              ><span
+                id="finAnnualSales"
+                style="font-weight: 700; color: var(--text-main)"
+                >$0</span
+              >
+            </div>
+            <div style="display: flex; justify-content: space-between">
+              <span>Projected Annual Net:</span
+              ><span
+                id="finAnnualNet"
+                style="font-weight: 700; color: var(--success)"
+                >$0</span
+              >
+            </div>
+          </div>
+
+          <div style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+              <thead>
+                <tr style="color: var(--text-muted); text-transform: uppercase;">
+                  <th style="text-align: left; padding: 4px;">Worker</th>
+                  <th style="text-align: right; padding: 4px;">YTD Sales</th>
+                  <th style="text-align: right; padding: 4px;">Avg/Day</th>
+                  <th style="text-align: right; padding: 4px;">YTD Pay</th>
+                  <th style="text-align: right; padding: 4px;">YTD Avg</th>
+                </tr>
+              </thead>
+              <tbody id="workerStatsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <div id="toast" class="toast">Data Synced!</div>
 
     <script>
       const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
-      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+      const SB_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
       const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-      const SERVICE_RATE = 0.55;
+      const DEFAULT_WORKERS = [
+        "Tammy",
+        "Linh",
+        "Van",
+        "ThuyLee",
+        "Tuyen",
+        "Kim",
+      ];
+      let workers =
+        (JSON.parse(localStorage.getItem("savedWorkers")) || DEFAULT_WORKERS).filter(
+          (w) => w !== "Kim Tran"
+        );
+      
+      // Ensure Kim is always last in the list
+      const ensureKimLast = (list) => {
+        const kimIndex = list.findIndex(w => w.toLowerCase() === 'kim');
+        if (kimIndex > -1 && kimIndex < list.length - 1) {
+           const kim = list.splice(kimIndex, 1)[0];
+           list.push(kim);
+        }
+        return list;
+      };
+      
+      workers = ensureKimLast(workers);
+
+      let periodStart = localStorage.getItem("periodStart") || "";
+      let currentPeriodDates = [];
+      let cloudCache = {};
+
+      const SERVICE_RATE = 0.55; // 55% commission
+
       const ANCHOR_DATE = new Date("2026-01-01T00:00:00");
 
-      let currentPeriodDates = [];
-      let periodStart = "";
-      let cloudCache = {};
-      let ytdData = [];
-      let currentViewMonth = new Date(); // For calendar navigation
-      let monthDataCache = {}; // Cache for monthly data
-
-      const fmt = (num) => new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-      }).format(num);
-
       window.onload = () => {
-        initializeDashboard();
+        refreshWorkerUI();
+
+        // Auto-calculate current period on start
+        let saved = localStorage.getItem("periodStart");
+        if (saved) {
+          document.getElementById("startDate").value = saved;
+          document.getElementById("periodPicker").value = saved;
+        } else {
+          resetToCurrentPeriod();
+        }
+        generatePeriod();
+        switchTab("worker");
       };
 
-      function initializeDashboard() {
-        // Set current month for calendar
-        currentViewMonth = new Date();
-
-        // Calculate current pay period for stats (optional)
-        const today = new Date();
-        const snappedStart = getAutoPeriodStart(today);
-        periodStart = snappedStart;
+      function resetToCurrentPeriod() {
+        const startStr = getAutoPeriodStart(new Date());
+        document.getElementById("startDate").value = startStr;
+        document.getElementById("periodPicker").value = new Date()
+          .toISOString()
+          .split("T")[0];
         generatePeriod();
+      }
 
-        // Load all data
-        loadDashboardData();
+      function handleDateSelect(val) {
+        if (!val) return;
+        const snappedStart = getAutoPeriodStart(new Date(val + "T00:00:00"));
+        document.getElementById("startDate").value = snappedStart;
+        document.getElementById("periodPicker").value = val;
+        document.getElementById("summaryPeriodPicker").value = val;
+        generatePeriod();
+      }
+
+      function handleSummaryDateSelect(val) {
+        handleDateSelect(val);
+        generateReportFromSummary();
       }
 
       function getAutoPeriodStart(targetDate) {
@@ -528,15 +902,56 @@
         const diff = t - ANCHOR_DATE;
         const daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
         let periodIndex = Math.floor(daysSince / 14);
-        if (periodIndex < 0) periodIndex = 0;
+        if (periodIndex < 0) periodIndex = 0; // Don't go before 2026
         const start = new Date(ANCHOR_DATE);
         start.setDate(start.getDate() + periodIndex * 14);
         return start.toISOString().split("T")[0];
       }
 
+      function refreshWorkerUI() {
+        localStorage.setItem("savedWorkers", JSON.stringify(workers));
+        const ws = document.getElementById("workerSelect");
+        if (ws) {
+          ws.innerHTML = '<option value="">-- Worker --</option>';
+          workers.forEach((w) => {
+            let opt = document.createElement("option");
+            opt.value = w;
+            opt.textContent = w;
+            ws.appendChild(opt);
+          });
+        }
+
+        // Add a simple worker management list below the add button if needed
+        const manageContainer = document.getElementById("workerListManage");
+        if (manageContainer) {
+          manageContainer.innerHTML = "";
+        }
+      }
+
+      function removeWorker(name) {
+        if (!confirm(`Remove ${name} from local list?`)) return;
+        workers = workers.filter((w) => w !== name);
+        refreshWorkerUI();
+        showToast("Removed " + name);
+      }
+
+      function addWorker() {
+        let name = document.getElementById("newWorkerName").value.trim();
+        if (!name || workers.includes(name)) return;
+        workers.push(name);
+        workers = ensureKimLast(workers); // Re-sort to keep Kim last
+        document.getElementById("newWorkerName").value = "";
+        refreshWorkerUI();
+        showToast("Added " + name);
+      }
+
       function generatePeriod() {
+        let start = document.getElementById("startDate").value;
+        if (!start) return;
+        periodStart = start;
+        localStorage.setItem("periodStart", start);
         currentPeriodDates = [];
-        let sd = new Date(periodStart + "T00:00:00");
+        let sd = new Date(start + "T00:00:00");
         for (let i = 0; i < 14; i++) {
           let d = new Date(sd);
           d.setDate(sd.getDate() + i);
@@ -545,136 +960,647 @@
         let ed = new Date(sd);
         ed.setDate(sd.getDate() + 13);
 
+        // Update UI Labels with Year
         const opt = { year: "numeric", month: "short", day: "numeric" };
-        const rangeText = `${sd.toLocaleDateString("en-US", opt)} - ${ed.toLocaleDateString("en-US", opt)}`;
-        document.getElementById("periodLabel").textContent = rangeText;
+        const rangeText = `${sd.toLocaleDateString(
+          "en-US",
+          opt
+        )} - ${ed.toLocaleDateString("en-US", opt)}`;
+        document.getElementById("periodLabel").textContent =
+          "Pay Period " +
+          (Math.floor((sd - ANCHOR_DATE) / (1000 * 60 * 60 * 24 * 14)) + 1);
+        document.getElementById("periodDatesSub").textContent = rangeText;
+        document.getElementById("reportPeriodText").textContent = rangeText;
+
+        prefetchPeriodData();
       }
 
-      async function loadDashboardData() {
-        // Fetch period data
-        const { data: periodData, error: periodError } = await supabaseClient
+      async function prefetchPeriodData() {
+        if (!currentPeriodDates.length) return;
+        const { data, error } = await supabaseClient
           .from("sales_records")
           .select("*")
           .in("entry_date", currentPeriodDates);
-
-        if (periodError) {
-          console.error("Error loading period data:", periodError);
+        if (error) {
+          console.error("Cloud Error:", error);
           return;
         }
 
-        // Fetch YTD data
+        let dbWorkersFound = false;
+        cloudCache = {};
+        if (data) {
+          data.forEach((row) => {
+            // Dynamic Discovery: If DB has a worker not in our list, add them!
+            if (row.worker_name && !workers.includes(row.worker_name)) {
+              workers.push(row.worker_name);
+              dbWorkersFound = true;
+            }
+
+            if (!cloudCache[row.entry_date])
+              cloudCache[row.entry_date] = {
+                incomes: {},
+                discount: 0,
+                loyalty: 0,
+              };
+            cloudCache[row.entry_date].incomes[row.worker_name] = Math.round(
+              parseFloat(row.amount) || 0
+            );
+            cloudCache[row.entry_date].discount = Math.round(
+              parseFloat(row.discount) || 0
+            );
+            cloudCache[row.entry_date].loyalty = Math.round(
+              parseFloat(row.loyalty_discount || 0)
+            );
+          });
+        }
+        if (dbWorkersFound) refreshWorkerUI();
+        loadDayFromCloud();
+      }
+
+      function switchTab(mode) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .getElementById("tabDaily")
+          .classList.toggle("active", mode === "daily");
+        document
+          .getElementById("tabWorker")
+          .classList.toggle("active", mode === "worker");
+        document
+          .getElementById("tabBatchLoyalty")
+          .classList.toggle("active", mode === "batchLoyalty");
+          
+        document.getElementById("viewDaily").style.display =
+          mode === "daily" ? "block" : "none";
+        document.getElementById("viewWorker").style.display =
+          mode === "worker" ? "block" : "none";
+        document.getElementById("viewBatchLoyalty").style.display =
+          mode === "batchLoyalty" ? "block" : "none";
+          
+        if (mode === "worker") loadWorkerBatch();
+        if (mode === "batchLoyalty") loadDiscountBatch();
+        if (mode === "daily") {
+           // Default to today or selected period start if today is out of range (optional, for now just today)
+           if(!document.getElementById("dailyEntryDate").value) {
+               document.getElementById("dailyEntryDate").valueAsDate = new Date();
+           }
+           loadDailyData();
+        }
+      }
+      
+      async function loadDailyData() {
+        const date = document.getElementById("dailyEntryDate").value;
+        if(!date) return;
+        
+        document.getElementById("loading-daily").style.display = "flex";
+        
+        // Ensure workers list is up to date in UI
+        const listContainer = document.getElementById("dailyWorkerList");
+        listContainer.innerHTML = "";
+        
+        // We need to fetch data for this specific date
+        // Check cloudCache first? It might not have this date if we haven't loaded the period.
+        // Safer to just fetch for this date specifically to be accurate.
+        
+        const { data, error } = await supabaseClient
+          .from("sales_records")
+          .select("*")
+          .eq("entry_date", date);
+          
+        let dayData = {};
+        let dayDiscount = 0;
+        
+        if (data) {
+           data.forEach(r => {
+               dayData[r.worker_name] = r.amount;
+               // Discount is stored per row, but should be same for all. Take first non-zero.
+               if(r.discount) dayDiscount = r.discount;
+           });
+        }
+        
+        workers.forEach(name => {
+            const val = dayData[name] !== undefined ? dayData[name] : "";
+            const row = document.createElement("div");
+            row.className = "worker-row";
+            row.innerHTML = `
+                <span class="worker-name">${name}</span>
+                <div class="currency-input">
+                    <span>$</span>
+                    <input type="number" class="income-input-daily" data-worker="${name}" value="${val}" placeholder="0" oninput="calculateDailyTotal()">
+                </div>
+            `;
+            listContainer.appendChild(row);
+        });
+        
+        document.getElementById("dailyDiscountTotal").value = dayDiscount > 0 ? dayDiscount : "";
+        calculateDailyTotal();
+        document.getElementById("loading-daily").style.display = "none";
+      }
+
+      function calculateDailyTotal() {
+        let gross = 0;
+        document.querySelectorAll('.income-input-daily').forEach(input => {
+            const val = parseFloat(input.value);
+            if (!isNaN(val)) gross += val;
+        });
+
+        let discount = parseFloat(document.getElementById('dailyDiscountTotal').value);
+        if (isNaN(discount)) discount = 0;
+
+        const net = gross - discount;
+
+        document.getElementById('grossTotal').innerText = fmt(gross);
+        document.getElementById('discountDisplay').innerText = '-' + fmt(discount);
+        document.getElementById('netTotal').innerText = fmt(net);
+      }
+      
+      async function saveDailyBatch() {
+        const date = document.getElementById("dailyEntryDate").value;
+        if (!date) return;
+        
+        document.getElementById("loading-daily").style.display = "flex";
+        
+        let discount = parseFloat(document.getElementById('dailyDiscountTotal').value) || 0;
+        
+        // We need to preserve Loyalty if it exists!
+        // Fetch existing for this date to get loyalty?
+        // Or assume we just upsert and don't touch loyalty column? 
+        // Supabase upsert replaces the row. If we omit loyalty_discount, it might set to NULL or DEFAULT.
+        // We must fetch first to be safe, or use the data we already fetched in loadDailyData (but that might be stale).
+        // Best approach: Fetch current state, merge, then save.
+        
+        const { data: existingData } = await supabaseClient
+          .from("sales_records")
+          .select("worker_name, loyalty_discount")
+          .eq("entry_date", date);
+          
+        let loyaltyMap = {};
+        if(existingData) {
+            existingData.forEach(r => loyaltyMap[r.worker_name] = r.loyalty_discount);
+        }
+
+        let records = [];
+        document.querySelectorAll('.income-input-daily').forEach(input => {
+            let wName = input.dataset.worker;
+            let amount = parseFloat(input.value) || 0;
+            // Only save if amount > 0 OR if there was previous data (to clear it)
+            // Actually better to save 0 to be explicit.
+            
+            records.push({
+                entry_date: date,
+                worker_name: wName,
+                amount: amount,
+                discount: discount,
+                loyalty_discount: loyaltyMap[wName] || 0
+            });
+        });
+        
+        const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(records, { onConflict: "entry_date, worker_name" });
+          
+        if (error) {
+           alert("Error saving: " + error.message);
+        } else {
+           showToast("Daily Entry Saved!");
+           // Update cache if we are in the same period
+           if(currentPeriodDates.includes(date)) {
+               // Update cache manually
+               if (!cloudCache[date]) cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+               records.forEach(r => {
+                   cloudCache[date].incomes[r.worker_name] = r.amount;
+                   cloudCache[date].discount = r.discount;
+                   cloudCache[date].loyalty = r.loyalty_discount;
+               });
+           }
+        }
+        document.getElementById("loading-daily").style.display = "none";
+      }
+
+      async function loadDayFromCloud() {
+        let date = document.getElementById("entryDate").value;
+        let data = cloudCache[date] || { incomes: {}, discount: 0, loyalty: 0 };
+        document
+          .querySelectorAll(".income-input")
+          .forEach(
+            (inp) =>
+              (inp.value =
+                data.incomes[inp.dataset.worker] !== undefined
+                  ? Math.round(data.incomes[inp.dataset.worker])
+                  : "")
+          );
+        document.getElementById("dailyDiscount").value = Math.round(
+          data.discount || 0
+        );
+        document.getElementById("loyaltyDiscount").value = Math.round(
+          data.loyalty || 0
+        );
+      }
+
+      async function saveDayToCloud() {
+        let date = document.getElementById("entryDate").value;
+        if (!date) return;
+        document.getElementById("loading-day").style.display = "flex";
+        let records = workers.map((w) => ({
+          entry_date: date,
+          worker_name: w,
+          amount:
+            parseFloat(
+              document.querySelector(`.income-input[data-worker="${w}"]`).value
+            ) || 0,
+          discount:
+            parseFloat(document.getElementById("dailyDiscount").value) || 0,
+          loyalty_discount:
+            parseFloat(document.getElementById("loyaltyDiscount").value) || 0,
+        }));
+        const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(records, { onConflict: "entry_date, worker_name" });
+        if (error) {
+          alert("Save Error: " + error.message);
+        } else {
+          if (!cloudCache[date])
+            cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+          records.forEach((r) => {
+            cloudCache[date].incomes[r.worker_name] = r.amount;
+          });
+          cloudCache[date].discount = records[0].discount;
+          cloudCache[date].loyalty = records[0].loyalty_discount;
+          showToast("Day Saved!");
+        }
+        document.getElementById("loading-day").style.display = "none";
+      }
+
+      async function loadWorkerBatch() {
+        let w = document.getElementById("workerSelect").value;
+        if (!w || !currentPeriodDates.length) return;
+        document.getElementById("loading-worker").style.display = "flex";
+        await prefetchPeriodData();
+        const container = document.getElementById("batchInputs");
+        container.innerHTML = "";
+        currentPeriodDates.forEach((date) => {
+          let val =
+            cloudCache[date] && cloudCache[date].incomes[w] !== undefined
+              ? Math.round(cloudCache[date].incomes[w])
+              : "";
+          let label = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "numeric",
+            day: "numeric",
+          });
+          let div = document.createElement("div");
+          div.className = "batch-row";
+          div.innerHTML = `<label style="font-weight:600; font-size:14px;">${label}</label>
+        <input type="number" class="w-batch-input" data-date="${date}" value="${val}" placeholder="$0" oninput="updateBatchTotal()">`;
+          container.appendChild(div);
+        });
+        updateBatchTotal();
+        document.getElementById("loading-worker").style.display = "none";
+      }
+
+      function updateBatchTotal() {
+        let total = 0;
+        document.querySelectorAll(".w-batch-input").forEach((inp) => {
+          total += parseFloat(inp.value) || 0;
+        });
+        document.getElementById("batchRunningTotal").textContent =
+          "$" + total.toFixed(2);
+      }
+
+      async function saveWorkerBatchToCloud() {
+        let w = document.getElementById("workerSelect").value;
+        if (!w) return;
+        document.getElementById("loading-worker").style.display = "flex";
+        let records = Array.from(
+          document.querySelectorAll(".w-batch-input")
+        ).map((inp) => {
+          let date = inp.dataset.date;
+          return {
+            entry_date: date,
+            worker_name: w,
+            amount: parseFloat(inp.value) || 0,
+            discount: (cloudCache[date] && cloudCache[date].discount) || 0,
+            loyalty_discount:
+              (cloudCache[date] && cloudCache[date].loyalty) || 0,
+          };
+        });
+        const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(records, { onConflict: "entry_date, worker_name" });
+        if (error) {
+          alert("Batch Worker Error: " + error.message);
+        } else {
+          records.forEach((r) => {
+            if (!cloudCache[r.entry_date])
+              cloudCache[r.entry_date] = {
+                incomes: {},
+                discount: 0,
+                loyalty: 0,
+              };
+            cloudCache[r.entry_date].incomes[w] = r.amount;
+          });
+          showToast("Worker Sales Saved!");
+        }
+        document.getElementById("loading-worker").style.display = "none";
+      }
+
+      async function loadDiscountBatch() {
+        const container = document.getElementById("discountBatchInputs");
+        container.innerHTML = "";
+        if (!currentPeriodDates.length) return;
+        document.getElementById("loading-batch-discounts").style.display =
+          "flex";
+        await prefetchPeriodData();
+        currentPeriodDates.forEach((date) => {
+          let data = cloudCache[date] || { discount: 0, loyalty: 0 };
+          let label = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "numeric",
+            day: "numeric",
+          });
+          let div = document.createElement("div");
+          div.className = "discount-row";
+          div.innerHTML = `<span style="font-weight:600; font-size:14px;">${label}</span><input type="number" class="l-batch-val" data-date="${date}" value="${data.loyalty}">`;
+          container.appendChild(div);
+        });
+        document.getElementById("loading-batch-discounts").style.display =
+          "none";
+      }
+
+      async function saveDiscountBatchToCloud() {
+        let btn = document.getElementById("btnSaveLoyalty");
+        btn.disabled = true;
+        document.getElementById("loading-batch-discounts").style.display =
+          "flex";
+        await prefetchPeriodData();
+        let records = [];
+        currentPeriodDates.forEach((date) => {
+          let lInp = document.querySelector(
+            `.l-batch-val[data-date="${date}"]`
+          );
+          let lVal = lInp ? parseFloat(lInp.value) || 0 : 0;
+          let dVal = (cloudCache[date] && cloudCache[date].discount) || 0;
+          workers.forEach((w) => {
+            records.push({
+              entry_date: date,
+              worker_name: w,
+              amount: (cloudCache[date] && cloudCache[date].incomes[w]) || 0,
+              discount: dVal,
+              loyalty_discount: lVal,
+            });
+          });
+          if (!cloudCache[date])
+            cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+          cloudCache[date].loyalty = lVal;
+        });
+        const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(records, { onConflict: "entry_date, worker_name" });
+        if (error) {
+          alert("Loyalty Save Error: " + error.message);
+        } else {
+          showToast("Loyalty Updated!");
+        }
+        document.getElementById("loading-batch-discounts").style.display =
+          "none";
+        btn.disabled = false;
+      }
+
+      let ytdData = [];
+      async function generateReportFromSummary() {
+        await prefetchPeriodData();
+        // Fetch YTD (Start of Year to end of current period)
         const yearStart = "2026-01-01";
         const periodEnd = currentPeriodDates[currentPeriodDates.length - 1];
-        const { data: ytdDataFetch, error: ytdError } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from("sales_records")
           .select("*")
           .gte("entry_date", yearStart)
           .lte("entry_date", periodEnd);
-
-        if (ytdError) {
-          console.error("Error loading YTD data:", ytdError);
-          return;
-        }
-
-        ytdData = ytdDataFetch || [];
-
-        // Process data
-        cloudCache = {};
-        const workers = new Set();
-
-        if (periodData) {
-          periodData.forEach((row) => {
-            workers.add(row.worker_name);
-            if (!cloudCache[row.entry_date]) {
-              cloudCache[row.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
-            }
-            cloudCache[row.entry_date].incomes[row.worker_name] = parseFloat(row.amount) || 0;
-            cloudCache[row.entry_date].discount = parseFloat(row.discount) || 0;
-            cloudCache[row.entry_date].loyalty = parseFloat(row.loyalty_discount || 0);
-          });
-        }
-
-        renderDashboard(Array.from(workers));
+        ytdData = data || [];
+        generateReport();
       }
 
-      function renderDashboard(workers) {
-        // Calculate period stats
-        let grossSales = 0;
-        let totalDiscounts = 0;
-        let totalDays = 0;
-        let workerStats = {};
+      const fmt = (num) =>
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0,
+        }).format(num);
 
-        workers.forEach(w => {
-          workerStats[w] = { sales: 0, days: 0, pay: 0 };
-        });
+       function generateReport() {
+        if (!currentPeriodDates.length) return;
+        const body = document.getElementById("summaryBody");
+        body.innerHTML = "";
+        
+        const statsBody = document.getElementById("workerStatsBody");
+        if (statsBody) statsBody.innerHTML = "";
+        
+        let tableYtdPaySum = 0;
 
-        currentPeriodDates.forEach(date => {
-          const entry = cloudCache[date] || { incomes: {}, discount: 0, loyalty: 0 };
-          totalDiscounts += entry.discount + entry.loyalty;
-
-          workers.forEach(w => {
-            const income = entry.incomes[w] || 0;
-            if (income > 0) {
-              workerStats[w].sales += income;
-              workerStats[w].days++;
-              totalDays++;
-            }
-            grossSales += income;
+        workers.forEach((w) => {
+          let s = 0,
+            d = 0;
+          currentPeriodDates.forEach((date) => {
+            let entry = cloudCache[date] || {
+              incomes: {},
+              discount: 0,
+              loyalty: 0,
+            };
+            let inc = entry.incomes[w] || 0;
+            s += inc;
+            if (inc > 0) d++;
           });
-        });
 
-        // Calculate pay (excluding Kim)
-        let totalStaffPay = 0;
-        workers.forEach(w => {
-          if (w.toLowerCase() !== 'kim') {
-            workerStats[w].pay = Math.round(workerStats[w].sales * SERVICE_RATE);
-            totalStaffPay += workerStats[w].pay;
+          // Commission Logic: 55% Gross (Kim is 0)
+          let isKim = w.toLowerCase() === "kim";
+          let isLinh = w.toLowerCase() === "linh";
+          let pay = isKim ? 0 : Math.round(s * SERVICE_RATE);
+
+          // W2 Logic: Tuyen/ThuyLee $750, Others $700, Kim $2500, Linh 100%
+          let is750 = ["tuyen", "thuylee"].includes(w.toLowerCase());
+
+          let defaultW2 = 0;
+          if (s > 0) {
+            if (isKim) defaultW2 = 2500;
+            else if (isLinh) defaultW2 = pay;
+            else if (is750) defaultW2 = 750;
+            else defaultW2 = 700;
+          }
+
+          // YTD Stats for Worker
+          let ySales = 0;
+          let yDaysSet = new Set();
+          ytdData.forEach((r) => {
+            if (r.worker_name === w) {
+              let amt = parseFloat(r.amount) || 0;
+              if (amt > 0) {
+                ySales += amt;
+                yDaysSet.add(r.entry_date);
+              }
+            }
+          });
+          let yDays = yDaysSet.size;
+          let yPay = isKim ? 0 : Math.round(ySales * SERVICE_RATE);
+          if(!isKim) tableYtdPaySum += yPay;
+
+          let avg = d > 0 ? pay / d : 0;
+          let yAvg = yDays > 0 ? yPay / yDays : 0;
+
+          let tr = document.createElement("tr");
+          tr.dataset.workerName = w; // Store raw name for logic
+          tr.innerHTML = `<td style="font-weight:700;">${w}</td>
+        <td style="text-align:right;">${fmt(s)}</td>
+        <td style="text-align:right;">${d}</td>
+        <td style="text-align:right; font-weight:700; color:var(--secondary);">${fmt(
+          pay
+        )}</td>
+        <td style="text-align:right;">
+          <div style="display:inline-flex; align-items:center; background:white; border:1px solid var(--border); border-radius:8px; padding:0 4px;">
+            <span style="font-size:12px; color:var(--text-muted); margin-right:2px;">$</span>
+            <input type="number" class="w2-entry" value="${Math.round(
+              defaultW2
+            )}" style="width:70px; text-align:right; border:none; outline:none; padding:4px 2px;" oninput="updateFoot()">
+          </div>
+        </td>
+        <td style="text-align:right; font-weight:700; color:var(--success);" class="c-cell">${fmt(
+          0
+        )}</td>`;
+          body.appendChild(tr);
+
+          // Populate the new stats table
+          if (statsBody && !isKim) {
+             let trStat = document.createElement("tr");
+             trStat.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
+             trStat.innerHTML = `
+                <td style="padding: 6px 4px; font-weight: 700;">${w}</td>
+                <td style="padding: 6px 4px; text-align: right;">${fmt(ySales)}</td>
+                <td style="padding: 6px 4px; text-align: right;">${fmt(avg)}</td>
+                <td style="padding: 6px 4px; text-align: right; color:var(--secondary); font-weight:700;">${fmt(yPay)}</td>
+                <td style="padding: 6px 4px; text-align: right;">${fmt(yAvg)}</td>
+             `;
+             statsBody.appendChild(trStat);
           }
         });
+        
+        updateFoot();
+        document.getElementById("summarySection").style.display = "block";
+        document
+          .getElementById("summarySection")
+          .scrollIntoView({ behavior: "smooth" });
+      }
 
-        const netIncome = grossSales - totalDiscounts - totalStaffPay;
+      function updateFoot() {
+        let grossTot = 0,
+          daysTot = 0,
+          payTot = 0,
+          w2Tot = 0,
+          cashTot = 0,
+          discTot = 0;
 
-        // Calculate YTD stats
-        let ytdGross = 0;
-        let ytdDisc = 0;
-        let ytdPay = 0;
+        // Calc total biweekly discounts across all dates
+        currentPeriodDates.forEach((date) => {
+          let entry = cloudCache[date] || { discount: 0, loyalty: 0 };
+          discTot +=
+            (parseFloat(entry.discount) || 0) +
+            (parseFloat(entry.loyalty) || 0);
+        });
 
+        Array.from(document.getElementById("summaryBody").rows).forEach((r) => {
+          let wName = r.dataset.workerName || "";
+          grossTot +=
+            parseFloat(r.cells[1].textContent.replace(/[^0-9.-]+/g, "")) || 0;
+          daysTot += parseInt(r.cells[2].textContent) || 0;
+          let pay =
+            parseFloat(r.cells[3].textContent.replace(/[^0-9.-]+/g, "")) || 0;
+
+          // Exclude Kim from Staff Pay total
+          if (wName.toLowerCase() !== "kim") {
+            payTot += pay;
+          }
+
+          let w2 = parseFloat(r.querySelector(".w2-entry").value) || 0;
+          w2Tot += w2;
+          let cash = Math.max(0, pay - w2);
+          r.querySelector(".c-cell").textContent = fmt(cash);
+          cashTot += cash;
+        }); // End Row Loop
+
+        let finGrossSale = Math.round(grossTot - discTot);
+        let finNetSale = Math.round(finGrossSale - payTot);
+
+        // Shop Period Avg
+        let shopAvg = daysTot > 0 ? payTot / daysTot : 0;
+
+        document.getElementById("totGross").textContent = fmt(grossTot);
+        document.getElementById("totDays").textContent = daysTot;
+        document.getElementById("totPay").textContent = fmt(payTot);
+        document.getElementById("totW2").textContent = fmt(w2Tot);
+        document.getElementById("totCash").textContent = fmt(cashTot);
+
+        // YTD Total Calculation (Summing Finalized Pay Periods)
+        let ytdGross = 0,
+          ytdDisc = 0,
+          ytdPay = 0;
+        let ytdManDays = 0; // Total days worked across all staff all year
+
+        // 1. Identify current period index
         const sd = new Date(periodStart + "T00:00:00");
-        const currentPIdx = Math.floor((sd - ANCHOR_DATE) / (1000 * 60 * 60 * 24 * 14));
+        const currentPIdx = Math.floor(
+          (sd - ANCHOR_DATE) / (1000 * 60 * 60 * 24 * 14)
+        );
 
+        // 2. Group HISTORICAL YTD data into 14-day Pay Period buckets
         let periods = {};
         ytdData.forEach((row) => {
           const d = new Date(row.entry_date + "T00:00:00");
-          const daysSince = Math.floor((d - ANCHOR_DATE) / (1000 * 60 * 60 * 24));
+          const daysSince = Math.floor(
+            (d - ANCHOR_DATE) / (1000 * 60 * 60 * 24)
+          );
           const pIdx = Math.floor(daysSince / 14);
 
+          // Only process periods BEFORE the current one
           if (pIdx >= 0 && pIdx < currentPIdx) {
-            if (!periods[pIdx]) periods[pIdx] = { records: [], days: new Set() };
+            if (!periods[pIdx])
+              periods[pIdx] = { records: [], days: new Set() };
             periods[pIdx].records.push(row);
             periods[pIdx].days.add(row.entry_date);
           }
         });
 
+        // 3. Sum up historical periods
         Object.keys(periods).forEach((pIdx) => {
           let p = periods[pIdx];
-          let pGross = 0, pDisc = 0, pPay = 0;
+          let pGross = 0,
+            pDisc = 0,
+            pPay = 0;
           let pWorkerSums = {};
           let pDaysSeen = new Set();
 
           p.records.forEach((r) => {
             let amt = parseFloat(r.amount) || 0;
             pGross += amt;
-            pWorkerSums[r.worker_name] = (pWorkerSums[r.worker_name] || 0) + amt;
+            pWorkerSums[r.worker_name] =
+              (pWorkerSums[r.worker_name] || 0) + amt;
             if (!pDaysSeen.has(r.entry_date)) {
-              pDisc += (parseFloat(r.discount) || 0) + (parseFloat(r.loyalty_discount) || 0);
+              pDisc +=
+                (parseFloat(r.discount) || 0) +
+                (parseFloat(r.loyalty_discount) || 0);
               pDaysSeen.add(r.entry_date);
             }
           });
 
-          Object.keys(pWorkerSums).forEach((w) => {
+            Object.keys(pWorkerSums).forEach((w) => {
             if (w.toLowerCase() !== "kim") {
               pPay += Math.round(pWorkerSums[w] * SERVICE_RATE);
             }
+          });
+
+          // Count Man-Days in this period
+          p.records.forEach((r) => {
+            let amt = parseFloat(r.amount) || 0;
+            if (amt > 0) ytdManDays++;
           });
 
           ytdGross += pGross;
@@ -682,209 +1608,45 @@
           ytdPay += pPay;
         });
 
-        ytdGross += grossSales;
-        ytdDisc += totalDiscounts;
-        ytdPay += totalStaffPay;
+        // 4. Add CURRENT Biweekly finalized totals to get YTD TOTAL
+        ytdGross += grossTot;
+        ytdDisc += discTot;
+        ytdPay += payTot;
+        ytdManDays += daysTot;
 
-        const ytdNet = ytdGross - ytdDisc - ytdPay;
+        let shopYtdAvg = ytdManDays > 0 ? ytdPay / ytdManDays : 0;
 
-        // Update stats cards with YTD data
-        document.getElementById("statGrossSales").textContent = fmt(ytdGross - ytdDisc);
-        document.getElementById("statGrossChange").textContent = `Since Jan 1, 2026`;
+        let ytdGrossSale = Math.round(ytdGross - ytdDisc);
+        let ytdNetSale = Math.round(ytdGrossSale - ytdPay);
 
-        document.getElementById("statNetIncome").textContent = fmt(ytdNet);
-        document.getElementById("statNetChange").textContent = `Profit YTD`;
+        document.getElementById("finTotalSale").textContent = fmt(grossTot);
+        document.getElementById("finDiscounts").textContent = fmt(discTot);
+        document.getElementById("finGrossSale").textContent = fmt(finGrossSale);
+        document.getElementById("finTotalPay").textContent = fmt(payTot);
+        // document.getElementById("finAvgPay").textContent = fmt(shopAvg); // Removed
+        document.getElementById("finNetSale").textContent = fmt(finNetSale);
 
-        document.getElementById("statStaffPay").textContent = fmt(ytdPay);
-        document.getElementById("statStaffChange").textContent = `All staff YTD`;
+        document.getElementById("ytdTotalSale").textContent = fmt(ytdGross);
+        document.getElementById("ytdDiscounts").textContent = fmt(ytdDisc);
+        document.getElementById("ytdGrossSale").textContent = fmt(ytdGrossSale);
+        document.getElementById("ytdTotalPay").textContent = fmt(ytdPay);
+        // document.getElementById("ytdAvgPay").textContent = fmt(shopYtdAvg); // Removed
+        document.getElementById("ytdNetSale").textContent = fmt(ytdNetSale);
 
-        const activeWorkers = workers.filter(w => workerStats[w].days > 0).length;
-        document.getElementById("statActiveWorkers").textContent = activeWorkers;
-        document.getElementById("statTotalDays").textContent = `Current period: ${totalDays} days`;
-
-        // Render calendar
-        renderCalendar();
-
-        // Render yearly sales
-        renderYearlySales();
+        // Annual Projections (26 periods per year)
+        document.getElementById("finAnnualSales").textContent = fmt(
+          grossTot * 26
+        );
+        document.getElementById("finAnnualNet").textContent = fmt(
+          finNetSale * 26
+        );
       }
 
-      async function renderCalendar() {
-        const container = document.getElementById("calendarGrid");
-        container.innerHTML = "";
-
-        // Update month title
-        const monthTitle = currentViewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-        document.getElementById("monthTitle").textContent = monthTitle;
-
-        // Get first and last day of the month
-        const year = currentViewMonth.getFullYear();
-        const month = currentViewMonth.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-
-        // Get starting Sunday (may be from previous month)
-        const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay()); // Go back to Sunday
-
-        // Get ending Saturday (may be from next month)
-        const endDate = new Date(lastDay);
-        endDate.setDate(endDate.getDate() + (6 - lastDay.getDay())); // Go forward to Saturday
-
-        // Fetch month data
-        const startDateStr = startDate.toISOString().split("T")[0];
-        const endDateStr = endDate.toISOString().split("T")[0];
-
-        const { data, error } = await supabaseClient
-          .from("sales_records")
-          .select("*")
-          .gte("entry_date", startDateStr)
-          .lte("entry_date", endDateStr);
-
-        // Build cache for this month
-        monthDataCache = {};
-        if (data) {
-          data.forEach(row => {
-            if (!monthDataCache[row.entry_date]) {
-              monthDataCache[row.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
-            }
-            monthDataCache[row.entry_date].incomes[row.worker_name] = parseFloat(row.amount) || 0;
-            monthDataCache[row.entry_date].discount = parseFloat(row.discount) || 0;
-            monthDataCache[row.entry_date].loyalty = parseFloat(row.loyalty_discount || 0);
-          });
-        }
-
-        // Render calendar cells
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let currentDate = new Date(startDate);
-        while (currentDate <= endDate) {
-          const dateStr = currentDate.toISOString().split("T")[0];
-          const entry = monthDataCache[dateStr] || { incomes: {}, discount: 0, loyalty: 0 };
-
-          let total = 0;
-          Object.values(entry.incomes).forEach(val => total += val);
-
-          const isToday = currentDate.getTime() === today.getTime();
-          const isCurrentMonth = currentDate.getMonth() === month;
-          const inPeriod = currentPeriodDates.includes(dateStr);
-
-          const cell = document.createElement("div");
-          cell.className = "day-cell";
-
-          if (!isCurrentMonth) {
-            cell.classList.add("other-month");
-          }
-
-          if (total > 0) {
-            cell.classList.add("has-sales");
-          } else {
-            cell.classList.add("no-sales");
-          }
-
-          if (inPeriod) {
-            cell.classList.add("in-period");
-          }
-
-          if (isToday) {
-            cell.classList.add("selected");
-          }
-
-          cell.innerHTML = `
-            <div class="day-number">${currentDate.getDate()}</div>
-            <div class="day-amount">${total > 0 ? fmt(total) : ''}</div>
-          `;
-
-          container.appendChild(cell);
-
-          // Move to next day
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-      }
-
-      function changeMonth(direction) {
-        if (direction === 0) {
-          // Today
-          currentViewMonth = new Date();
-        } else {
-          // Prev or Next
-          currentViewMonth.setMonth(currentViewMonth.getMonth() + direction);
-        }
-        renderCalendar();
-      }
-
-      function renderYearlySales() {
-        const container = document.getElementById("yearlySales");
-
-        // Group YTD data by year
-        const yearlyData = {};
-
-        ytdData.forEach(row => {
-          const year = row.entry_date.substring(0, 4); // Extract year from date
-          if (!yearlyData[year]) {
-            yearlyData[year] = { sales: 0, discounts: 0, pay: 0 };
-          }
-
-          const amount = parseFloat(row.amount) || 0;
-          yearlyData[year].sales += amount;
-
-          // Only count discount/loyalty once per date
-          if (!yearlyData[year][`disc_${row.entry_date}`]) {
-            yearlyData[year].discounts += (parseFloat(row.discount) || 0) + (parseFloat(row.loyalty_discount) || 0);
-            yearlyData[year][`disc_${row.entry_date}`] = true;
-          }
-
-          // Calculate pay (exclude Kim)
-          if (row.worker_name.toLowerCase() !== 'kim') {
-            const workerPay = Math.round(amount * SERVICE_RATE);
-            yearlyData[year].pay += workerPay;
-          }
-        });
-
-        // Sort years descending (most recent first)
-        const years = Object.keys(yearlyData).sort((a, b) => b - a);
-
-        if (years.length === 0) {
-          container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No data yet</p>';
-          return;
-        }
-
-        const currentYear = new Date().getFullYear();
-        const currentDate = new Date();
-
-        container.innerHTML = years.map(year => {
-          const data = yearlyData[year];
-          const grossSales = data.sales - data.discounts;
-          const profit = grossSales - data.pay;
-
-          // Calculate projection for current year
-          let projectionHTML = '';
-          if (parseInt(year) === currentYear) {
-            const dayOfYear = Math.floor((currentDate - new Date(currentYear, 0, 0)) / (1000 * 60 * 60 * 24));
-            const daysInYear = ((currentYear % 4 === 0 && currentYear % 100 !== 0) || currentYear % 400 === 0) ? 366 : 365;
-            const projectedSales = Math.round((grossSales / dayOfYear) * daysInYear);
-            const projectedProfit = Math.round((profit / dayOfYear) * daysInYear);
-
-            projectionHTML = `<div class="year-projection">Projected: ${fmt(projectedSales)} (${fmt(projectedProfit)} profit)</div>`;
-          }
-
-          return `
-            <div class="year-item">
-              <div class="year-label">📅 ${year}</div>
-              <div class="year-stats">
-                <div class="year-sales">${fmt(grossSales)}</div>
-                <div class="year-profit">Profit: ${fmt(profit)}</div>
-                ${projectionHTML}
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-
-      function refreshDashboard() {
-        loadDashboardData();
+      function showToast(m) {
+        let t = document.getElementById("toast");
+        t.textContent = m;
+        t.style.opacity = "1";
+        setTimeout(() => (t.style.opacity = "0"), 3000);
       }
     </script>
   </body>
