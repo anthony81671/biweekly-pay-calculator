@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>K&T Nails - Saved Receipts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --secondary: #f472b6;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --sidebar-bg: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            padding: 32px 24px;
+            position: fixed;
+            height: 100vh;
+            border-right: 1px solid var(--border);
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-section img {
+            width: 120px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 40px;
+            flex: 1;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        /* Table Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amount {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .type-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f5f9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <img src="kntlogo2026.png" alt="K&T Nails">
+            <h2>K&T NAILS</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-item">🏠 Receipt Home</a>
+            <a href="daily-entry.html" class="nav-item">💰 Enter Sales</a>
+            <a href="business-budget.html" class="nav-item">📈 Budget & Expenses</a>
+            <a href="receipt-scanner.html" class="nav-item">📸 Receipt Scanner</a>
+            <a href="receipt-list.html" class="nav-item active">📋 View Receipts</a>
+        </nav>
+    </div>
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <h1>Saved Receipts</h1>
+                <p style="color: var(--text-muted)">Historical record of all scanned expenses</p>
+            </div>
+            <a href="receipt-scanner.html" class="btn btn-primary">Scan New Receipt</a>
+        </div>
+
+        <div class="card">
+            <div id="loading" class="loading">Loading receipts...</div>
+            <table id="receiptsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Store/Company</th>
+                        <th>Type</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="receiptsBody">
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        const fmt = (num) => new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(num);
+
+        async function loadReceipts() {
+            const { data, error } = await supabaseClient
+                .from('receipts')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching receipts:', error);
+                document.getElementById('loading').textContent = 'Failed to load receipts.';
+                return;
+            }
+
+            const body = document.getElementById('receiptsBody');
+            body.innerHTML = '';
+
+            if (data.length === 0) {
+                document.getElementById('loading').textContent = 'No receipts found.';
+                return;
+            }
+
+            data.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.date || 'N/A'}</td>
+                    <td style="font-weight: 600;">${r.companyStore || 'Unknown'}</td>
+                    <td><span class="type-tag">${r.transactionType || 'Expense'}</span></td>
+                    <td style="color: var(--text-muted); font-size: 12px; max-width: 300px;">${r.items || 'None'}</td>
+                    <td class="amount">${fmt(r.total || 0)}</td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('receiptsTable').style.display = 'table';
+        }
+
+        loadReceipts();
+    </script>
+</body>
+</html>

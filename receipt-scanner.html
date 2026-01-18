@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>K&T Nails - Receipt Scanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      :root {
+        --primary: #ec4899;
+        --primary-dark: #db2777;
+        --secondary: #f472b6;
+        --background: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --sidebar-bg: #f8fafc;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--background);
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* Sidebar Copy */
+      .sidebar {
+        width: 280px;
+        background: var(--sidebar-bg);
+        padding: 32px 24px;
+        position: fixed;
+        height: 100vh;
+        border-right: 1px solid var(--border);
+      }
+      .logo-section {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .logo-section img {
+        width: 120px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+      .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .nav-item {
+        padding: 14px 20px;
+        border-radius: 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--primary);
+      }
+      .nav-item.active {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+      }
+
+      .main-content {
+        margin-left: 280px;
+        padding: 40px;
+        flex: 1;
+      }
+      .header {
+        margin-bottom: 32px;
+      }
+      .header h1 {
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      /* Scanner Specific */
+      .camera-card {
+        background: white;
+        border-radius: 24px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .camera-view {
+        width: 100%;
+        aspect-ratio: 3/4;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        position: relative;
+      }
+      #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .scanner-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--primary);
+        box-shadow: 0 0 15px var(--primary);
+        animation: scan 3s linear infinite;
+      }
+      @keyframes scan {
+        0% {
+          top: 0%;
+        }
+        50% {
+          top: 100%;
+        }
+        100% {
+          top: 0%;
+        }
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-top: 24px;
+      }
+      .capture-btn {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: 4px solid var(--primary);
+        background: transparent;
+        padding: 5px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .capture-btn:active {
+        transform: scale(0.9);
+      }
+      .capture-btn .inner {
+        width: 100%;
+        height: 100%;
+        background: var(--primary);
+        border-radius: 50%;
+      }
+
+      .preview-container {
+        text-align: center;
+        display: none;
+      }
+      #capturedImg {
+        width: 100%;
+        border-radius: 16px;
+        margin: 20px 0;
+      }
+      .btn-group {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+      }
+      .btn {
+        flex: 1;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 16px;
+        transition: 0.2s;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-secondary {
+        background: #f1f5f9;
+        color: var(--text-main);
+      }
+
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        backdrop-filter: blur(8px);
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #eee;
+        border-top: 5px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .result-card {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        padding: 20px;
+        border-radius: 16px;
+        margin-top: 24px;
+        display: none;
+      }
+      .result-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .result-label {
+        font-weight: 600;
+        color: #166534;
+      }
+      .result-value {
+        font-weight: 800;
+        color: #15803d;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-content {
+          margin-left: 0;
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <div class="logo-section">
+        <img src="kntlogo2026.png" alt="K&T Nails" />
+        <h2>K&T NAILS</h2>
+      </div>
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-item">🏠 Receipt Home</a>
+        <a href="daily-entry.html" class="nav-item">💰 Enter Sales</a>
+        <a href="business-budget.html" class="nav-item">📈 Budget & Expenses</a>
+        <a href="receipt-scanner.html" class="nav-item active">📸 Receipt Scanner</a>
+        <a href="receipt-list.html" class="nav-item">📋 View Receipts</a>
+      </nav>
+    </div>
+
+    <main class="main-content">
+      <div class="header">
+        <h1>Receipt Scanner</h1>
+        <p>Snap a photo of any business expense receipt</p>
+      </div>
+
+      <div class="camera-card" id="cameraCard">
+        <div class="camera-view">
+          <video id="video" autoplay playsinline></video>
+          <div class="scanner-line"></div>
+        </div>
+        <div class="controls">
+          <button class="capture-btn" id="captureBtn">
+            <div class="inner"></div>
+          </button>
+          <p
+            style="font-weight: 600; font-size: 14px; color: var(--text-muted)"
+          >
+            TAP TO CAPTURE
+          </p>
+        </div>
+      </div>
+
+      <div class="camera-card preview-container" id="previewContainer">
+        <h3>Review Receipt</h3>
+        <img id="capturedImg" />
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="retake()">Retake</button>
+          <button class="btn btn-primary" onclick="process()">
+            Process with AI
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="result-card"
+        id="resultCard"
+        style="background: white; border: 1px solid var(--border)"
+      >
+        <h3 style="margin-bottom: 20px; color: var(--primary)">Scan Results</h3>
+        <div class="result-row">
+          <span class="result-label">Date:</span>
+          <input
+            type="text"
+            id="resDate"
+            class="btn"
+            style="
+              background: #f8fafc;
+              text-align: right;
+              width: auto;
+              flex: 1;
+              padding: 4px 8px;
+              font-size: 14px;
+            "
+          />
+        </div>
+        <div class="result-row">
+          <span class="result-label">Transaction Type:</span>
+          <input
+            type="text"
+            id="resType"
+            class="btn"
+            style="
+              background: #f8fafc;
+              text-align: right;
+              width: auto;
+              flex: 1;
+              padding: 4px 8px;
+              font-size: 14px;
+            "
+          />
+        </div>
+        <div class="result-row">
+          <span class="result-label">Company/Store:</span>
+          <input
+            type="text"
+            id="resMerchant"
+            class="btn"
+            style="
+              background: #f8fafc;
+              text-align: right;
+              width: auto;
+              flex: 1;
+              padding: 4px 8px;
+              font-size: 14px;
+            "
+          />
+        </div>
+        <div class="result-row">
+          <span class="result-label">Items:</span>
+          <textarea
+            id="resItems"
+            class="btn"
+            style="
+              background: #f8fafc;
+              text-align: right;
+              width: auto;
+              flex: 1;
+              padding: 4px 8px;
+              font-size: 14px;
+              min-height: 60px;
+              font-family: inherit;
+            "
+          ></textarea>
+        </div>
+        <div
+          class="result-row"
+          style="margin-top: 12px; border-top: 2px solid #f1f5f9; padding-top: 12px"
+        >
+          <span class="result-label" style="font-size: 18px">Total:</span>
+          <input
+            type="text"
+            id="resTotal"
+            class="btn"
+            style="
+              background: #f1f5f9;
+              text-align: right;
+              width: auto;
+              flex: 1;
+              padding: 8px;
+              font-size: 20px;
+              font-weight: 800;
+              color: var(--primary);
+            "
+          />
+        </div>
+        <div class="btn-group" style="margin-top: 20px">
+          <button class="btn btn-secondary" onclick="retake()">Discard</button>
+          <button class="btn btn-primary" onclick="saveToBudget()">
+            Confirm & Save
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <p style="font-weight: 700; color: var(--text-main)">
+        AI is analyzing receipt...
+      </p>
+    </div>
+
+    <canvas id="canvas" hidden></canvas>
+
+    <script>
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const captureBtn = document.getElementById("captureBtn");
+      const cameraCard = document.getElementById("cameraCard");
+      const previewContainer = document.getElementById("previewContainer");
+      const capturedImg = document.getElementById("capturedImg");
+      const loadingOverlay = document.getElementById("loadingOverlay");
+      const resultCard = document.getElementById("resultCard");
+
+      const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
+      const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
+      const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+      let stream = null;
+
+      async function startCamera() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false,
+          });
+          video.srcObject = stream;
+        } catch (err) {
+          alert("Could not access camera: " + err.message);
+        }
+      }
+
+      function stopCamera() {
+        if (stream) stream.getTracks().forEach((t) => t.stop());
+      }
+
+      captureBtn.onclick = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0);
+        capturedImg.src = canvas.toDataURL("image/jpeg");
+        cameraCard.style.display = "none";
+        previewContainer.style.display = "block";
+        stopCamera();
+      };
+
+      function retake() {
+        cameraCard.style.display = "block";
+        previewContainer.style.display = "none";
+        resultCard.style.display = "none";
+        startCamera();
+      }
+
+        async function process() {
+            loadingOverlay.style.display = 'flex';
+            try {
+                const res = await fetch('http://localhost:3001/api/receipt-ocr-base64', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: capturedImg.src })
+                });
+                const data = await res.json();
+                
+                document.getElementById('resMerchant').value = data.companyStore || '';
+                document.getElementById('resTotal').value = (data.total || 0).toFixed(2);
+                document.getElementById('resDate').value = data.date || '';
+                document.getElementById('resType').value = data.transactionType || 'Expense';
+                document.getElementById('resItems').value = data.items || '';
+                
+                resultCard.style.display = 'block';
+                previewContainer.style.display = 'none';
+            } catch (err) {
+                alert('Analysis failed: ' + err.message);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        async function saveToBudget() {
+            const expense = {
+                date: document.getElementById('resDate').value,
+                companyStore: document.getElementById('resMerchant').value,
+                total: parseFloat(document.getElementById('resTotal').value),
+                transactionType: document.getElementById('resType').value,
+                items: document.getElementById('resItems').value
+            };
+            
+            loadingOverlay.style.display = 'flex';
+            try {
+                // Save to Supabase 'receipts' table
+                const { data, error } = await supabaseClient
+                    .from('receipts')
+                    .insert([expense]);
+
+                if (error) throw error;
+
+                // Also optionally save to the business budget expenses table if needed
+                // For now, we follow the user's request to see it in a table (receipt-list.html)
+                
+                location.href = 'receipt-list.html';
+            } catch (err) {
+                alert('Save failed: ' + err.message);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+      startCamera();
+    </script>
+  </body>
+</html>

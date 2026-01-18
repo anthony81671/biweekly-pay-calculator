@@ -6,7 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ocr": "node ocr_server.js",
+    "start": "node ocr_server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "formidable": "^3.5.1",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.3.1",
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "vite": "^6.0.0"
