@@ -689,11 +689,7 @@
           <div class="stat-change" id="statStaffChange">YTD: $0</div>
         </div>
 
-        <div class="stat-card" style="border-left: 4px solid var(--warning);">
-          <div class="stat-label">Active Workers</div>
-          <div class="stat-value" id="statActiveWorkers">0</div>
-          <div class="stat-change" id="statTotalDays">0 working days</div>
-        </div>
+
       </div>
 
       <!-- Charts Section -->
@@ -1169,9 +1165,7 @@
         document.getElementById("statStaffPay").textContent = fmt(ytdPay);
         document.getElementById("statStaffChange").textContent = `All staff YTD`;
 
-        const activeWorkers = workers.filter(w => workerStats[w].days > 0).length;
-        document.getElementById("statActiveWorkers").textContent = activeWorkers;
-        document.getElementById("statTotalDays").textContent = `Current period: ${totalDays} days`;
+
 
         // Render calendar with safe fallback
         try {
