@@ -29,54 +29,78 @@ app.use(express.static(__dirname)); // Serve the static files from current dir
 const supabase = SUPABASE_SERVICE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY) : null;
 
 // Receipt Text Parser
+// Receipt Text Parser
+function smartCategorize(text) {
+  const t = text.toLowerCase();
+  
+  // Utilities
+  if (t.match(/pg&e|electric|water|waste|fee|gas|power|utilities|att|verizon|t-mobile|comcast|xfinity|internet/)) return 'Utilities';
+  
+  // Marketing
+  if (t.match(/google|facebook|instagram|ads|marketing|print|flyer|promo/)) return 'Marketing';
+  
+  // Admin / Bank
+  if (t.match(/bank|fee|charge|interest|service/)) return 'Admin / Bank';
+  
+  // Professional
+  if (t.match(/attorney|law|cpa|accounting|tax|legal|subscription|software|adobe|intuit|quickbooks/)) return 'Professional';
+  
+  // Travel / Auto
+  if (t.match(/chevron|shell|mobil|texaco|gas station|fuel|parking|uber|lyft|flight|hotel|airbnb|travel/)) return 'Travel / Auto';
+  
+  // Meals
+  if (t.match(/cafe|coffee|starbucks|mcdonald|burger|grill|restaurant|pho|noodle|sushi|pizza|food|kitchen|bar|dining|lunch|dinner/)) return 'Business Meals';
+  
+  // Supplies (Default fallback for salon)
+  if (t.match(/nail|beauty|salon|supply|cosmo|prof|sally|polish|gel|acrylic|store|market|wholesale/)) return 'Supply';
+  
+  return 'Other'; // Default if unsure
+}
+
 function parseReceiptText(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  let companyStore = lines[0] || null;
+  let companyStore = null; // Will try to find first non-date/non-total line
   let total = null;
-  let transactionType = 'Expense'; // Default
+  let category = 'Other'; 
   let items = [];
 
   const totalPatterns = [
-    /total[:\s]*\$?([\d,]+\.?\d*)/i,
-    /amount[:\s]*\$?([\d,]+\.?\d*)/i,
-    /grand\s*total[:\s]*\$?([\d,]+\.?\d*)/i,
-    /balance\s*due[:\s]*\$?([\d,]+\.?\d*)/i,
+    /(?:total|amount|due|balance)[:\s]*\$?([\d,]+\.?\d{2})/i,
+    /\$?([\d,]+\.?\d{2})[^\n]*\s*(?:total|due)/i, // Number then word "Total"
+    /^total\s*\$?([\d,]+\.?\d{2})/i
   ];
 
-  const typePatterns = [
-    { pattern: /visa|mastercard|debit|credit|amex|discover|card/i, type: 'Card' },
-    { pattern: /cash|change/i, type: 'Cash' },
-    { pattern: /venmo|zelle|paypal/i, type: 'Digital' }
-  ];
-
+  // Try to find Total (starting from bottom up)
   for (const line of [...lines].reverse()) {
-    // Total detection
-    if (total === null) {
-      for (const pattern of totalPatterns) {
-        const match = line.match(pattern);
-        if (match) {
-          const num = match[1].replace(',', '');
-          total = parseFloat(num);
-          if (!isNaN(total)) break;
+    if (total !== null) break;
+    for (const pattern of totalPatterns) {
+      const match = line.match(pattern);
+      if (match) {
+        const num = parseFloat(match[1].replace(/,/g, ''));
+        if (!isNaN(num)) {
+          total = num;
+          break;
         }
       }
     }
-    
-    // Transaction Type detection
-    for (const { pattern, type } of typePatterns) {
-      if (pattern.test(line)) {
-        transactionType = type;
-        break;
+  }
+  
+  // Fallback: looking for largest number if no "Total" keyword found
+  if (total === null) {
+      const numbers = text.match(/\d+\.\d{2}/g);
+      if (numbers) {
+          const validNums = numbers.map(n => parseFloat(n)).filter(n => n < 10000); // Filter out crazy OCR errors
+          if (validNums.length > 0) total = Math.max(...validNums);
       }
-    }
   }
 
   // Date detection
   let date = null;
+  // Patterns: YYYY-MM-DD, MM/DD/YYYY, DD-Mon-YYYY, etc.
   const datePatterns = [
-    /(\d{4}-\d{2}-\d{2})/,
-    /(\d{1,2}\/\d{1,2}\/\d{2,4})/,
-    /(\d{1,2}-\d{1,2}-\d{2,4})/,
+    /\b(\d{4}-\d{2}-\d{2})\b/,
+    /\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/,
+    /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,
     /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})/i,
   ];
 
@@ -85,27 +109,42 @@ function parseReceiptText(text) {
       const match = line.match(pattern);
       if (match) {
         date = match[1];
+        // Normalize to YYYY-MM-DD if possible or leave as string
         break;
       }
     }
     if (date) break;
   }
-
-  // Simple item extraction (look for lines that seem like items - text followed by price)
-  const itemPattern = /^(.+?)\s+(\d+\.\d{2})$/;
+  
+  // Merchant Name Guessing (First line that isn't a date or just symbols)
   for (const line of lines) {
-    const match = line.match(itemPattern);
-    if (match && !totalPatterns.some(p => p.test(line))) {
-      items.push(match[1].trim());
-    }
+      if (line.length > 3 && !line.match(/\d{1,2}\/\d{1,2}/) && !line.includes('Total')) {
+          companyStore = line.replace(/[^\w\s'&]/g, '').trim(); 
+          break;
+      }
   }
 
+  // Items / Description - grab standard text lines
+  // Filter out the total line and date line
+  const descLines = lines.filter(l => 
+    (!total || !l.includes(total)) && 
+    (!date || !l.includes(date)) &&
+    l !== companyStore &&
+    l.length > 3
+  );
+  
+  // Limit description to first 5 lines to avoid clutter
+  const descText = descLines.slice(0, 5).join(', ');
+  
+  // Smart Categorize based on full text
+  category = smartCategorize(text + " " + (companyStore || ''));
+
   return { 
-    date, 
-    companyStore, 
-    total, 
-    transactionType, 
-    items: items.join(', '), 
+    date: date || new Date().toLocaleDateString(), 
+    companyStore: companyStore || 'Unknown Store', 
+    total: total || 0, 
+    transactionType: category, // Mapping this to the category dropdown
+    items: descText, 
     raw_text: text 
   };
 }
