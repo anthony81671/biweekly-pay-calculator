@@ -10,23 +10,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       :root {
-        --primary: #5856d6;
-        --secondary: #007aff;
-        --success: #34c759;
-        --danger: #ff3b30;
-        --background: #f8fafc;
-        --card-bg: #ffffff;
-        --text-main: #0f172a;
-        --text-muted: #64748b;
-        --border: #e2e8f0;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        --sidebar-bg: #f8fafc;
+        /* Premium Spa Palette - Warm Stone & Sophisticated Rose */
+        --primary: #BE185D;       /* Pink-700 */
+        --primary-soft: #FBCFE8;  /* Pink-200 */
+        --secondary: #F472B6;     /* Pink-400 */
+        --success: #059669;       /* Emerald-600 */
+        --danger: #E11D48;        /* Rose-600 */
+        --warning: #D97706;       /* Amber-600 */
+        
+        --background: #FAFAF9;    /* Warm Stone-50 */
+        --sidebar-bg: #FFFFFF;    /* Clean White */
+        --card-bg: #FFFFFF;
+        
+        --text-main: #1C1917;     /* Stone-900 */
+        --text-muted: #57534E;    /* Stone-600 */
+        --border: #E7E5E4;        /* Stone-200 */
+        
+        --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.05), 0 2px 4px -1px rgba(28, 25, 23, 0.03);
+        --shadow-lg: 0 10px 15px -3px rgba(190, 24, 93, 0.05), 0 4px 6px -2px rgba(190, 24, 93, 0.025);
+        --radius-lg: 16px;
+        --radius-xl: 24px;
       }
       * {
         box-sizing: border-box;
@@ -60,10 +70,12 @@
         margin-bottom: 16px;
       }
       .logo-section h2 {
+          font-family: "Playfair Display", serif;
           font-size: 20px;
-          font-weight: 800;
-          color: var(--text-main);
+          font-weight: 700;
+          color: var(--primary);
           margin-bottom: 4px;
+          letter-spacing: -0.01em;
       }
       .nav-menu {
         display: flex;
@@ -103,12 +115,14 @@
       }
       
       h1 {
-        font-size: 28px;
-        font-weight: 800;
+        font-family: "Playfair Display", serif;
+        font-size: 32px;
+        font-weight: 700;
         text-align: left;
         background: none;
         -webkit-text-fill-color: initial;
         color: var(--text-main);
+        letter-spacing: -0.02em;
       }
 
       @media (max-width: 768px) {
@@ -117,19 +131,25 @@
       }
       .card {
         background: var(--card-bg);
-        backdrop-filter: blur(15px);
-        border-radius: 20px;
+        border-radius: var(--radius-xl);
         padding: 24px;
         margin-bottom: 24px;
         border: 1px solid var(--border);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow-md);
         position: relative;
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-soft);
       }
       h2 {
-        font-size: 19px;
-        font-weight: 700;
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 600;
         margin-top: 0;
         margin-bottom: 18px;
+        color: var(--primary);
       }
       label {
         display: block;

@@ -994,8 +994,11 @@
     <script>
         const categories = {
             'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'],
-            'Operating Expenses': ['Salon Lease', 'Business License/LLC/City License', 'CNA Insurance/Workers Comp', 
-                                  'Chase Merchant Charges & Fee', 'Decorations', 'Business Meal', 'Donations', 'Gift', 'Supply', 'Other'],
+            'Utilities': ['Electricity & Gas', 'Water & Waste', 'Internet & Phone'],
+            'Marketing': ['Advertising', 'Software / Subscriptions'],
+            'Admin / Bank': ['Merchant Fees', 'Bank Service Charges'],
+            'Professional': ['Accounting & Legal', 'Dues & Subscriptions', 'quickbook'],
+            'Travel / Auto': ['Business Meals', 'Auto / Mileage'],
             'Income Sources': ['Venmo', 'Zelle', 'Credit Card Deposit']
         };
 
@@ -1059,8 +1062,10 @@
                             date: d.date,
                             category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'].includes(transactionType)
                                       ? 'Employee Costs'
-                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(transactionType) ? 'Income Sources' : 'Operating Expenses'),
-                            subcategory: transactionType,
+                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(transactionType) 
+                                          ? 'Income Sources' 
+                                          : getCategoryForSubcategory(transactionType)),
+                            subcategory: d.subcategory || transactionType,
                             amount: parseFloat(d.total),
                             description: `${d.companystore || d.companyStore} - ${d.items || 'Receipt'}`
                         };
@@ -1192,9 +1197,17 @@
             }
         }
 
+        // Helper to find category
+        function getCategoryForSubcategory(sub) {
+            for (const [cat, subs] of Object.entries(categories)) {
+                if (subs.includes(sub)) return cat;
+            }
+            return 'Operating Expenses'; // Fallback
+        }
+
         // New Grid Update Logic
         function updateMonthlyExpense(year, monthIndex, subcategory, amount) {
-            const category = categories['Employee Costs'].includes(subcategory) ? 'Employee Costs' : 'Operating Expenses';
+            const category = getCategoryForSubcategory(subcategory);
             const monthStr = (monthIndex + 1).toString().padStart(2, '0');
             const date = `${year}-${monthStr}-01`;
 
@@ -1546,10 +1559,12 @@
                         yIncomeTotal += amt;
                     } else {
                         yTotal += amt;
+                        // Determine if it is Employee Costs or other Op Expenses for the summary cards
                         if (categories['Employee Costs'].includes(e.subcategory)) {
                             months[eMonth].employeeCosts += amt;
                             empTotal += amt;
                         } else {
+                            // Everything else is Operating Expenses
                             months[eMonth].operatingExpenses += amt;
                             opTotal += amt;
                         }
@@ -1635,43 +1650,48 @@
                 `;
             };
 
-            // Employee Costs Section
-            tbody.innerHTML += `<tr class="section-row blue"><td colspan="15">Employee Costs</td></tr>`;
-            categories['Employee Costs'].forEach(sub => {
-                let total = 0;
-                let row = `<tr><td>${sub}</td>`;
-                for (let i = 0; i < 12; i++) {
-                    total += (months[i].breakdown[sub] || 0);
-                    row += createInputCell(sub, i);
-                }
-                const subId = sub.replace(/\s+/g, '-');
-                row += `<td class="data-cell-total" id="total-row-${subId}">${fmt(total)}</td></tr>`;
-                tbody.innerHTML += row;
-            });
-            tbody.innerHTML += `<tr class="section-total-row">
-                <td style="font-weight: 700; color: #1e40af;">Total Employee Costs</td>
-                ${months.map((m, i) => `<td class="data-cell" id="subtotal-emp-${i}" style="text-align: right; padding: 4px 8px; font-weight: 700; color: #1e40af; background: rgba(239, 246, 255, 0.5);">${fmt(m.employeeCosts)}</td>`).join('')}
-                <td style="font-weight: 800; color: #1e40af; background: rgba(239, 246, 255, 0.5);" id="grand-total-emp">${fmt(empTotal)}</td>
-            </tr>`;
+            // Dynamic Expense Sections (excluding Income Sources to be handled separately)
+            const expenseSections = [
+                { name: 'Employee Costs', colorClass: 'blue', totalId: 'emp', headerColor: '#1e40af', bg: 'rgba(239, 246, 255, 0.5)' },
+                { name: 'Utilities', colorClass: 'purple', totalId: 'util', headerColor: '#7e22ce', bg: 'rgba(250, 245, 255, 0.5)' },
+                { name: 'Marketing', colorClass: 'purple', totalId: 'mkt', headerColor: '#db2777', bg: 'rgba(252, 231, 243, 0.5)' }, // Pinkish
+                { name: 'Admin / Bank', colorClass: 'section-row', totalId: 'admin', headerColor: '#475569', bg: 'rgba(241, 245, 249, 0.5)' }, // Gray
+                { name: 'Professional', colorClass: 'section-row', totalId: 'prof', headerColor: '#0f766e', bg: 'rgba(204, 251, 241, 0.5)' }, // Teal
+                { name: 'Travel / Auto', colorClass: 'section-row', totalId: 'travel', headerColor: '#ea580c', bg: 'rgba(255, 237, 213, 0.5)' } // Orange
+            ];
 
-            // Operating Expenses Section
-            tbody.innerHTML += `<tr class="section-row purple"><td colspan="15">Operating Expenses</td></tr>`;
-            categories['Operating Expenses'].forEach(sub => {
-                let total = 0;
-                let row = `<tr><td>${sub}</td>`;
-                for (let i = 0; i < 12; i++) {
-                    total += (months[i].breakdown[sub] || 0);
-                    row += createInputCell(sub, i);
-                }
-                const subId = sub.replace(/\s+/g, '-');
-                row += `<td class="data-cell-total" id="total-row-${subId}">${fmt(total)}</td></tr>`;
-                tbody.innerHTML += row;
+            expenseSections.forEach(section => {
+                const subcats = categories[section.name];
+                if (!subcats) return;
+
+                // Section Header
+                tbody.innerHTML += `<tr class="section-row ${section.colorClass}" style="color: ${section.headerColor}; border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;"><td colspan="15">${section.name.toUpperCase()}</td></tr>`;
+                
+                let sectionAllMonthsTotal = Array(12).fill(0);
+                let sectionGrandTotal = 0;
+
+                subcats.forEach(sub => {
+                    let total = 0;
+                    let row = `<tr><td>${sub}</td>`;
+                    for (let i = 0; i < 12; i++) {
+                        const val = (months[i].breakdown[sub] || 0);
+                        total += val;
+                        sectionAllMonthsTotal[i] += val;
+                        row += createInputCell(sub, i);
+                    }
+                    sectionGrandTotal += total;
+                    const subId = sub.replace(/\s+/g, '-');
+                    row += `<td class="data-cell-total" id="total-row-${subId}">${fmt(total)}</td></tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // Section Total Row
+               tbody.innerHTML += `<tr class="section-total-row">
+                    <td style="font-weight: 700; color: ${section.headerColor}; padding-left: 20px;">Total ${section.name}</td>
+                    ${sectionAllMonthsTotal.map((val, i) => `<td class="data-cell" style="text-align: right; padding: 4px 8px; font-weight: 700; color: ${section.headerColor}; background: ${section.bg};">${fmt(val)}</td>`).join('')}
+                    <td style="font-weight: 800; color: ${section.headerColor}; background: ${section.bg};">${fmt(sectionGrandTotal)}</td>
+                </tr>`;
             });
-            tbody.innerHTML += `<tr class="section-total-row">
-                <td style="font-weight: 700; color: #7e22ce;">Total Operating Expenses</td>
-                ${months.map((m, i) => `<td class="data-cell" id="subtotal-op-${i}" style="text-align: right; padding: 4px 8px; font-weight: 700; color: #7e22ce; background: rgba(250, 245, 255, 0.5);">${fmt(m.operatingExpenses)}</td>`).join('')}
-                <td style="font-weight: 800; color: #7e22ce; background: rgba(250, 245, 255, 0.5);" id="grand-total-op">${fmt(opTotal)}</td>
-            </tr>`;
 
             // Monthly Total Row (EXPENSES)
             tbody.innerHTML += `<tr class="monthly-total-row" style="background: #fef2f2; border-top: 2px solid #fee2e2;">

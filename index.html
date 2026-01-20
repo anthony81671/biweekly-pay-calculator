@@ -11,25 +11,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
       :root {
-        --primary: #ec4899;
-        --primary-dark: #db2777;
-        --secondary: #f472b6;
-        --success: #10b981;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        --background: #f8fafc;
-        --card-bg: #ffffff;
-        --text-main: #0f172a;
-        --text-muted: #64748b;
-        --border: #e2e8f0;
-        --sidebar-bg: #f8fafc;
-        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        /* Premium Spa Palette - Warm Stone & Sophisticated Rose */
+        --primary: #BE185D;       /* Pink-700 */
+        --primary-soft: #FBCFE8;  /* Pink-200 */
+        --secondary: #F472B6;     /* Pink-400 */
+        --success: #059669;       /* Emerald-600 */
+        --danger: #E11D48;        /* Rose-600 */
+        --warning: #D97706;       /* Amber-600 */
+        
+        --background: #FAFAF9;    /* Warm Stone-50 */
+        --sidebar-bg: #FFFFFF;    /* Clean White */
+        --card-bg: #FFFFFF;
+        
+        --text-main: #1C1917;     /* Stone-900 */
+        --text-muted: #57534E;    /* Stone-600 */
+        --border: #E7E5E4;        /* Stone-200 */
+        
+        --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.05), 0 2px 4px -1px rgba(28, 25, 23, 0.03);
+        --shadow-lg: 0 10px 15px -3px rgba(190, 24, 93, 0.05), 0 4px 6px -2px rgba(190, 24, 93, 0.025);
+        --radius-lg: 16px;
+        --radius-xl: 24px;
       }
 
       * {
@@ -39,10 +47,10 @@
       }
 
       body {
-        font-family: "Inter", -apple-system, sans-serif;
+        font-family: "Inter", sans-serif;
         background-color: var(--background);
         color: var(--text-main);
-        line-height: 1.5;
+        line-height: 1.6;
         overflow-x: hidden;
         display: flex;
         min-height: 100vh;
@@ -74,10 +82,12 @@
       }
 
       .logo-section h2 {
-        font-size: 20px;
-        font-weight: 800;
-        color: var(--text-main);
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--primary);
         margin-bottom: 4px;
+        letter-spacing: -0.01em;
       }
 
       .logo-section p {
@@ -129,9 +139,10 @@
       }
 
       .dashboard-header h1 {
-        font-size: 28px;
+        font-family: "Playfair Display", serif;
+        font-size: 32px;
         font-weight: 700;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
         color: var(--text-main);
       }
 
@@ -145,16 +156,17 @@
 
       .stat-card {
         background: var(--card-bg);
-        border-radius: 24px;
+        border-radius: var(--radius-xl);
         padding: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-md);
         border: 1px solid var(--border);
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: all 0.3s ease;
       }
 
       .stat-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-soft);
       }
 
       .stat-label {
@@ -167,9 +179,12 @@
       }
 
       .stat-value {
+        font-family: "Playfair Display", serif;
         font-size: 36px;
-        font-weight: 900;
+        font-weight: 700;
         margin-bottom: 4px;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
       }
 
       .stat-change {
@@ -195,16 +210,18 @@
 
       .chart-card {
         background: var(--card-bg);
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-radius: var(--radius-xl);
+        padding: 28px;
+        box-shadow: var(--shadow-md);
         border: 1px solid var(--border);
       }
 
       .chart-card h3 {
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 20px;
+        font-family: "Playfair Display", serif;
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        color: var(--text-main);
       }
 
 
@@ -217,9 +234,10 @@
       }
 
       .month-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: var(--primary);
+        font-family: "Playfair Display", serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-main);
       }
 
       .month-nav {

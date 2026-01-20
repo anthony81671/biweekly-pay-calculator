@@ -337,9 +337,8 @@
           />
         </div>
         <div class="result-row">
-          <span class="result-label">Transaction Type:</span>
-          <input
-            type="text"
+          <span class="result-label">Category:</span>
+          <select
             id="resType"
             class="btn"
             style="
@@ -350,7 +349,41 @@
               padding: 4px 8px;
               font-size: 14px;
             "
-          />
+          >
+            <!-- Utilities -->
+            <optgroup label="Utilities">
+              <option value="Electricity & Gas">Electricity & Gas</option>
+              <option value="Water & Waste">Water & Waste</option>
+              <option value="Internet & Phone">Internet & Phone</option>
+            </optgroup>
+            <!-- Marketing -->
+            <optgroup label="Marketing">
+              <option value="Advertising">Advertising</option>
+              <option value="Software / Subscriptions">Software / Subscriptions</option>
+            </optgroup>
+            <!-- Admin / Bank -->
+            <optgroup label="Admin / Bank">
+              <option value="Merchant Fees">Merchant Fees</option>
+              <option value="Bank Service Charges">Bank Service Charges</option>
+            </optgroup>
+             <!-- Professional -->
+            <optgroup label="Professional">
+              <option value="Accounting & Legal">Accounting & Legal</option>
+              <option value="Dues & Subscriptions">Dues & Subscriptions</option>
+              <option value="quickbook">quickbook</option>
+            </optgroup>
+             <!-- Travel / Auto -->
+            <optgroup label="Travel / Auto">
+              <option value="Business Meals">Business Meals</option>
+              <option value="Auto / Mileage">Auto / Mileage</option>
+            </optgroup>
+             <!-- Employee Costs -->
+            <optgroup label="Employee Costs">
+              <option value="Wages">Wages</option>
+              <option value="Supply">Supply</option>
+              <option value="Other">Other</option>
+            </optgroup>
+          </select>
         </div>
         <div class="result-row">
           <span class="result-label">Company/Store:</span>
@@ -486,7 +519,16 @@
                 document.getElementById('resMerchant').value = data.companyStore || '';
                 document.getElementById('resTotal').value = (data.total || 0).toFixed(2);
                 document.getElementById('resDate').value = data.date || '';
-                document.getElementById('resType').value = data.transactionType || 'Expense';
+                
+                // Try to match, otherwise default to Other
+                const select = document.getElementById('resType');
+                const ocrType = data.transactionType; // likely Card/Cash
+                
+                // If OCR type matches a value (unlikely given it returns Card/Cash), use it
+                // Otherwise default to empty or Other
+                // We'll leave it as 'Supply' or 'Other' as default
+                select.value = 'Other'; 
+                
                 document.getElementById('resItems').value = data.items || '';
                 
                 resultCard.style.display = 'block';
@@ -503,7 +545,8 @@
                 date: document.getElementById('resDate').value,
                 companyStore: document.getElementById('resMerchant').value,
                 total: parseFloat(document.getElementById('resTotal').value),
-                transactionType: document.getElementById('resType').value,
+                transactionType: document.getElementById('resType').value, // Backwards compatibility
+                subcategory: document.getElementById('resType').value, // New column
                 items: document.getElementById('resItems').value
             };
             
