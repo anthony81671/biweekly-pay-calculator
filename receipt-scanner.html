@@ -18,6 +18,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
       :root {
         --primary: #ec4899;
@@ -569,31 +570,134 @@
         startCamera();
       }
 
+        // Ported from backend
+        function smartCategorize(text) {
+          const t = text.toLowerCase();
+          
+          if (t.match(/pg&e|electric|water|waste|fee|gas|power|utilities|att|verizon|t-mobile|comcast|xfinity|internet/)) return 'Utilities';
+          if (t.match(/google|facebook|instagram|ads|marketing|print|flyer|promo/)) return 'Marketing';
+          if (t.match(/bank|fee|charge|interest|service/)) return 'Admin / Bank';
+          if (t.match(/attorney|law|cpa|accounting|tax|legal|subscription|software|adobe|intuit|quickbooks/)) return 'Professional';
+          if (t.match(/chevron|shell|mobil|texaco|gas station|fuel|parking|uber|lyft|flight|hotel|airbnb|travel/)) return 'Travel / Auto';
+          if (t.match(/cafe|coffee|starbucks|mcdonald|burger|grill|restaurant|pho|noodle|sushi|pizza|food|kitchen|bar|dining|lunch|dinner/)) return 'Business Meals';
+          if (t.match(/nail|beauty|salon|supply|cosmo|prof|sally|polish|gel|acrylic|store|market|wholesale/)) return 'Supply';
+          
+          return 'Other';
+        }
+
+        function parseReceiptText(text) {
+          const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+          let companyStore = null; 
+          let total = null;
+          let category = 'Other'; 
+          let items = [];
+
+          const totalPatterns = [
+            /(?:total|amount|due|balance)[:\s]*\$?([\d,]+\.?\d{2})/i,
+            /\$?([\d,]+\.?\d{2})[^\n]*\s*(?:total|due)/i,
+            /^total\s*\$?([\d,]+\.?\d{2})/i
+          ];
+
+          for (const line of [...lines].reverse()) {
+            if (total !== null) break;
+            for (const pattern of totalPatterns) {
+              const match = line.match(pattern);
+              if (match) {
+                const num = parseFloat(match[1].replace(/,/g, ''));
+                if (!isNaN(num)) {
+                  total = num;
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (total === null) {
+              const numbers = text.match(/\d+\.\d{2}/g);
+              if (numbers) {
+                  const validNums = numbers.map(n => parseFloat(n)).filter(n => n < 10000); 
+                  if (validNums.length > 0) total = Math.max(...validNums);
+              }
+          }
+
+          let date = null;
+          const datePatterns = [
+            /\b(\d{4}-\d{2}-\d{2})\b/,
+            /\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/,
+            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,
+            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})/i,
+          ];
+
+          for (const line of lines) {
+            for (const pattern of datePatterns) {
+              const match = line.match(pattern);
+              if (match) {
+                date = match[1];
+                break;
+              }
+            }
+            if (date) break;
+          }
+          
+          for (const line of lines) {
+              if (line.length > 3 && !line.match(/\d{1,2}\/\d{1,2}/) && !line.includes('Total')) {
+                  companyStore = line.replace(/[^\w\s'&]/g, '').trim(); 
+                  break;
+              }
+          }
+
+          const descLines = lines.filter(l => 
+            (!total || !l.includes(total)) && 
+            (!date || !l.includes(date)) &&
+            l !== companyStore &&
+            l.length > 3
+          );
+          
+          const descText = descLines.slice(0, 5).join(', ');
+          category = smartCategorize(text + " " + (companyStore || ''));
+
+          return { 
+            date: date || new Date().toISOString().split('T')[0], 
+            companyStore: companyStore || 'Unknown Store', 
+            total: total || 0, 
+            transactionType: category,
+            items: descText, 
+            raw_text: text 
+          };
+        }
+
         async function process() {
             loadingOverlay.style.display = 'flex';
-            try {
-                // Using relative path for proxy
-                const res = await fetch('/api/receipt-ocr-base64', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: capturedImg.src })
-                });
-                
-                // Handle non-JSON responses (like 404/500 HTML pages)
-                const contentType = res.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("Server error: AI service unreachable. Please ensure you are using the Tunnel link.");
-                }
+            const statusText = loadingOverlay.querySelector('p');
+            statusText.textContent = "Loading AI Brain...";
 
-                const data = await res.json();
+            try {
+                // Client-side OCR using Tesseract.js
+                const { data: { text } } = await Tesseract.recognize(
+                  capturedImg.src,
+                  'eng',
+                  {
+                    logger: m => {
+                        if(m.status === 'recognizing text') {
+                           statusText.textContent = `Reading Receipt... ${Math.round(m.progress * 100)}%`;
+                        } else {
+                           statusText.textContent = m.status;
+                        }
+                    }
+                  }
+                );
+
+                console.log("OCR Output:", text);
+                statusText.textContent = "Analyzing data...";
                 
+                const data = parseReceiptText(text);
+
                 document.getElementById('resMerchant').value = data.companyStore || '';
                 document.getElementById('resTotal').value = (data.total || 0).toFixed(2);
                 document.getElementById('resDate').value = data.date || '';
                 
                 const select = document.getElementById('resType');
                 if (data.transactionType && data.transactionType !== 'Other') {
-                     // Try to match category
                      for(let i=0; i<select.options.length; i++) {
                          if(select.options[i].value === data.transactionType) {
                              select.selectedIndex = i;
@@ -608,8 +712,10 @@
                 previewContainer.style.display = 'none';
             } catch (err) {
                 alert('Analysis failed: ' + err.message);
+                console.error(err);
             } finally {
                 loadingOverlay.style.display = 'none';
+                statusText.textContent = "AI is analyzing receipt...";
             }
         }
 
