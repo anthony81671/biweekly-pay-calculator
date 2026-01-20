@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #ec4899;
@@ -209,12 +211,18 @@
                 <button id="syncBtn" onclick="syncToCloud()" class="btn" style="display: none; background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;">
                     <i class="fas fa-cloud-upload-alt"></i> Sync (<span id="pendingCount">0</span>) to Cloud
                 </button>
-                <select id="yearFilter" class="btn" style="background: white; border: 1px solid var(--border); padding: 8px 16px;" onchange="loadReceipts()">
-                    <option value="2026">2026</option>
-                    <option value="2025">2025</option>
+                <select id="yearFilter" onchange="loadReceipts()" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-weight: 600;">
                     <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
                 </select>
-                <a href="receipt-scanner.html" class="btn btn-primary">Scan New Receipt</a>
+                <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(this)">
+                <button onclick="document.getElementById('excelUpload').click()" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px;">
+                    <i class="fas fa-file-excel"></i> Upload Excel
+                </button>
+                <button onclick="window.location.href='receipt-scanner.html'" class="btn btn-primary" style="padding: 12px 24px;">
+                    <i class="fas fa-camera"></i> Scan New Receipt
+                </button>
             </div>
         </div>
 
@@ -554,6 +562,105 @@
             document.getElementById('storeFilter').value = '';
             document.getElementById('typeFilter').value = '';
             applyFilters();
+        }
+
+        async function handleExcelUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (rows.length === 0) {
+                    alert('No data found in Excel file');
+                    return;
+                }
+
+                console.log('Parsed Excel data:', rows);
+
+                let successCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    
+                    // Map Excel columns (flexible column names)
+                    const date = row['Date'] || row['date'] || row['DATE'];
+                    const type = row['Transaction Type'] || row['Type'] || row['type'] || row['TransactionType'];
+                    const store = row['Company/Store'] || row['Store'] || row['Company'] || row['store'];
+                    const items = row['Items'] || row['items'] || row['Description'] || row['description'] || '';
+                    const total = parseFloat(row['Total'] || row['total'] || row['Amount'] || row['amount'] || 0);
+
+                    // Validate required fields
+                    if (!date || !type || !store || !total) {
+                        errors.push(`Row ${i + 2}: Missing required fields (Date, Type, Store, or Total)`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // Format date to YYYY-MM-DD
+                    let formattedDate;
+                    try {
+                        if (typeof date === 'number') {
+                            // Excel serial date
+                            const excelDate = XLSX.SSF.parse_date_code(date);
+                            formattedDate = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+                        } else {
+                            // String date - try to parse
+                            const d = new Date(date);
+                            if (isNaN(d.getTime())) throw new Error('Invalid date');
+                            formattedDate = d.toISOString().split('T')[0];
+                        }
+                    } catch (e) {
+                        errors.push(`Row ${i + 2}: Invalid date format`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // Insert to database
+                    try {
+                        const { error } = await supabaseClient
+                            .from('receipts')
+                            .insert([{
+                                date: formattedDate,
+                                companystore: store,
+                                total: total,
+                                transactiontype: type,
+                                items: items
+                            }]);
+
+                        if (error) throw error;
+                        successCount++;
+                    } catch (err) {
+                        errors.push(`Row ${i + 2}: ${err.message}`);
+                        errorCount++;
+                    }
+                }
+
+                // Show results
+                let message = `Import complete!\n✅ ${successCount} receipts imported successfully`;
+                if (errorCount > 0) {
+                    message += `\n❌ ${errorCount} rows failed`;
+                    if (errors.length > 0) {
+                        message += `\n\nErrors:\n${errors.slice(0, 5).join('\n')}`;
+                        if (errors.length > 5) message += `\n... and ${errors.length - 5} more errors`;
+                    }
+                }
+                alert(message);
+
+                // Reload receipts
+                await loadReceipts();
+
+                // Clear file input
+                input.value = '';
+            } catch (err) {
+                console.error('Excel upload error:', err);
+                alert('Failed to process Excel file: ' + err.message);
+            }
         }
 
         function resetForm() {
