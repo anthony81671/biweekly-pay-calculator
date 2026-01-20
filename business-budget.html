@@ -647,11 +647,7 @@
 
         <!-- Navigation -->
         <div class="nav-buttons">
-            <button class="nav-btn active">📊 Grid Entry Mode</button>
-            <button class="nav-btn" onclick="window.location.href='index.html'">🏠 Receipt Home</button>
-            <button class="nav-btn" onclick="window.location.href='daily-entry.html'">💰 Enter Sales</button>
-            <button class="nav-btn" onclick="window.location.href='receipt-scanner.html'">📸 Scanner</button>
-            <button class="nav-btn" onclick="window.location.href='receipt-list.html'">📋 Receipts</button>
+            <button class="nav-btn" onclick="window.location.href='index.html'">🏠 Dashboard</button>
             <div id="cloudStatus" style="margin-left: auto; font-size: 0.75rem; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
                 <span id="syncIndicator" style="width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;"></span>
                 <span id="syncText">Checking Cloud...</span>
@@ -673,23 +669,10 @@
                         </div>
                     </div>
                     <div class="report-buttons">
-                        <div style="position: relative; display: inline-block;">
-                            <input type="file" id="pdfUpload" accept=".pdf" style="display: none;" onchange="handlePdfUpload(this)">
-                            <button onclick="document.getElementById('pdfUpload').click()" class="report-btn" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
-                                📄 Scan PDF
-                            </button>
-                        </div>
-                        <button class="report-btn" onclick="saveLocalFeedback()" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0;">
-                            💾 Save Local
-                        </button>
-                        <button id="saveCloudBtn" class="report-btn" onclick="saveToCloud()" style="background: #4f46e5; color: white;">
-                            ☁️ Save to Cloud
-                        </button>
-                        <button class="report-btn" onclick="clearCurrentYear()" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">
-                            🧹 Clear Year
+                        <button class="report-btn" onclick="forceRefreshFromCloud()" style="background: #06b6d4; color: white;">
+                            🔄 Refresh Receipts
                         </button>
                         <button class="report-btn btn-export" onclick="exportReport()">📥 Export</button>
-                        <button class="report-btn btn-reset" onclick="showResetConfirm()">⚠️ Reset All</button>
                     </div>
                 </div>
 
@@ -808,7 +791,7 @@
         const categories = {
             'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'],
             'Operating Expenses': ['Salon Lease', 'Business License/LLC/City License', 'CNA Insurance/Workers Comp', 
-                                  'Chase Merchant Charges & Fee', 'Seasonal Decorations', 'Donations', 'Gift', 'Supply'],
+                                  'Chase Merchant Charges & Fee', 'Decorations', 'Business Meal', 'Donations', 'Gift', 'Supply', 'Other'],
             'Income Sources': ['Venmo', 'Zelle', 'Credit Card Deposit']
         };
 
@@ -819,7 +802,7 @@
         const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-        const TABLE_NAME = 'expenses'; 
+        const TABLE_NAME = 'receipts'; // Changed from 'expenses' to 'receipts'
 
         // Initialize
         async function init() {
@@ -852,34 +835,62 @@
         }
 
         async function loadFromCloud() {
-            setSyncStatus('syncing', 'Updating from Cloud...');
+            setSyncStatus('syncing', 'Loading Receipts from Cloud...');
             try {
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
                     .select('*');
 
+                console.log('Loading receipts from cloud - Raw data:', data);
+                console.log('Loading receipts from cloud - Error:', error);
+
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    expenses = data.map(d => ({
-                        id: d.id,
-                        date: d.date,
-                        category: d.category,
-                        subcategory: d.subcategory,
-                        amount: parseFloat(d.amount),
-                        description: d.description || 'Cloud Entry'
-                    }));
+                    // Convert receipts to expense format for the existing aggregation logic
+                    expenses = data.map(d => {
+                        const transactionType = d.transactiontype || d.transactionType;
+                        return {
+                            id: d.id,
+                            date: d.date,
+                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'].includes(transactionType)
+                                      ? 'Employee Costs'
+                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(transactionType) ? 'Income Sources' : 'Operating Expenses'),
+                            subcategory: transactionType,
+                            amount: parseFloat(d.total),
+                            description: `${d.companystore || d.companyStore} - ${d.items || 'Receipt'}`
+                        };
+                    });
+                    
+                    console.log('Processed expenses from receipts:', expenses);
+                    
+                    // Show user what was loaded
+                    const businessMealCount = expenses.filter(e => e.subcategory === 'Business Meal').length;
+                    const totalAmount = expenses.filter(e => e.subcategory === 'Business Meal')
+                        .reduce((sum, e) => sum + e.amount, 0);
+                    
+                    console.log(`Found ${businessMealCount} Business Meal entries totaling $${totalAmount.toFixed(2)}`);
+                    
                     saveExpenses(false); // Update local cache
                     updateReport();
                     renderExpenses();
-                    setSyncStatus('synced', 'Cloud Synced');
+                    setSyncStatus('synced', `Loaded ${data.length} receipts from cloud`);
                 } else {
-                    setSyncStatus('synced', 'Cloud Connected (No Data)');
+                    console.log('No receipts found in database');
+                    expenses = [];
+                    updateReport();
+                    setSyncStatus('synced', 'Cloud Connected (No Receipts)');
                 }
             } catch (err) {
                 console.error('Cloud load error:', err);
                 setSyncStatus('error', 'Cloud Offline');
             }
+        }
+
+        async function forceRefreshFromCloud() {
+            console.log('Force refresh triggered');
+            await loadFromCloud();
+            alert('Data refreshed from cloud!');
         }
 
         function setSyncStatus(type, text) {
@@ -954,6 +965,27 @@
 
         function addExpense() {
             // No longer used in grid mode but kept logic for internal creation
+        }
+
+        // Handle Enter key on grid inputs
+        function handleGridEnterKey(event, year, monthIndex, subcategory) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                const value = input.value;
+
+                // Save the entry
+                updateMonthlyExpense(year, monthIndex, subcategory, value);
+
+                // Clear the input field for next entry
+                input.value = '';
+
+                // Show success feedback
+                input.classList.add('updated');
+                setTimeout(() => {
+                    input.classList.remove('updated');
+                }, 1000);
+            }
         }
 
         // New Grid Update Logic
@@ -1387,12 +1419,13 @@
                 const colorStyle = customColor ? `style="color: ${customColor}; font-weight: 700;"` : '';
                 return `
                     <td class="data-cell">
-                        <input type="number" step="0.01" value="${displayVal}" 
-                               class="grid-input ${hasUnsavedChanges ? 'unsaved' : ''}" 
+                        <input type="number" step="0.01" value="${displayVal}"
+                               class="grid-input"
                                id="input-${monthIdx}-${sub.replace(/\s+/g, '-')}"
                                ${colorStyle}
-                               onblur="updateMonthlyExpense(${selectedYear}, ${monthIdx}, '${sub}', this.value)"
-                               onkeydown="if(event.key==='Enter') this.blur();"
+                               readonly
+                               title="This is a report view. Add receipts to update values."
+                               style="cursor: not-allowed; background: #f8fafc;"
                                placeholder="—">
                     </td>
                 `;

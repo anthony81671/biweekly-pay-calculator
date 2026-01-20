@@ -138,80 +138,9 @@
       /* Stats Grid */
       .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 20px;
-        margin-bottom: 24px;
-      }
-
-      .receipts-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 20px;
         margin-bottom: 32px;
-      }
-
-      .stat-card.receipt-stat {
-        background: #fdf2f8;
-        border: 1px solid #fbcfe8;
-      }
-
-      .recent-activity {
-        background: var(--card-bg);
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        border: 1px solid var(--border);
-        margin-top: 20px;
-      }
-
-      .activity-item {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .activity-item:last-child {
-        border-bottom: none;
-      }
-
-      .activity-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        background: #f1f5f9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        color: var(--text-muted);
-      }
-
-      .activity-info {
-        flex: 1;
-      }
-
-      .activity-merchant {
-        font-weight: 700;
-        font-size: 15px;
-      }
-
-      .activity-date {
-        font-size: 12px;
-        color: var(--text-muted);
-      }
-
-      .activity-amount {
-        font-weight: 800;
-        font-size: 16px;
-        color: var(--text-main);
-      }
-
-      .side-column {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
       }
 
       .stat-card {
@@ -701,35 +630,34 @@
       </div>
 
       <nav class="nav-menu">
-        <a href="index.html" class="nav-item active">🏠 Receipt Home</a>
-        <a href="daily-entry.html" class="nav-item">💰 Enter Sales</a>
-        <a href="business-budget.html" class="nav-item">📈 Budget & Expenses</a>
-        <a href="dashboard.html" class="nav-item">⚙️ Staff Payroll</a>
+        <a href="index.html" class="nav-item active">🏠 Dashboard</a>
+        <a href="dashboard.html" class="nav-item">💰 Enter Sales</a>
+        <a href="business-budget.html" class="nav-item">📈 Budget</a>
+        <a href="receipt-list.html" class="nav-item">📋 Business Receipts</a>
         <a href="receipt-scanner.html" class="nav-item">📸 Receipt Scanner</a>
-        <a href="receipt-list.html" class="nav-item">📋 View Receipts</a>
       </nav>
     </div>
 
     <!-- Main Content -->
     <div class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Receipt Home</h1>
+        <h1>Dashboard Overview</h1>
         <div id="cacheStatus" style="font-size: 12px; color: var(--success); margin-bottom: 4px; font-weight: 600;"></div>
         <div id="periodLabel" style="font-size: 14px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.03); display: inline-block; padding: 4px 12px; border-radius: 20px;">Loading Period...</div>
-        <div style="display: flex; justify-content: center; gap: 12px; align-items: center; margin-top: 10px;">
-          <select id="yearSelector" class="action-btn secondary" style="padding: 8px 16px; font-size: 14px; width: auto; min-width: 120px;">
-            <option value="2024">2024 Year</option>
-            <option value="2025">2025 Year</option>
-            <option value="2026" selected>2026 Year</option>
-            <option value="2027">2027 Year</option>
-          </select>
-          <button id="forceRefreshBtn" class="action-btn" style="padding: 8px 16px; font-size: 14px; max-width: 200px;">
-            🔄 Refresh
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
+          <button id="forceRefreshBtn" class="action-btn" style="padding: 8px 16px; font-size: 14px; max-width: 200px; margin: 0;">
+            🔄 Force Refresh
           </button>
+          <a href="receipt-list.html" class="action-btn secondary" style="padding: 8px 16px; font-size: 14px; text-decoration: none; color: white; background: var(--secondary);">
+            📋 Business Receipts
+          </a>
+          <a href="receipt-scanner.html" class="action-btn primary" style="padding: 8px 16px; font-size: 14px; text-decoration: none; color: white;">
+            📸 Receipt Scanner
+          </a>
         </div>
       </div>
 
-      <!-- Business Stats -->
+      <!-- Key Stats -->
       <div class="stats-grid">
         <div class="stat-card" style="border-left: 4px solid var(--primary);">
           <div class="stat-label">Gross Sales</div>
@@ -753,27 +681,6 @@
           <div class="stat-label">Active Workers</div>
           <div class="stat-value" id="statActiveWorkers">0</div>
           <div class="stat-change" id="statTotalDays">0 working days</div>
-        </div>
-      </div>
-
-      <!-- Receipt Stats -->
-      <div class="receipts-stats">
-        <div class="stat-card receipt-stat" style="border-left: 4px solid #db2777;">
-          <div class="stat-label">Total Spent</div>
-          <div class="stat-value" id="statReceiptTotal" style="font-size: 28px;">$0</div>
-          <div class="stat-change" id="statReceiptMsg">YTD Expenses</div>
-        </div>
-
-        <div class="stat-card receipt-stat" style="border-left: 4px solid #f472b6;">
-          <div class="stat-label">Receipts Scanned</div>
-          <div class="stat-value" id="statReceiptCount" style="font-size: 28px;">0</div>
-          <div class="stat-change">Total Records</div>
-        </div>
-
-        <div class="stat-card receipt-stat" style="border-left: 4px solid #9d174d;">
-          <div class="stat-label">Average Spent</div>
-          <div class="stat-value" id="statReceiptAvg" style="font-size: 28px;">$0</div>
-          <div class="stat-change">Per Receipt</div>
         </div>
       </div>
 
@@ -805,26 +712,12 @@
           </div>
         </div>
 
-        <div class="side-column">
-          <div class="yearly-sales">
-            <h3>📊 Yearly Sales Tracker</h3>
-            <div id="yearlySales">
-              <div class="loading">
-                <div class="spinner"></div>
-                Loading...
-              </div>
-            </div>
-          </div>
-
-          <div class="recent-activity">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-              <h3 style="font-size: 18px; font-weight: 700;">📸 Recent Receipts</h3>
-              <a href="receipt-scanner.html" style="font-size: 12px; font-weight: 700; color: var(--primary); text-decoration: none;">Scan New</a>
-            </div>
-            <div id="recentReceiptsList">
-               <div style="text-align: center; color: var(--text-muted); padding: 20px;">
-                  No receipts scanned yet
-               </div>
+        <div class="yearly-sales">
+          <h3>📊 Yearly Sales Tracker</h3>
+          <div id="yearlySales">
+            <div class="loading">
+              <div class="spinner"></div>
+              Loading...
             </div>
           </div>
         </div>
@@ -855,13 +748,12 @@
       var supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
       const SERVICE_RATE = 0.55;
-      let ANCHOR_DATE = new Date("2026-01-01T00:00:00");
+      const ANCHOR_DATE = new Date("2026-01-01T00:00:00");
 
       let currentPeriodDates = [];
       let periodStart = "";
       let cloudCache = {};
       let ytdData = [];
-      let currentSelectedYear = 2026;
       let currentViewMonth = new Date(); // For calendar navigation
       let monthDataCache = {}; // Cache for monthly data
 
@@ -883,12 +775,6 @@
         const refreshBtn = document.getElementById("forceRefreshBtn");
         if (refreshBtn) {
           refreshBtn.addEventListener("click", manualForceRefresh);
-        }
-        const yearSelect = document.getElementById("yearSelector");
-        if (yearSelect) {
-          yearSelect.addEventListener("change", (e) => {
-            handleYearChange(parseInt(e.target.value));
-          });
         }
       }
 
@@ -933,21 +819,12 @@
       async function initializeDashboard() {
         updateStatus("Initializing...");
 
-        const yearSelect = document.getElementById("yearSelector");
-        currentSelectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
-        
-        // Update anchor date for current selected year
-        ANCHOR_DATE = new Date(`${currentSelectedYear}-01-01T00:00:00`);
+        // Set current month for calendar
+        currentViewMonth = new Date();
 
-        // Set view month to matching year
+        // Calculate current pay period for stats
         const today = new Date();
-        if (today.getFullYear() === currentSelectedYear) {
-          currentViewMonth = today;
-        } else {
-          currentViewMonth = new Date(currentSelectedYear, 0, 1);
-        }
-
-        const snappedStart = getAutoPeriodStart(currentViewMonth);
+        const snappedStart = getAutoPeriodStart(today);
         periodStart = snappedStart;
         generatePeriod();
 
@@ -1026,27 +903,6 @@
         console.log("✅ Period generation complete.");
       }
 
-      async function handleYearChange(year) {
-        currentSelectedYear = year;
-        updateStatus(`Switching to ${year}...`);
-        
-        // Reset anchor and periods
-        ANCHOR_DATE = new Date(`${year}-01-01T00:00:00`); 
-        // Usually pay periods continue across years, but for visual year switching we anchor to Jan of that year
-        
-        if (new Date().getFullYear() === year) {
-          currentViewMonth = new Date();
-        } else {
-          currentViewMonth = new Date(year, 0, 1); // Start of selected year
-        }
-        
-        const snappedStart = getAutoPeriodStart(currentViewMonth);
-        periodStart = snappedStart;
-        generatePeriod();
-        
-        await loadDashboardData(true); // Force refresh for new year
-      }
-
       async function manualForceRefresh() {
         console.log("Manual force refresh triggered");
         updateStatus("Refreshing data...", "var(--warning)");
@@ -1070,10 +926,9 @@
           console.log("loadDashboardData called, forceRefresh:", forceRefresh);
           updateStatus("Connecting to Supabase...");
 
-          const yearStart = `${currentSelectedYear}-01-01`;
-          const yearEnd = `${currentSelectedYear}-12-31`;
+          const yearStart = "2026-01-01";
           const periodEnd = currentPeriodDates[currentPeriodDates.length - 1];
-          const cacheKey = YTD_CACHE_PREFIX + periodEnd + "_" + currentSelectedYear;
+          const cacheKey = YTD_CACHE_PREFIX + periodEnd;
 
           // 1. Check cache for YTD data first (for immediate display)
           let cachedYtd = null;
@@ -1095,31 +950,11 @@
 
           // YTD Fetch (Only if not cached or force refresh)
           const ytdPromise = (!cachedYtd || forceRefresh) 
-            ? supabaseClient.from("sales_records").select("*").gte("entry_date", yearStart).lte("entry_date", yearEnd)
+            ? supabaseClient.from("sales_records").select("*").gte("entry_date", yearStart).lte("entry_date", periodEnd)
             : Promise.resolve({ data: cachedYtd, error: null });
 
-          // Receipts Fetch
-          const receiptsPromise = supabaseClient
-            .from("receipts")
-            .select("*")
-            .gte("date", yearStart)
-            .lte("date", yearEnd)
-            .order("date", { ascending: false })
-            .limit(5);
-
-          const receiptsYtdPromise = supabaseClient
-            .from("receipts")
-            .select("total")
-            .gte("date", yearStart)
-            .lte("date", yearEnd);
-
           // 3. Wait for basic data
-          const [periodRes, ytdRes, recentReceiptsRes, ytdReceiptsRes] = await Promise.all([
-            periodPromise, 
-            ytdPromise, 
-            receiptsPromise,
-            receiptsYtdPromise
-          ]);
+          const [periodRes, ytdRes] = await Promise.all([periodPromise, ytdPromise]);
 
           if (periodRes.error) throw new Error("Period data error: " + periodRes.error.message);
           if (ytdRes.error) throw new Error("YTD data error: " + ytdRes.error.message);
@@ -1148,7 +983,7 @@
           }
 
           // 5. Render Core Stats and start Calendar render (Calendar also fetches its own month data)
-          await processAndRender(periodData, ytdData, recentReceiptsRes.data || [], ytdReceiptsRes.data || []);
+          await processAndRender(periodData, ytdData);
 
         } catch (err) {
           console.error("Dashboard Load Error:", err);
@@ -1157,7 +992,7 @@
         }
       }
 
-      async function processAndRender(periodData, ytdList, recentReceipts, ytdReceipts) {
+      async function processAndRender(periodData, ytdList) {
         try {
             // Process data for rendering
             cloudCache = {};
@@ -1181,39 +1016,11 @@
             }
     
             // Render dashboard - AWAIT this
-            await renderDashboard(Array.from(workers), recentReceipts, ytdReceipts);
+            await renderDashboard(Array.from(workers));
         } catch (e) {
             console.error("Error in processAndRender:", e);
             throw e;
         }
-      }
-
-      function updateReceiptStats(recent, ytd) {
-        let total = 0;
-        let count = ytd.length;
-        ytd.forEach(r => total += (parseFloat(r.total) || 0));
-        let avg = count > 0 ? total / count : 0;
-
-        document.getElementById("statReceiptTotal").textContent = fmt(total);
-        document.getElementById("statReceiptCount").textContent = count;
-        document.getElementById("statReceiptAvg").textContent = fmt(avg);
-
-        const list = document.getElementById("recentReceiptsList");
-        if (recent.length === 0) {
-          list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No receipts scanned yet</div>';
-          return;
-        }
-
-        list.innerHTML = recent.map(r => `
-          <div class="activity-item">
-            <div class="activity-icon">${(r.companyStore || "U")[0].toUpperCase()}</div>
-            <div class="activity-info">
-              <div class="activity-merchant">${r.companyStore || "Unknown Merchant"}</div>
-              <div class="activity-date">${r.date || "N/A"}</div>
-            </div>
-            <div class="activity-amount">${fmt(parseFloat(r.total) || 0)}</div>
-          </div>
-        `).join("");
       }
 
       function showError(msg) {
@@ -1249,10 +1056,7 @@
         }
       }
 
-      async function renderDashboard(workers, recentReceipts, ytdReceipts) {
-        // Update Receipt Section
-        updateReceiptStats(recentReceipts, ytdReceipts);
-
+      async function renderDashboard(workers) {
         // Calculate period stats
         let grossSales = 0;
         let totalDiscounts = 0;

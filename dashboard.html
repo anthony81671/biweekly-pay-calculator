@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Pay Calculator Cloud Pro</title>
+    <title>Sales Entry</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,43 +20,100 @@
         --secondary: #007aff;
         --success: #34c759;
         --danger: #ff3b30;
-        --background: #f2f2f7;
+        --background: #f8fafc;
         --card-bg: #ffffff;
-        --text-main: #1a1a1a;
-        --text-muted: #4a4a4a;
-        --border: #d1d1d6;
-        --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --sidebar-bg: #f8fafc;
       }
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
       }
       body {
-        font-family: "Inter", -apple-system, sans-serif;
-        margin: 0;
-        padding: 0;
+        font-family: 'Inter', sans-serif;
         background-color: var(--background);
         color: var(--text-main);
-        line-height: 1.5;
-      }
-      .container {
-        max-width: 650px;
-        margin: 0 auto;
-        padding: 20px 16px 120px;
-      }
-      header {
-        padding: 20px 0;
-        text-align: center;
-        position: relative;
-      }
-      h1 {
-        font-size: 26px;
-        font-weight: 800;
+        display: flex;
+        min-height: 100vh;
         margin: 0;
+      }
+      
+      /* Sidebar */
+      .sidebar {
+        width: 280px;
+        background: var(--sidebar-bg);
+        padding: 32px 24px;
+        position: fixed;
+        height: 100vh;
+        border-right: 1px solid var(--border);
+      }
+      .logo-section {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .logo-section img {
+        width: 120px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+      .logo-section h2 {
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text-main);
+          margin-bottom: 4px;
+      }
+      .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .nav-item {
+        padding: 14px 20px;
+        border-radius: 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--primary);
+      }
+      .nav-item.active {
         background: linear-gradient(135deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: white;
+      }
+
+      .container {
+        margin-left: 280px;
+        padding: 40px;
+        flex: 1;
+        max-width: calc(100% - 280px);
+      }
+      
+      header {
+        text-align: left;
+        margin-bottom: 32px;
+        padding: 0;
+      }
+      
+      h1 {
+        font-size: 28px;
+        font-weight: 800;
+        text-align: left;
+        background: none;
+        -webkit-text-fill-color: initial;
+        color: var(--text-main);
+      }
+
+      @media (max-width: 768px) {
+        .sidebar { display: none; }
+        .container { margin-left: 0; padding: 20px; max-width: 100%; }
       }
       .card {
         background: var(--card-bg);
@@ -287,17 +344,24 @@
     </style>
   </head>
   <body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <img src="kntlogo2026.png" alt="K&T Nails">
+            <h2>K&T NAILS</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-item">🏠 Dashboard</a>
+            <a href="dashboard.html" class="nav-item active">💰 Enter Sales</a>
+            <a href="business-budget.html" class="nav-item">📈 Budget</a>
+            <a href="receipt-list.html" class="nav-item">📋 Business Receipts</a>
+            <a href="receipt-scanner.html" class="nav-item">📸 Receipt Scanner</a>
+        </nav>
+    </div>
+
     <div class="container">
       <header>
-        <h1>Pay Calculator Cloud</h1>
-        <div class="sync-status">● Cloud Sync Connected</div>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-          <a href="index.html" style="padding: 8px 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: 2px solid var(--primary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 8px rgba(88, 86, 214, 0.3);">🏠 Receipt Home</a>
-          <a href="daily-entry.html" style="padding: 8px 16px; background: white; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📅 Quick Entry</a>
-          <a href="business-budget.html" style="padding: 8px 16px; background: white; border: 2px solid var(--success); color: var(--success); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">💰 Budget</a>
-          <a href="receipt-scanner.html" style="padding: 8px 16px; background: white; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📸 Scanner</a>
-          <a href="receipt-list.html" style="padding: 8px 16px; background: white; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📋 Receipts</a>
-        </div>
+        <h1>Sales Entry</h1>
+        <div class="sync-status" style="text-align: left; margin-top: 4px;">● Cloud Sync Connected</div>
       </header>
 
       <div class="card">
@@ -863,6 +927,10 @@
       window.onload = () => {
         refreshWorkerUI();
 
+        // Check for date passed in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+
         // Auto-calculate current period on start
         let saved = localStorage.getItem("periodStart");
         if (saved) {
@@ -872,7 +940,13 @@
           resetToCurrentPeriod();
         }
         generatePeriod();
-        switchTab("worker");
+        switchTab("daily");
+
+        // If a specific date was passed, set it in the daily entry
+        if (dateParam) {
+          document.getElementById("dailyEntryDate").value = dateParam;
+          loadDailyData();
+        }
       };
 
       function resetToCurrentPeriod() {
