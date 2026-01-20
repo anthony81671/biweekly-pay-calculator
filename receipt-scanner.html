@@ -509,7 +509,7 @@
         async function process() {
             loadingOverlay.style.display = 'flex';
             try {
-                const res = await fetch('http://localhost:3001/api/receipt-ocr-base64', {
+                const res = await fetch('/api/receipt-ocr-base64', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: capturedImg.src })
