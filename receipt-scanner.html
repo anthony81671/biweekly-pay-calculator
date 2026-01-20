@@ -446,6 +446,69 @@
           </button>
         </div>
       </div>
+      </div>
+
+      <div class="camera-card" id="manualEntryCard" style="margin-top: 32px;">
+        <h3 style="margin-bottom: 20px; color: var(--text-main)">📝 Manual Entry</h3>
+        
+        <div class="result-row">
+            <span class="result-label">Date:</span>
+            <input type="date" id="manDate" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+        </div>
+        
+        <div class="result-row">
+            <span class="result-label">Category:</span>
+            <select id="manCategory" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+                <optgroup label="Utilities">
+                  <option value="Electricity & Gas">Electricity & Gas</option>
+                  <option value="Water & Waste">Water & Waste</option>
+                  <option value="Internet & Phone">Internet & Phone</option>
+                </optgroup>
+                <optgroup label="Marketing">
+                  <option value="Advertising">Advertising</option>
+                  <option value="Software / Subscriptions">Software / Subscriptions</option>
+                </optgroup>
+                <optgroup label="Admin / Bank">
+                  <option value="Merchant Fees">Merchant Fees</option>
+                  <option value="Bank Service Charges">Bank Service Charges</option>
+                </optgroup>
+                <optgroup label="Professional">
+                  <option value="Accounting & Legal">Accounting & Legal</option>
+                  <option value="Dues & Subscriptions">Dues & Subscriptions</option>
+                  <option value="quickbook">quickbook</option>
+                </optgroup>
+                <optgroup label="Travel / Auto">
+                  <option value="Business Meals">Business Meals</option>
+                  <option value="Auto / Mileage">Auto / Mileage</option>
+                </optgroup>
+                <optgroup label="Employee Costs">
+                  <option value="Wages">Wages</option>
+                  <option value="Supply" selected>Supply</option>
+                  <option value="Other">Other</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="result-row">
+            <span class="result-label">Store/Company:</span>
+            <input type="text" id="manMerchant" placeholder="e.g. Home Depot" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+        </div>
+
+        <div class="result-row">
+            <span class="result-label">Items:</span>
+            <textarea id="manItems" placeholder="Description..." class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1; min-height:60px;"></textarea>
+        </div>
+
+        <div class="result-row" style="margin-top:12px; border-top:2px solid #f1f5f9; padding-top:12px;">
+            <span class="result-label" style="font-size:18px;">Total:</span>
+            <input type="number" id="manTotal" step="0.01" placeholder="0.00" class="btn" style="text-align: right; background: #f1f5f9; width:auto; flex:1; font-size:20px; font-weight:800; color:var(--primary);">
+        </div>
+
+        <button class="btn btn-primary" onclick="saveManual()" style="width:100%; margin-top:20px;">
+            Save Receipt
+        </button>
+      </div>
+
     </main>
 
     <div class="loading-overlay" id="loadingOverlay">
@@ -509,25 +572,35 @@
         async function process() {
             loadingOverlay.style.display = 'flex';
             try {
+                // Using relative path for proxy
                 const res = await fetch('/api/receipt-ocr-base64', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: capturedImg.src })
                 });
+                
+                // Handle non-JSON responses (like 404/500 HTML pages)
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new Error("Server error: AI service unreachable. Please ensure you are using the Tunnel link.");
+                }
+
                 const data = await res.json();
                 
                 document.getElementById('resMerchant').value = data.companyStore || '';
                 document.getElementById('resTotal').value = (data.total || 0).toFixed(2);
                 document.getElementById('resDate').value = data.date || '';
                 
-                // Try to match, otherwise default to Other
                 const select = document.getElementById('resType');
-                const ocrType = data.transactionType; // likely Card/Cash
-                
-                // If OCR type matches a value (unlikely given it returns Card/Cash), use it
-                // Otherwise default to empty or Other
-                // We'll leave it as 'Supply' or 'Other' as default
-                select.value = 'Other'; 
+                if (data.transactionType && data.transactionType !== 'Other') {
+                     // Try to match category
+                     for(let i=0; i<select.options.length; i++) {
+                         if(select.options[i].value === data.transactionType) {
+                             select.selectedIndex = i;
+                             break;
+                         }
+                     }
+                }
                 
                 document.getElementById('resItems').value = data.items || '';
                 
@@ -545,24 +618,56 @@
                 date: document.getElementById('resDate').value,
                 companyStore: document.getElementById('resMerchant').value,
                 total: parseFloat(document.getElementById('resTotal').value),
-                transactionType: document.getElementById('resType').value, // Backwards compatibility
-                subcategory: document.getElementById('resType').value, // New column
+                transactionType: document.getElementById('resType').value,
+                subcategory: document.getElementById('resType').value,
                 items: document.getElementById('resItems').value
             };
+            await saveExpense(expense, () => {
+                // On success for scan
+                resultCard.style.display = "none";
+                cameraCard.style.display = "block";
+                startCamera();
+            });
+        }
+        
+        async function saveManual() {
+            const expense = {
+                date: document.getElementById('manDate').value,
+                companyStore: document.getElementById('manMerchant').value,
+                total: parseFloat(document.getElementById('manTotal').value),
+                transactionType: document.getElementById('manCategory').value,
+                subcategory: document.getElementById('manCategory').value,
+                items: document.getElementById('manItems').value
+            };
             
+            if(!expense.total || !expense.companyStore) {
+                alert("Please enter at least a Company Name and Total.");
+                return;
+            }
+
+            await saveExpense(expense, () => {
+                // Reset form
+                document.getElementById('manMerchant').value = '';
+                document.getElementById('manTotal').value = '';
+                document.getElementById('manItems').value = '';
+                document.getElementById('manCategory').value = 'Supply';
+            });
+        }
+
+        async function saveExpense(expense, onSuccess) {
             loadingOverlay.style.display = 'flex';
             try {
-                // Save to Supabase 'receipts' table
                 const { data, error } = await supabaseClient
                     .from('receipts')
                     .insert([expense]);
 
                 if (error) throw error;
 
-                // Also optionally save to the business budget expenses table if needed
-                // For now, we follow the user's request to see it in a table (receipt-list.html)
+                // Success
+                alert("✅ Receipt Saved Successfully!");
                 
-                location.href = 'receipt-list.html';
+                if(onSuccess) onSuccess();
+
             } catch (err) {
                 alert('Save failed: ' + err.message);
             } finally {
