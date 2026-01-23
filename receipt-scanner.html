@@ -607,13 +607,38 @@
 
       async function startCamera() {
         try {
+          // Try environment (back) camera first (for mobile)
           stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" },
             audio: false,
           });
           video.srcObject = stream;
+          console.log('✅ Camera started (environment/back camera)');
         } catch (err) {
-          alert("Could not access camera: " + err.message + "\n\nYou can use the 'Upload from Gallery' option instead.");
+          console.warn('Environment camera not available, trying any camera...', err.message);
+          try {
+            // Fallback: try any camera (for desktop)
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+            video.srcObject = stream;
+            console.log('✅ Camera started (any available camera)');
+          } catch (err2) {
+            console.warn('Any camera failed, trying user (front) camera...', err2.message);
+            try {
+              // Last resort: try front camera explicitly
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user" },
+                audio: false,
+              });
+              video.srcObject = stream;
+              console.log('✅ Camera started (user/front camera)');
+            } catch (err3) {
+              alert("Could not access camera: " + err3.message + "\n\nYou can use the 'Upload from Gallery' option instead.");
+              console.error('All camera attempts failed:', err3);
+            }
+          }
         }
       }
 
