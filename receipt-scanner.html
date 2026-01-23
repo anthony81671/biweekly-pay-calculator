@@ -565,7 +565,15 @@
       function matchKnownStore(ocrStoreName) {
         if (!ocrStoreName || ocrStoreName === 'Unknown Store') return null;
         
-        const cleanOCR = ocrStoreName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        // Normalize function to handle common OCR errors
+        const normalize = (s) => s.toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/[0]/g, 'o')  // 0 → o
+          .replace(/[1]/g, 'i')  // 1 → i  
+          .replace(/[5]/g, 's')  // 5 → s
+          .trim();
+        
+        const cleanOCR = normalize(ocrStoreName);
         
         // Try exact match first
         for (const known of knownStores) {
@@ -574,18 +582,20 @@
           }
         }
         
-        // Try fuzzy match (contains or is contained)
+        // Try fuzzy match with normalization
         for (const known of knownStores) {
-          const cleanKnown = known.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+          const cleanKnown = normalize(known);
           
-          // If OCR text contains most of the known store name
+          // If normalized OCR text contains most of the known store name
           if (cleanOCR.includes(cleanKnown) || cleanKnown.includes(cleanOCR)) {
-            // Calculate similarity
-            const similarity = cleanOCR.length > cleanKnown.length ? 
-              cleanKnown.length / cleanOCR.length : 
-              cleanOCR.length / cleanKnown.length;
+            // Calculate similarity on raw (non-normalized) text
+            const raw1 = ocrStoreName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const raw2 = known.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const similarity = raw1.length > raw2.length ? 
+              raw2.length / raw1.length : 
+              raw1.length / raw2.length;
             
-            if (similarity > 0.6) { // 60% similarity threshold
+            if (similarity > 0.5) { // 50% similarity threshold
               console.log('🎯 Matched "' + ocrStoreName + '" to known store "' + known + '"');
               return known;
             }
@@ -841,6 +851,10 @@
                    !lowerLine.includes('qty') &&
                    !lowerLine.includes('unit') &&
                    !lowerLine.includes('description') &&
+                   !lowerLine.includes('date') &&
+                   !lowerLine.match(/\d{1,2}[\/\-]\d{1,2}/) &&  // No dates
+                   !lowerLine.match(/\b\d{5}\b/) &&  // No zip codes
+                   !lowerLine.match(/\b(st|ave|rd|blvd|hwy|lane|suite|ste|dr)\b/i) &&  // No addresses
                    (!date || !l.includes(date)) &&
                    l !== companyStore &&
                    l.length > 2 &&
@@ -848,11 +862,40 @@
                    !l.match(/^[\d\s\$\.,]+$/);  // Skip lines with only numbers
           });
           
-          // Clean up descriptions - remove prices from the end
+          // Clean up descriptions - remove prices and quantities from the end
           const cleanedDescs = descLines.map(line => {
-            // Remove trailing prices like "$10.00" or "10.00"
-            return line.replace(/\s*\$?\s*[\d,]+\.\d{2}\s*$/g, '').trim();
-          }).filter(d => d.length > 0);
+            let cleaned = line
+              .replace(/^\d+\s+/, '')  // Remove leading quantity
+              .replace(/\s*\$?\s*[\d,]+\.\d{2}\s*$/g, '')  // Remove trailing price with decimals
+              .replace(/\s*\$?\s*[\d,]+\.?\d{0,2}\s*$/g, '')  // Remove trailing price without decimals
+              .replace(/[#:]\s*$/, '')  // Remove trailing # or :
+              .trim();
+            return cleaned;
+          }).filter(d => {
+            if (d.length < 3) return false;
+            if (d.match(/^[A-Z]{2}\s\d{5}/)) return false;  // Skip state + zip
+            if (d.match(/\d{1,2}:\d{2}/)) return false;  // Skip timestamps
+            
+            // Filter out store name using normalized matching
+            if (companyStore) {
+              const normalize = (s) => s.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/[0]/g, 'o')
+                .replace(/[1]/g, 'i')
+                .replace(/[5]/g, 's')
+                .trim();
+              
+              const normalizedDesc = normalize(d);
+              const normalizedStore = normalize(companyStore);
+              
+              // Don't include if it's the store name
+              if (normalizedStore.includes(normalizedDesc) || normalizedDesc.includes(normalizedStore)) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
           
           const descText = cleanedDescs.slice(0, 5).join(', ');
           category = smartCategorize(text + " " + (companyStore || ''));
