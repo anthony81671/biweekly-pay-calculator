@@ -1751,13 +1751,24 @@
                 }
             });
             
+            // Combine all operating expense categories (everything except Employee Costs and Income Sources)
+            const operatingExpenseCategories = [
+                ...categories['Utilities'],
+                ...categories['Marketing'],
+                ...categories['Admin / Bank'],
+                ...categories['Professional'],
+                ...categories['Travel / Auto'],
+                ...categories['Supply'],
+                ...categories['Other']
+            ];
+            
             // Prepare data for the report template
             const reportData = {
                 employeeCosts: categories['Employee Costs'].map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
-                operatingExpenses: categories['Operating Expenses'].map(name => ({
+                operatingExpenses: operatingExpenseCategories.map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
