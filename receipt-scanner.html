@@ -541,6 +541,59 @@
       const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
       let stream = null;
+      let knownStores = []; // Cache of known store names
+
+      // Load known stores from Supabase on page load
+      async function loadKnownStores() {
+        try {
+          const { data, error } = await supabaseClient
+            .from('receipts')
+            .select('companyStore')
+            .not('companyStore', 'is', null);
+          
+          if (!error && data) {
+            // Get unique store names
+            knownStores = [...new Set(data.map(r => r.companyStore).filter(s => s && s !== 'Unknown Store'))];
+            console.log('📋 Loaded', knownStores.length, 'known stores:', knownStores);
+          }
+        } catch (err) {
+          console.warn('Could not load known stores:', err);
+        }
+      }
+
+      // Fuzzy match store name against known stores
+      function matchKnownStore(ocrStoreName) {
+        if (!ocrStoreName || ocrStoreName === 'Unknown Store') return null;
+        
+        const cleanOCR = ocrStoreName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+        
+        // Try exact match first
+        for (const known of knownStores) {
+          if (known.toLowerCase() === ocrStoreName.toLowerCase()) {
+            return known;
+          }
+        }
+        
+        // Try fuzzy match (contains or is contained)
+        for (const known of knownStores) {
+          const cleanKnown = known.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+          
+          // If OCR text contains most of the known store name
+          if (cleanOCR.includes(cleanKnown) || cleanKnown.includes(cleanOCR)) {
+            // Calculate similarity
+            const similarity = cleanOCR.length > cleanKnown.length ? 
+              cleanKnown.length / cleanOCR.length : 
+              cleanOCR.length / cleanKnown.length;
+            
+            if (similarity > 0.6) { // 60% similarity threshold
+              console.log('🎯 Matched "' + ocrStoreName + '" to known store "' + known + '"');
+              return known;
+            }
+          }
+        }
+        
+        return null; // No match found
+      }
 
       async function startCamera() {
         try {
@@ -657,7 +710,7 @@
 
         function parseReceiptText(text) {
           // Handle single-line OCR by splitting on common delimiters
-          let normalizedText = text.replace(/\s+(TOTAL|SUBTOTAL|TAX|DATE|ITEM)/gi, '\n$1');
+          let normalizedText = text.replace(/\s+(TOTAL|SUBTOTAL|TAX|DATE|ITEM|AMOUNT|DESCRIPTION)/gi, '\n$1');
           const lines = normalizedText.split('\n').map(l => l.trim()).filter(Boolean);
           
           let companyStore = null; 
@@ -665,21 +718,21 @@
           let category = 'Other'; 
           let items = [];
 
-          // FIXED: Use word boundaries to prevent SUBTOTAL from matching
+          // IMPROVED: Better total detection for invoices without "TOTAL" keyword
           const totalPatterns = [
-            // Prioritize exact "TOTAL" matches (not SUBTOTAL)
+            // Standard patterns
             /\bTOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i,
             /\$\s*([\d,]+\.\d{2})\s*\bTOTAL\b/i,
             /\b(?:GRAND TOTAL|FINAL TOTAL)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
-            /\b(?:AMOUNT DUE|BALANCE DUE)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\b(?:AMOUNT DUE|BALANCE DUE|BALANCE)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
             /\b(?:YOU PAID|PAYMENT|CHARGED)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
-            // Last resort: match any "total" but exclude SUBTOTAL explicitly
+            // Invoice patterns (AMOUNT column)
+            /\bAMOUNT[:\s]*\$?\s*([\d,]+\.?\d{0,2})/i,
             /(?<!SUB)TOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i
           ];
 
-          // Search from bottom up for total (actual total is usually at bottom)
+          // Search from bottom up for total
           for (const line of [...lines].reverse()) {
-            // Skip lines with SUBTOTAL explicitly
             if (line.toUpperCase().includes('SUBTOTAL')) continue;
             
             if (total !== null) break;
@@ -687,7 +740,7 @@
               const match = line.match(pattern);
               if (match) {
                 const num = parseFloat(match[1].replace(/,/g, ''));
-                if (!isNaN(num) && num > 0 && num < 10000) {
+                if (!isNaN(num) && num > 0 && num < 100000) {
                   total = num;
                   console.log('✅ Found TOTAL:', num, 'from line:', line);
                   break;
@@ -696,29 +749,42 @@
             }
           }
           
-          // Fallback: find largest reasonable number (total is usually the largest)
+          // IMPROVED: Better fallback for invoices - look for amounts in AMOUNT column
           if (total === null) {
-              const numbers = text.match(/\$?\s*([\d,]+\.\d{2})/g);
+              // First try to find amounts near "AMOUNT" keyword
+              const amountMatch = text.match(/AMOUNT[\s\S]{0,50}\$?\s*([\d,]+\.?\d{0,2})/i);
+              if (amountMatch) {
+                const num = parseFloat(amountMatch[1].replace(/,/g, ''));
+                if (!isNaN(num) && num > 0 && num < 100000) {
+                  total = num;
+                  console.log('💰 Found amount from AMOUNT column:', total);
+                }
+              }
+          }
+          
+          // Last resort: find largest reasonable number
+          if (total === null) {
+              const numbers = text.match(/\$?\s*([\d,]+\.?\d{0,2})/g);
               if (numbers) {
                   const validNums = numbers
                     .map(n => parseFloat(n.replace(/[^\d.]/g, '')))
-                    .filter(n => n > 0.50 && n < 10000);
+                    .filter(n => n > 1 && n < 100000);
                   if (validNums.length > 0) {
                     total = Math.max(...validNums);
-                    console.log('⚠️ Using fallback TOTAL (largest number):', total);
+                    console.log('⚠️ Using fallback (largest number):', total);
                   }
               }
           }
 
-          // Enhanced date detection with normalization
+          // Enhanced date detection
           let date = null;
           const datePatterns = [
-            /\b(\d{4}-\d{2}-\d{2})\b/,                                    // YYYY-MM-DD
-            /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/,                            // MM/DD/YYYY
-            /\b(\d{1,2}\/\d{1,2}\/\d{2})\b/,                            // MM/DD/YY
-            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,                            // MM-DD-YYYY
-            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{1,2}[\s,]+\d{4})/i,  // Month DD, YYYY
-            /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b/i     // DD Month YYYY
+            /\b(\d{4}-\d{2}-\d{2})\b/,
+            /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/,
+            /\b(\d{1,2}\/\d{1,2}\/\d{2})\b/,
+            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,
+            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{1,2}[\s,]+\d{4})/i,
+            /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b/i
           ];
 
           for (const line of lines) {
@@ -726,9 +792,13 @@
               const match = line.match(pattern);
               if (match) {
                 date = match[1];
-                // Try to normalize to YYYY-MM-DD
                 try {
-                  const parsed = new Date(date);
+                  let parsed = new Date(date);
+                  // Handle 2-digit years
+                  if (date.match(/\/\d{2}$/)) {
+                    const year = parsed.getFullYear();
+                    if (year < 2000) parsed.setFullYear(year + 100); // Convert 1925 to 2025
+                  }
                   if (!isNaN(parsed.getTime())) {
                     date = parsed.toISOString().split('T')[0];
                   }
@@ -741,32 +811,50 @@
             if (date) break;
           }
           
-          // Better merchant name detection
-          for (const line of lines.slice(0, 10)) {  // Check first 10 lines
+          // IMPROVED: Better merchant name detection with fuzzy matching
+          for (const line of lines.slice(0, 10)) {
               const cleaned = line.replace(/[^\w\s'&.-]/g, '').trim();
-              // Skip lines that are mostly numbers, dates, or common receipt words
               if (cleaned.length > 3 && 
                   !line.match(/\d{1,2}[\/\-]\d{1,2}/) && 
                   !line.match(/^\d+$/) &&
-                  !line.toLowerCase().match(/^(total|subtotal|tax|receipt|invoice|thank you|visit|store|location)$/)) {
+                  !line.toLowerCase().match(/^(total|subtotal|tax|receipt|invoice|thank you|visit|store|location|qty|description|unit|amount|date|sold|to)$/)) {
                   companyStore = cleaned;
                   break;
               }
           }
+          
+          // Try to match against known stores
+          if (companyStore) {
+            const matched = matchKnownStore(companyStore);
+            if (matched) {
+              companyStore = matched; // Use the known store name
+            }
+          }
 
-          // Extract item descriptions
+          // IMPROVED: Extract only item descriptions (not prices)
           const descLines = lines.filter(l => {
             const lowerLine = l.toLowerCase();
             return !lowerLine.includes('total') &&
                    !lowerLine.includes('subtotal') &&
                    !lowerLine.includes('tax') &&
+                   !lowerLine.includes('amount') &&
+                   !lowerLine.includes('qty') &&
+                   !lowerLine.includes('unit') &&
+                   !lowerLine.includes('description') &&
                    (!date || !l.includes(date)) &&
                    l !== companyStore &&
-                   l.length > 3 &&
-                   !l.match(/^[\d\s\$\.,]+$/);  // Skip lines with only numbers/symbols
+                   l.length > 2 &&
+                   l.length < 50 &&  // Descriptions are usually short
+                   !l.match(/^[\d\s\$\.,]+$/);  // Skip lines with only numbers
           });
           
-          const descText = descLines.slice(0, 5).join(', ');
+          // Clean up descriptions - remove prices from the end
+          const cleanedDescs = descLines.map(line => {
+            // Remove trailing prices like "$10.00" or "10.00"
+            return line.replace(/\s*\$?\s*[\d,]+\.\d{2}\s*$/g, '').trim();
+          }).filter(d => d.length > 0);
+          
+          const descText = cleanedDescs.slice(0, 5).join(', ');
           category = smartCategorize(text + " " + (companyStore || ''));
 
           return { 
@@ -905,6 +993,7 @@
         }
 
       startCamera();
+      loadKnownStores(); // Load known stores on page load
     </script>
   </body>
 </html>
