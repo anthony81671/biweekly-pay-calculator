@@ -301,6 +301,11 @@
           >
             TAP TO CAPTURE
           </p>
+          <p style="margin: 10px 0; color: var(--text-muted); font-weight: 600;">OR</p>
+          <label for="fileUpload" class="btn btn-secondary" style="cursor: pointer; display: inline-block; text-align: center;">
+            📁 Upload from Gallery
+          </label>
+          <input type="file" id="fileUpload" accept="image/*" style="display: none;">
         </div>
       </div>
 
@@ -545,12 +550,49 @@
           });
           video.srcObject = stream;
         } catch (err) {
-          alert("Could not access camera: " + err.message);
+          alert("Could not access camera: " + err.message + "\n\nYou can use the 'Upload from Gallery' option instead.");
         }
       }
 
       function stopCamera() {
         if (stream) stream.getTracks().forEach((t) => t.stop());
+      }
+
+      // Image preprocessing for better OCR
+      function preprocessImage(imageData) {
+        const tempCanvas = document.createElement('canvas');
+        const img = new Image();
+        img.src = imageData;
+        
+        return new Promise((resolve) => {
+          img.onload = () => {
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const ctx = tempCanvas.getContext('2d');
+            
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+            
+            // Get image data
+            const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            
+            // Convert to grayscale and increase contrast
+            for (let i = 0; i < data.length; i += 4) {
+              const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+              // Increase contrast
+              const contrast = 1.5;
+              const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+              let value = factor * (avg - 128) + 128;
+              value = Math.max(0, Math.min(255, value));
+              
+              data[i] = data[i + 1] = data[i + 2] = value;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            resolve(tempCanvas.toDataURL('image/jpeg', 0.95));
+          };
+        });
       }
 
       captureBtn.onclick = () => {
@@ -563,6 +605,21 @@
         stopCamera();
       };
 
+      // File upload handler
+      document.getElementById('fileUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            capturedImg.src = event.target.result;
+            cameraCard.style.display = "none";
+            previewContainer.style.display = "block";
+            stopCamera();
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
       function retake() {
         cameraCard.style.display = "block";
         previewContainer.style.display = "none";
@@ -570,17 +627,30 @@
         startCamera();
       }
 
-        // Ported from backend
+        // Enhanced categorization with more keywords
         function smartCategorize(text) {
           const t = text.toLowerCase();
           
-          if (t.match(/pg&e|electric|water|waste|fee|gas|power|utilities|att|verizon|t-mobile|comcast|xfinity|internet/)) return 'Utilities';
-          if (t.match(/google|facebook|instagram|ads|marketing|print|flyer|promo/)) return 'Marketing';
-          if (t.match(/bank|fee|charge|interest|service/)) return 'Admin / Bank';
-          if (t.match(/attorney|law|cpa|accounting|tax|legal|subscription|software|adobe|intuit|quickbooks/)) return 'Professional';
-          if (t.match(/chevron|shell|mobil|texaco|gas station|fuel|parking|uber|lyft|flight|hotel|airbnb|travel/)) return 'Travel / Auto';
-          if (t.match(/cafe|coffee|starbucks|mcdonald|burger|grill|restaurant|pho|noodle|sushi|pizza|food|kitchen|bar|dining|lunch|dinner/)) return 'Business Meals';
-          if (t.match(/nail|beauty|salon|supply|cosmo|prof|sally|polish|gel|acrylic|store|market|wholesale/)) return 'Supply';
+          // Utilities - expanded
+          if (t.match(/pg&e|pge|electric|electricity|water|waste|sewer|trash|gas|power|utilities|att|verizon|t-mobile|tmobile|comcast|xfinity|internet|phone|cable|spectrum/)) return 'Utilities';
+          
+          // Marketing - expanded
+          if (t.match(/google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|social media|adwords/)) return 'Marketing';
+          
+          // Admin / Bank - expanded
+          if (t.match(/bank|banking|fee|charge|interest|service charge|wells fargo|chase|bofa|citibank|merchant|square|stripe|paypal/)) return 'Admin / Bank';
+          
+          // Professional - expanded
+          if (t.match(/attorney|lawyer|law|cpa|accounting|accountant|tax|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax/)) return 'Professional';
+          
+          // Travel / Auto - expanded
+          if (t.match(/chevron|shell|mobil|exxon|texaco|76|arco|gas station|fuel|gasoline|parking|uber|lyft|taxi|flight|airline|hotel|motel|airbnb|travel|rental car|hertz|enterprise/)) return 'Travel / Auto';
+          
+          // Business Meals - expanded
+          if (t.match(/cafe|coffee|starbucks|peet|dunkin|mcdonald|burger king|wendy|in-n-out|taco bell|chipotle|subway|kfc|pizza hut|domino|papa john|restaurant|pho|noodle|sushi|ramen|thai|chinese|vietnamese|korean|mexican|italian|bistro|grill|diner|bakery|bar|pub|dining|lunch|dinner|breakfast|eatery/)) return 'Business Meals';
+          
+          // Supply - expanded (nail salon specific)
+          if (t.match(/nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|sally beauty|ulta|sephora|polish|gel|acrylic|powder|monomer|uv|led|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|home depot|lowes|office depot|staples/)) return 'Supply';
           
           return 'Other';
         }
@@ -592,19 +662,23 @@
           let category = 'Other'; 
           let items = [];
 
+          // Enhanced total patterns with more variations
           const totalPatterns = [
-            /(?:total|amount|due|balance)[:\s]*\$?([\d,]+\.?\d{2})/i,
-            /\$?([\d,]+\.?\d{2})[^\n]*\s*(?:total|due)/i,
-            /^total\s*\$?([\d,]+\.?\d{2})/i
+            /(?:total|amount due|amount|balance due|balance)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\$\s*([\d,]+\.\d{2})\s*(?:total|due|balance)/i,
+            /(?:grand total|subtotal|final)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /^total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /(?:you paid|payment|charged)[:\s]*\$?\s*([\d,]+\.\d{2})/i
           ];
 
+          // Search from bottom up for total
           for (const line of [...lines].reverse()) {
             if (total !== null) break;
             for (const pattern of totalPatterns) {
               const match = line.match(pattern);
               if (match) {
                 const num = parseFloat(match[1].replace(/,/g, ''));
-                if (!isNaN(num)) {
+                if (!isNaN(num) && num > 0 && num < 10000) {
                   total = num;
                   break;
                 }
@@ -612,20 +686,26 @@
             }
           }
           
+          // Fallback: find largest reasonable number
           if (total === null) {
-              const numbers = text.match(/\d+\.\d{2}/g);
+              const numbers = text.match(/\$?\s*([\d,]+\.\d{2})/g);
               if (numbers) {
-                  const validNums = numbers.map(n => parseFloat(n)).filter(n => n < 10000); 
+                  const validNums = numbers
+                    .map(n => parseFloat(n.replace(/[^\d.]/g, '')))
+                    .filter(n => n > 0.50 && n < 10000);
                   if (validNums.length > 0) total = Math.max(...validNums);
               }
           }
 
+          // Enhanced date detection with normalization
           let date = null;
           const datePatterns = [
-            /\b(\d{4}-\d{2}-\d{2})\b/,
-            /\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/,
-            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,
-            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})/i,
+            /\b(\d{4}-\d{2}-\d{2})\b/,                                    // YYYY-MM-DD
+            /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/,                            // MM/DD/YYYY
+            /\b(\d{1,2}\/\d{1,2}\/\d{2})\b/,                            // MM/DD/YY
+            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,                            // MM-DD-YYYY
+            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{1,2}[\s,]+\d{4})/i,  // Month DD, YYYY
+            /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b/i     // DD Month YYYY
           ];
 
           for (const line of lines) {
@@ -633,25 +713,45 @@
               const match = line.match(pattern);
               if (match) {
                 date = match[1];
+                // Try to normalize to YYYY-MM-DD
+                try {
+                  const parsed = new Date(date);
+                  if (!isNaN(parsed.getTime())) {
+                    date = parsed.toISOString().split('T')[0];
+                  }
+                } catch (e) {
+                  // Keep original if parsing fails
+                }
                 break;
               }
             }
             if (date) break;
           }
           
-          for (const line of lines) {
-              if (line.length > 3 && !line.match(/\d{1,2}\/\d{1,2}/) && !line.includes('Total')) {
-                  companyStore = line.replace(/[^\w\s'&]/g, '').trim(); 
+          // Better merchant name detection
+          for (const line of lines.slice(0, 10)) {  // Check first 10 lines
+              const cleaned = line.replace(/[^\w\s'&.-]/g, '').trim();
+              // Skip lines that are mostly numbers, dates, or common receipt words
+              if (cleaned.length > 3 && 
+                  !line.match(/\d{1,2}[\/\-]\d{1,2}/) && 
+                  !line.match(/^\d+$/) &&
+                  !line.toLowerCase().match(/^(total|subtotal|tax|receipt|invoice|thank you|visit|store|location)$/)) {
+                  companyStore = cleaned;
                   break;
               }
           }
 
-          const descLines = lines.filter(l => 
-            (!total || !l.includes(total)) && 
-            (!date || !l.includes(date)) &&
-            l !== companyStore &&
-            l.length > 3
-          );
+          // Extract item descriptions
+          const descLines = lines.filter(l => {
+            const lowerLine = l.toLowerCase();
+            return !lowerLine.includes('total') &&
+                   !lowerLine.includes('subtotal') &&
+                   !lowerLine.includes('tax') &&
+                   (!date || !l.includes(date)) &&
+                   l !== companyStore &&
+                   l.length > 3 &&
+                   !l.match(/^[\d\s\$\.,]+$/);  // Skip lines with only numbers/symbols
+          });
           
           const descText = descLines.slice(0, 5).join(', ');
           category = smartCategorize(text + " " + (companyStore || ''));
@@ -669,12 +769,17 @@
         async function process() {
             loadingOverlay.style.display = 'flex';
             const statusText = loadingOverlay.querySelector('p');
-            statusText.textContent = "Loading AI Brain...";
+            statusText.textContent = "Enhancing image...";
 
             try {
+                // Preprocess image for better OCR
+                const processedImage = await preprocessImage(capturedImg.src);
+                
+                statusText.textContent = "Loading AI Brain...";
+                
                 // Client-side OCR using Tesseract.js
                 const { data: { text } } = await Tesseract.recognize(
-                  capturedImg.src,
+                  processedImage,
                   'eng',
                   {
                     logger: m => {
@@ -706,13 +811,18 @@
                      }
                 }
                 
-                document.getElementById('resItems').value = data.items || '';
+                // Show items with raw text for debugging
+                const itemsText = data.items || '';
+                const debugInfo = itemsText ? itemsText : `[Raw OCR: ${text.substring(0, 100)}...]`;
+                document.getElementById('resItems').value = debugInfo;
                 
                 resultCard.style.display = 'block';
                 previewContainer.style.display = 'none';
             } catch (err) {
-                alert('Analysis failed: ' + err.message);
+                alert('Analysis failed: ' + err.message + '\n\nTry taking a clearer photo or use manual entry below.');
                 console.error(err);
+                // Show preview again so user can retake
+                previewContainer.style.display = 'block';
             } finally {
                 loadingOverlay.style.display = 'none';
                 statusText.textContent = "AI is analyzing receipt...";
