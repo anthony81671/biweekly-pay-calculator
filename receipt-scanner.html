@@ -631,26 +631,26 @@
         function smartCategorize(text) {
           const t = text.toLowerCase();
           
-          // Utilities - expanded
-          if (t.match(/pg&e|pge|electric|electricity|water|waste|sewer|trash|gas|power|utilities|att|verizon|t-mobile|tmobile|comcast|xfinity|internet|phone|cable|spectrum/)) return 'Utilities';
+          // Utilities - with word boundaries
+          if (t.match(/\b(pg&e|pge|electric|electricity|water|waste|sewer|trash|gas|power|utilities|att|verizon|t-mobile|tmobile|comcast|xfinity|internet|phone|cable|spectrum)\b/)) return 'Utilities';
           
-          // Marketing - expanded
-          if (t.match(/google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|social media|adwords/)) return 'Marketing';
+          // Marketing - with word boundaries
+          if (t.match(/\b(google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|adwords)\b|social media/)) return 'Marketing';
           
-          // Admin / Bank - expanded
-          if (t.match(/bank|banking|fee|charge|interest|service charge|wells fargo|chase|bofa|citibank|merchant|square|stripe|paypal/)) return 'Admin / Bank';
+          // Admin / Bank - with word boundaries (FIXED: prevents 'chase' matching 'purchase')
+          if (t.match(/\b(bank|banking|fee|charge|interest|merchant|square|stripe|paypal|wells fargo|bofa|citibank|chase bank)\b|service charge/)) return 'Admin / Bank';
           
-          // Professional - expanded (REMOVED 'tax' keyword to prevent false positives)
-          if (t.match(/attorney|lawyer|law firm|cpa|accounting firm|accountant|tax service|tax preparation|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax/)) return 'Professional';
+          // Professional - with word boundaries
+          if (t.match(/\b(attorney|lawyer|cpa|accountant|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax)\b|law firm|accounting firm|tax service|tax preparation/)) return 'Professional';
           
-          // Travel / Auto - expanded
-          if (t.match(/chevron|shell|mobil|exxon|texaco|76|arco|gas station|fuel|gasoline|parking|uber|lyft|taxi|flight|airline|hotel|motel|airbnb|travel|rental car|hertz|enterprise/)) return 'Travel / Auto';
+          // Travel / Auto - with word boundaries
+          if (t.match(/\b(chevron|shell|mobil|exxon|texaco|arco|gasoline|parking|uber|lyft|taxi|airline|hotel|motel|airbnb|travel|hertz|enterprise)\b|gas station|fuel|flight|rental car/)) return 'Travel / Auto';
           
-          // Business Meals - expanded
-          if (t.match(/cafe|coffee|starbucks|peet|dunkin|mcdonald|burger king|wendy|in-n-out|taco bell|chipotle|subway|kfc|pizza hut|domino|papa john|restaurant|pho|noodle|sushi|ramen|thai|chinese|vietnamese|korean|mexican|italian|bistro|grill|diner|bakery|bar|pub|dining|lunch|dinner|breakfast|eatery/)) return 'Business Meals';
+          // Business Meals - with word boundaries
+          if (t.match(/\b(cafe|coffee|starbucks|peet|dunkin|mcdonald|subway|kfc|domino|restaurant|pho|noodle|sushi|ramen|thai|chinese|vietnamese|korean|mexican|italian|bistro|grill|diner|bakery|bar|pub|dining|lunch|dinner|breakfast|eatery)\b|burger king|wendy|in-n-out|taco bell|chipotle|pizza hut|papa john/)) return 'Business Meals';
           
-          // Supply - expanded (nail salon specific)
-          if (t.match(/nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|sally beauty|ulta|sephora|polish|gel|acrylic|powder|monomer|uv|led|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|home depot|lowes|office depot|staples/)) return 'Supply';
+          // Supply - with word boundaries (nail salon specific)
+          if (t.match(/\b(nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|ulta|sephora|polish|gel|acrylic|powder|monomer|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|staples)\b|sally beauty|uv|led|home depot|lowes|office depot/)) return 'Supply';
           
           return 'Other';
         }
