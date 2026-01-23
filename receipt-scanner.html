@@ -640,8 +640,8 @@
           // Admin / Bank - expanded
           if (t.match(/bank|banking|fee|charge|interest|service charge|wells fargo|chase|bofa|citibank|merchant|square|stripe|paypal/)) return 'Admin / Bank';
           
-          // Professional - expanded
-          if (t.match(/attorney|lawyer|law|cpa|accounting|accountant|tax|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax/)) return 'Professional';
+          // Professional - expanded (REMOVED 'tax' keyword to prevent false positives)
+          if (t.match(/attorney|lawyer|law firm|cpa|accounting firm|accountant|tax service|tax preparation|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax/)) return 'Professional';
           
           // Travel / Auto - expanded
           if (t.match(/chevron|shell|mobil|exxon|texaco|76|arco|gas station|fuel|gasoline|parking|uber|lyft|taxi|flight|airline|hotel|motel|airbnb|travel|rental car|hertz|enterprise/)) return 'Travel / Auto';
@@ -656,23 +656,32 @@
         }
 
         function parseReceiptText(text) {
-          const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+          // Handle single-line OCR by splitting on common delimiters
+          let normalizedText = text.replace(/\s+(TOTAL|SUBTOTAL|TAX|DATE|ITEM)/gi, '\n$1');
+          const lines = normalizedText.split('\n').map(l => l.trim()).filter(Boolean);
+          
           let companyStore = null; 
           let total = null;
           let category = 'Other'; 
           let items = [];
 
-          // Enhanced total patterns with more variations
+          // FIXED: Use word boundaries to prevent SUBTOTAL from matching
           const totalPatterns = [
-            /(?:total|amount due|amount|balance due|balance)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
-            /\$\s*([\d,]+\.\d{2})\s*(?:total|due|balance)/i,
-            /(?:grand total|subtotal|final)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
-            /^total[:\s]*\$?\s*([\d,]+\.\d{2})/i,
-            /(?:you paid|payment|charged)[:\s]*\$?\s*([\d,]+\.\d{2})/i
+            // Prioritize exact "TOTAL" matches (not SUBTOTAL)
+            /\bTOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\$\s*([\d,]+\.\d{2})\s*\bTOTAL\b/i,
+            /\b(?:GRAND TOTAL|FINAL TOTAL)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\b(?:AMOUNT DUE|BALANCE DUE)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\b(?:YOU PAID|PAYMENT|CHARGED)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            // Last resort: match any "total" but exclude SUBTOTAL explicitly
+            /(?<!SUB)TOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i
           ];
 
-          // Search from bottom up for total
+          // Search from bottom up for total (actual total is usually at bottom)
           for (const line of [...lines].reverse()) {
+            // Skip lines with SUBTOTAL explicitly
+            if (line.toUpperCase().includes('SUBTOTAL')) continue;
+            
             if (total !== null) break;
             for (const pattern of totalPatterns) {
               const match = line.match(pattern);
@@ -680,20 +689,24 @@
                 const num = parseFloat(match[1].replace(/,/g, ''));
                 if (!isNaN(num) && num > 0 && num < 10000) {
                   total = num;
+                  console.log('✅ Found TOTAL:', num, 'from line:', line);
                   break;
                 }
               }
             }
           }
           
-          // Fallback: find largest reasonable number
+          // Fallback: find largest reasonable number (total is usually the largest)
           if (total === null) {
               const numbers = text.match(/\$?\s*([\d,]+\.\d{2})/g);
               if (numbers) {
                   const validNums = numbers
                     .map(n => parseFloat(n.replace(/[^\d.]/g, '')))
                     .filter(n => n > 0.50 && n < 10000);
-                  if (validNums.length > 0) total = Math.max(...validNums);
+                  if (validNums.length > 0) {
+                    total = Math.max(...validNums);
+                    console.log('⚠️ Using fallback TOTAL (largest number):', total);
+                  }
               }
           }
 
