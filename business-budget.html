@@ -1751,24 +1751,37 @@
                 }
             });
             
-            // Combine all operating expense categories (everything except Employee Costs and Income Sources)
-            const operatingExpenseCategories = [
-                ...categories['Utilities'],
-                ...categories['Marketing'],
-                ...categories['Admin / Bank'],
-                ...categories['Professional'],
-                ...categories['Travel / Auto'],
-                ...categories['Supply'],
-                ...categories['Other']
-            ];
-            
-            // Prepare data for the report template
+            // Prepare data for the report template - organized by category
             const reportData = {
                 employeeCosts: categories['Employee Costs'].map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
-                operatingExpenses: operatingExpenseCategories.map(name => ({
+                utilities: categories['Utilities'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                marketing: categories['Marketing'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                adminBank: categories['Admin / Bank'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                professional: categories['Professional'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                travelAuto: categories['Travel / Auto'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                supply: categories['Supply'].map(name => ({
+                    name,
+                    months: months.map(m => m.breakdown[name] || 0)
+                })),
+                other: categories['Other'].map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),

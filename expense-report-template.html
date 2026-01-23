@@ -319,20 +319,32 @@
                 });
             }
             
-            // Operating Expenses Section
-            html += `<tr class="section-header green"><td colspan="14">OPERATING EXPENSES</td></tr>`;
-            if (data.operatingExpenses) {
-                data.operatingExpenses.forEach(item => {
-                    let rowTotal = 0;
-                    html += `<tr class="item-row"><td>${item.name}</td>`;
-                    item.months.forEach((val, idx) => {
-                        rowTotal += val || 0;
-                        expenseMonthTotals[idx] += val || 0;
-                        html += `<td>${formatCurrency(val)}</td>`;
+            // Operating Expenses - Show each category separately
+            const operatingCategories = [
+                { name: 'UTILITIES', items: data.utilities || [] },
+                { name: 'MARKETING', items: data.marketing || [] },
+                { name: 'ADMIN / BANK', items: data.adminBank || [] },
+                { name: 'PROFESSIONAL', items: data.professional || [] },
+                { name: 'TRAVEL / AUTO', items: data.travelAuto || [] },
+                { name: 'SUPPLY', items: data.supply || [] },
+                { name: 'OTHER', items: data.other || [] }
+            ];
+            
+            operatingCategories.forEach(category => {
+                if (category.items.length > 0) {
+                    html += `<tr class="section-header green"><td colspan="14">${category.name}</td></tr>`;
+                    category.items.forEach(item => {
+                        let rowTotal = 0;
+                        html += `<tr class="item-row"><td>${item.name}</td>`;
+                        item.months.forEach((val, idx) => {
+                            rowTotal += val || 0;
+                            expenseMonthTotals[idx] += val || 0;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        });
+                        html += `<td>${formatCurrency(rowTotal)}</td></tr>`;
                     });
-                    html += `<td>${formatCurrency(rowTotal)}</td></tr>`;
-                });
-            }
+                }
+            });
             
             // Monthly Expense Total Row
             let expenseGrandTotal = expenseMonthTotals.reduce((a, b) => a + b, 0);
