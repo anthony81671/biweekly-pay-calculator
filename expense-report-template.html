@@ -101,6 +101,12 @@
             border-collapse: collapse;
             font-size: 9px;
         }
+
+        .company-breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+        }
         
         thead tr {
             background: linear-gradient(135deg, #2c5282, #1a365d);
@@ -260,11 +266,19 @@
 
             /* Make all table headers repeat on each printed page */
             thead {
-                display: table-header-group;
+                display: table-header-group !important;
+            }
+
+            .company-breakdown-table thead {
+                display: table-header-group !important;
+            }
+
+            .company-breakdown-table tbody {
+                display: table-row-group;
             }
 
             .detail-table thead {
-                display: table-header-group;
+                display: table-header-group !important;
             }
         }
         
@@ -501,7 +515,7 @@
                         <div class="orange-shape"></div>
                     </div>
                 </div>
-                <table>
+                <table class="company-breakdown-table">
                     <thead>
                         <tr>
             `;
