@@ -362,21 +362,16 @@
               <option value="Water & Waste">Water & Waste</option>
               <option value="Internet & Phone">Internet & Phone</option>
             </optgroup>
-            <!-- Marketing -->
-            <optgroup label="Marketing">
+            <!-- Marketing & Professional -->
+            <optgroup label="Marketing & Professional">
               <option value="Advertising">Advertising</option>
               <option value="Subscriptions">Subscriptions</option>
+              <option value="Accounting & Legal">Accounting & Legal</option>
             </optgroup>
             <!-- Admin / Bank -->
             <optgroup label="Admin / Bank">
               <option value="Merchant Fees">Merchant Fees</option>
               <option value="Bank Service Charges">Bank Service Charges</option>
-            </optgroup>
-             <!-- Professional -->
-            <optgroup label="Professional">
-              <option value="Accounting & Legal">Accounting & Legal</option>
-              <option value="Dues & Subscriptions">Dues & Subscriptions</option>
-              <option value="Intuit Quickbooks">Intuit Quickbooks</option>
             </optgroup>
              <!-- Travel / Auto -->
             <optgroup label="Travel / Auto">
@@ -470,18 +465,14 @@
                   <option value="Water & Waste">Water & Waste</option>
                   <option value="Internet & Phone">Internet & Phone</option>
                 </optgroup>
-                <optgroup label="Marketing">
+                <optgroup label="Marketing & Professional">
                   <option value="Advertising">Advertising</option>
                   <option value="Subscriptions">Subscriptions</option>
+                  <option value="Accounting & Legal">Accounting & Legal</option>
                 </optgroup>
                 <optgroup label="Admin / Bank">
                   <option value="Merchant Fees">Merchant Fees</option>
                   <option value="Bank Service Charges">Bank Service Charges</option>
-                </optgroup>
-                <optgroup label="Professional">
-                  <option value="Accounting & Legal">Accounting & Legal</option>
-                  <option value="Dues & Subscriptions">Dues & Subscriptions</option>
-                  <option value="Intuit Quickbooks">Intuit Quickbooks</option>
                 </optgroup>
                 <optgroup label="Travel / Auto">
                   <option value="Business Meals">Business Meals</option>
@@ -722,14 +713,13 @@
           // Utilities - with word boundaries
           if (t.match(/\b(pg&e|pge|electric|electricity|water|waste|sewer|trash|gas|power|utilities|att|verizon|t-mobile|tmobile|comcast|xfinity|internet|phone|cable|spectrum)\b/)) return 'Utilities';
           
-          // Marketing - with word boundaries
-          if (t.match(/\b(google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|adwords)\b|social media/)) return 'Marketing';
-          
+          // Marketing & Professional subcategories - with word boundaries
+          if (t.match(/\b(google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|adwords)\b|social media/)) return 'Advertising';
+          if (t.match(/\b(attorney|lawyer|cpa|accountant|legal)\b|law firm|accounting firm|tax service|tax preparation/)) return 'Accounting & Legal';
+          if (t.match(/\b(subscription|software|adobe|microsoft|intuit|quickbooks|turbotax)\b/)) return 'Subscriptions';
+
           // Admin / Bank - with word boundaries (FIXED: prevents 'chase' matching 'purchase')
           if (t.match(/\b(bank|banking|fee|charge|interest|merchant|square|stripe|paypal|wells fargo|bofa|citibank|chase bank)\b|service charge/)) return 'Admin / Bank';
-          
-          // Professional - with word boundaries
-          if (t.match(/\b(attorney|lawyer|cpa|accountant|legal|subscription|software|adobe|microsoft|intuit|quickbooks|turbotax)\b|law firm|accounting firm|tax service|tax preparation/)) return 'Professional';
           
           // Travel / Auto - with word boundaries
           if (t.match(/\b(chevron|shell|mobil|exxon|texaco|arco|gasoline|parking|uber|lyft|taxi|airline|hotel|motel|airbnb|travel|hertz|enterprise)\b|gas station|fuel|flight|rental car/)) return 'Travel / Auto';
