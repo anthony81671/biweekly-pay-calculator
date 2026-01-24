@@ -361,6 +361,7 @@
               <option value="Electricity & Gas">Electricity & Gas</option>
               <option value="Water & Waste">Water & Waste</option>
               <option value="Internet & Phone">Internet & Phone</option>
+              <option value="Supplies">Supplies</option>
             </optgroup>
             <!-- Marketing & Professional -->
             <optgroup label="Marketing & Professional">
@@ -381,7 +382,6 @@
              <!-- Employee Costs -->
             <optgroup label="Employee Costs">
               <option value="Wages">Wages</option>
-              <option value="Supply">Supply</option>
               <option value="Other">Other</option>
             </optgroup>
           </select>
@@ -464,6 +464,7 @@
                   <option value="Electricity & Gas">Electricity & Gas</option>
                   <option value="Water & Waste">Water & Waste</option>
                   <option value="Internet & Phone">Internet & Phone</option>
+                  <option value="Supplies" selected>Supplies</option>
                 </optgroup>
                 <optgroup label="Marketing & Professional">
                   <option value="Advertising">Advertising</option>
@@ -480,7 +481,6 @@
                 </optgroup>
                 <optgroup label="Employee Costs">
                   <option value="Wages">Wages</option>
-                  <option value="Supply" selected>Supply</option>
                   <option value="Other">Other</option>
                 </optgroup>
             </select>
@@ -727,8 +727,8 @@
           // Business Meals - with word boundaries
           if (t.match(/\b(cafe|coffee|starbucks|peet|dunkin|mcdonald|subway|kfc|domino|restaurant|pho|noodle|sushi|ramen|thai|chinese|vietnamese|korean|mexican|italian|bistro|grill|diner|bakery|bar|pub|dining|lunch|dinner|breakfast|eatery)\b|burger king|wendy|in-n-out|taco bell|chipotle|pizza hut|papa john/)) return 'Business Meals';
           
-          // Supply - with word boundaries (nail salon specific)
-          if (t.match(/\b(nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|ulta|sephora|polish|gel|acrylic|powder|monomer|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|staples)\b|sally beauty|uv|led|home depot|lowes|office depot/)) return 'Supply';
+          // Supplies - with word boundaries (nail salon specific)
+          if (t.match(/\b(nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|ulta|sephora|polish|gel|acrylic|powder|monomer|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|staples)\b|sally beauty|uv|led|home depot|lowes|office depot/)) return 'Supplies';
           
           return 'Other';
         }
@@ -1025,7 +1025,7 @@
                 document.getElementById('manMerchant').value = '';
                 document.getElementById('manTotal').value = '';
                 document.getElementById('manItems').value = '';
-                document.getElementById('manCategory').value = 'Supply';
+                document.getElementById('manCategory').value = 'Supplies';
             });
         }
 

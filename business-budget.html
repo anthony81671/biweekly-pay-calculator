@@ -1014,11 +1014,10 @@
     <script>
         const categories = {
             'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
-            'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments'],
+            'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments', 'Supplies'],
             'Marketing & Professional': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
             'Admin / Bank': ['Merchant Fees', 'Bank Service Charges'],
             'Travel / Auto': ['Business Meals', 'Auto / Mileage'],
-            'Supplies': ['Supply'],
             'Income Sources': ['Venmo', 'Zelle', 'Credit Card Deposit']
         };
 
@@ -1101,6 +1100,9 @@
                         }
                         if (mappedSubcategory === 'Intuit Quickbooks' || mappedSubcategory === 'Dues & Subscriptions') {
                             mappedSubcategory = 'Accounting & Legal';
+                        }
+                        if (mappedSubcategory === 'Supply') {
+                            mappedSubcategory = 'Supplies';
                         }
 
                         return {
@@ -1701,8 +1703,7 @@
                 { name: 'Occupancy', colorClass: 'section-row green', totalId: 'util', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
                 { name: 'Marketing & Professional', colorClass: 'section-row green', totalId: 'mktprof', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
                 { name: 'Admin / Bank', colorClass: 'section-row green', totalId: 'admin', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
-                { name: 'Travel / Auto', colorClass: 'section-row green', totalId: 'travel', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
-                { name: 'Supplies', colorClass: 'section-row green', totalId: 'supply', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' }
+                { name: 'Travel / Auto', colorClass: 'section-row green', totalId: 'travel', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' }
             ];
 
             expenseSections.forEach(section => {
@@ -1915,19 +1916,6 @@
                             .reduce((sum, e) => sum + e.amount, 0);
                     })
                 })),
-                supplies: categories['Supplies'].map(name => ({
-                    name,
-                    months: Array(12).fill(0).map((_, monthIdx) => {
-                        return expenses
-                            .filter(e => {
-                                const d = new Date(e.date + 'T12:00:00');
-                                return d.getFullYear() === selectedYear &&
-                                       d.getMonth() === monthIdx &&
-                                       e.subcategory === name;
-                            })
-                            .reduce((sum, e) => sum + e.amount, 0);
-                    })
-                })),
                 incomeSources: categories['Income Sources'].map(name => ({
                     name,
                     months: Array(12).fill(0).map((_, monthIdx) => {
@@ -1974,12 +1962,12 @@
 
                 setSyncStatus('synced', 'Generating export...');
 
-                // Store data in sessionStorage to avoid URL length limits
-                sessionStorage.setItem('exportData', JSON.stringify(data));
-                sessionStorage.setItem('exportReceipts', JSON.stringify(receiptsByCategory));
-                sessionStorage.setItem('exportYear', selectedYear);
-                sessionStorage.setItem('exportMonth', exportMonth);
-                sessionStorage.setItem('isMonthlyReport', isMonthlyReport);
+                // Store data in localStorage to share with new window
+                localStorage.setItem('exportData', JSON.stringify(data));
+                localStorage.setItem('exportReceipts', JSON.stringify(receiptsByCategory));
+                localStorage.setItem('exportYear', selectedYear);
+                localStorage.setItem('exportMonth', exportMonth);
+                localStorage.setItem('isMonthlyReport', isMonthlyReport);
 
                 // Open the report in a new window
                 const monthParam = isMonthlyReport ? `&month=${exportMonth}` : '';
