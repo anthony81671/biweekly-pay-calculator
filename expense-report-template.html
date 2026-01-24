@@ -35,8 +35,8 @@
         .header {
             display: flex;
             align-items: center;
-            margin-bottom: 4px;
-            padding-bottom: 3px;
+            margin-bottom: 0;
+            padding-bottom: 0;
             border-bottom: 2px solid #2c5282;
             position: relative;
         }
@@ -215,7 +215,7 @@
         }
 
         .detailed-breakdown {
-            margin-top: 2px;
+            margin-top: 0;
         }
 
         .category-breakdown {
@@ -483,20 +483,20 @@
             let html = '<div style="page-break-before: always;">';
 
             html += `
-                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 2px; border-bottom: 1px solid #2c5282;">
-                    <div class="header-logo" style="gap: 4px;">
-                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 20px; height: 20px;" onerror="this.style.display='none'">
+                <div class="header">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
-                            <h1 style="font-size: 8px; margin: 0; line-height: 1;">K&T Nails and Spa</h1>
-                            <h2 style="font-size: 9px; margin: 0; line-height: 1.2;">DETAILED COMPANY BREAKDOWN</h2>
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>DETAILED COMPANY BREAKDOWN</h2>
                         </div>
                     </div>
-                    <div class="decorative-element" style="width: 45px; height: 25px;">
-                        <div class="blue-shape" style="width: 30px; height: 22px;"></div>
-                        <div class="orange-shape" style="width: 15px; height: 15px; right: 22px; top: 6px;"></div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
                     </div>
                 </div>
-                <table style="margin-top: 2px;">
+                <table>
                     <thead>
                         <tr>
             `;
@@ -824,17 +824,17 @@
 
             // Add header for transaction details section
             html += `
-                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 2px; border-bottom: 1px solid #2c5282;">
-                    <div class="header-logo" style="gap: 4px;">
-                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 20px; height: 20px;" onerror="this.style.display='none'">
+                <div class="header">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
-                            <h1 style="font-size: 8px; margin: 0; line-height: 1;">K&T Nails and Spa</h1>
-                            <h2 style="font-size: 9px; margin: 0; line-height: 1.2;">TRANSACTION DETAILS BY CATEGORY</h2>
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>TRANSACTION DETAILS BY CATEGORY</h2>
                         </div>
                     </div>
-                    <div class="decorative-element" style="width: 45px; height: 25px;">
-                        <div class="blue-shape" style="width: 30px; height: 22px;"></div>
-                        <div class="orange-shape" style="width: 15px; height: 15px; right: 22px; top: 6px;"></div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
                     </div>
                 </div>
             `;
