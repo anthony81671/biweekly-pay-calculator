@@ -324,13 +324,12 @@
             
             // Operating Expenses - Show each category separately
             const operatingCategories = [
-                { name: 'UTILITIES', items: data.utilities || [] },
+                { name: 'OCCUPANCY', items: data.occupancy || [] },
                 { name: 'MARKETING', items: data.marketing || [] },
                 { name: 'ADMIN / BANK', items: data.adminBank || [] },
                 { name: 'PROFESSIONAL', items: data.professional || [] },
                 { name: 'TRAVEL / AUTO', items: data.travelAuto || [] },
-                { name: 'SUPPLY', items: data.supply || [] },
-                { name: 'OTHER', items: data.other || [] }
+                { name: 'SUPPLIES', items: data.supplies || [] }
             ];
             
             operatingCategories.forEach(category => {

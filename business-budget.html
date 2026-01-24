@@ -672,13 +672,18 @@
         }
 
         .section-row.blue {
-            background: #eff6ff !important;
-            color: #1e40af;
+            background: #2c5282 !important;
+            color: white;
         }
 
         .section-row.purple {
-            background: #f3e8ff !important;
-            color: #6b21a8;
+            background: #553c9a !important;
+            color: white;
+        }
+
+        .section-row.green {
+            background: #276749 !important;
+            color: white;
         }
 
         .data-cell {
@@ -993,19 +998,18 @@
 
     <script>
         const categories = {
-            'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'],
-            'Utilities': ['Electricity & Gas', 'Water & Waste', 'Internet & Phone'],
-            'Marketing': ['Advertising', 'Software / Subscriptions'],
+            'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
+            'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone'],
+            'Marketing & Professional': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
             'Admin / Bank': ['Merchant Fees', 'Bank Service Charges'],
-            'Professional': ['Accounting & Legal', 'Dues & Subscriptions', 'Intuit Quickbooks'],
             'Travel / Auto': ['Business Meals', 'Auto / Mileage'],
-            'Supply': ['Supply'],
-            'Other': ['Other'],
+            'Supplies': ['Supply'],
             'Income Sources': ['Venmo', 'Zelle', 'Credit Card Deposit']
         };
 
         const fmt = (num) => '$' + (num || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         let hasUnsavedChanges = false;
+        let expenses = [];
 
         // Supabase Init
         const SB_URL = "https://ijcxddulqsxwfaqfzmhx.supabase.co";
@@ -1059,15 +1063,40 @@
                     // Convert receipts to expense format for the existing aggregation logic
                     expenses = data.map(d => {
                         const transactionType = d.transactiontype || d.transactionType;
+
+                        // Map old subcategory names to new ones
+                        let mappedSubcategory = d.subcategory || transactionType;
+                        if (mappedSubcategory === 'Salon Lease' || mappedSubcategory === 'Salon Lease / Rent') {
+                            mappedSubcategory = 'Rent';
+                        }
+                        if (mappedSubcategory === 'Business Meal') {
+                            mappedSubcategory = 'Business Meals';
+                        }
+                        if (mappedSubcategory === 'Business License' || mappedSubcategory === 'Tax') {
+                            mappedSubcategory = 'Business License & Tax';
+                        }
+                        if (mappedSubcategory === 'Software / Subscriptions') {
+                            mappedSubcategory = 'Subscriptions';
+                        }
+                        if (mappedSubcategory === 'Federal Taxes (941/943)') {
+                            mappedSubcategory = 'Federal Taxes (941/943/944)';
+                        }
+                        if (mappedSubcategory === 'Federal Unemployment (940)') {
+                            mappedSubcategory = 'Payroll Tax';
+                        }
+                        if (mappedSubcategory === 'Intuit Quickbooks' || mappedSubcategory === 'Dues & Subscriptions') {
+                            mappedSubcategory = 'Accounting & Legal';
+                        }
+
                         return {
                             id: d.id,
                             date: d.date,
-                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'].includes(transactionType)
+                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'].includes(transactionType)
                                       ? 'Employee Costs'
-                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(transactionType) 
-                                          ? 'Income Sources' 
-                                          : getCategoryForSubcategory(transactionType)),
-                            subcategory: d.subcategory || transactionType,
+                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(transactionType)
+                                          ? 'Income Sources'
+                                          : getCategoryForSubcategory(mappedSubcategory)),
+                            subcategory: mappedSubcategory,
                             amount: parseFloat(d.total),
                             description: `${d.companystore || d.companyStore} - ${d.items || 'Receipt'}`
                         };
@@ -1076,11 +1105,11 @@
                     console.log('Processed expenses from receipts:', expenses);
                     
                     // Show user what was loaded
-                    const businessMealCount = expenses.filter(e => e.subcategory === 'Business Meal').length;
-                    const totalAmount = expenses.filter(e => e.subcategory === 'Business Meal')
+                    const businessMealCount = expenses.filter(e => e.subcategory === 'Business Meals').length;
+                    const totalAmount = expenses.filter(e => e.subcategory === 'Business Meals')
                         .reduce((sum, e) => sum + e.amount, 0);
-                    
-                    console.log(`Found ${businessMealCount} Business Meal entries totaling $${totalAmount.toFixed(2)}`);
+
+                    console.log(`Found ${businessMealCount} Business Meals entries totaling $${totalAmount.toFixed(2)}`);
                     
                     saveExpenses(false); // Update local cache
                     updateReport();
@@ -1505,7 +1534,7 @@
                 { name: 'CNA Insurance', keywords: ['cna insurance', 'workers comp', 'state fund'], sub: 'CNA Insurance/Workers Comp' },
                 { name: 'IRS (Federal Tax)', keywords: ['internal revenue service', 'irs.gov', 'form 941', 'form 944', 'form 940'], sub: 'Federal Taxes (941/943/944)' },
                 { name: 'EDD (State Tax)', keywords: ['employment development department', 'edd.ca.gov', 'sui/ett', 'pit/sdi'], sub: 'CA SUI/ETT' },
-                { name: 'Salon Lease', keywords: ['lease', 'rent', 'property management'], sub: 'Salon Lease' },
+                { name: 'Rent', keywords: ['lease', 'rent', 'property management'], sub: 'Rent' },
                 { name: 'Chase Merchant', keywords: ['chase merchant', 'merchant fee', 'service charge', 'interchange'], sub: 'Chase Merchant Charges & Fee' }
             ];
 
@@ -1636,17 +1665,16 @@
 
             const createInputCell = (sub, monthIdx, customColor = null) => {
                 const val = months[monthIdx].breakdown[sub] || 0;
-                const displayVal = val > 0 ? val.toFixed(2) : '';
-                const colorStyle = customColor ? `style="color: ${customColor}; font-weight: 700;"` : '';
+                const displayVal = val > 0 ? fmt(val) : '';
+                const colorStyle = customColor ? `color: ${customColor}; font-weight: 700;` : '';
                 return `
                     <td class="data-cell">
-                        <input type="number" step="0.01" value="${displayVal}"
+                        <input type="text" value="${displayVal}"
                                class="grid-input"
                                id="input-${monthIdx}-${sub.replace(/\s+/g, '-')}"
-                               ${colorStyle}
+                               style="cursor: not-allowed; background: #f8fafc; ${colorStyle}"
                                readonly
                                title="This is a report view. Add receipts to update values."
-                               style="cursor: not-allowed; background: #f8fafc;"
                                placeholder="—">
                     </td>
                 `;
@@ -1654,12 +1682,12 @@
 
             // Dynamic Expense Sections (excluding Income Sources to be handled separately)
             const expenseSections = [
-                { name: 'Employee Costs', colorClass: 'blue', totalId: 'emp', headerColor: '#1e40af', bg: 'rgba(239, 246, 255, 0.5)' },
-                { name: 'Utilities', colorClass: 'purple', totalId: 'util', headerColor: '#7e22ce', bg: 'rgba(250, 245, 255, 0.5)' },
-                { name: 'Marketing', colorClass: 'purple', totalId: 'mkt', headerColor: '#db2777', bg: 'rgba(252, 231, 243, 0.5)' }, // Pinkish
-                { name: 'Admin / Bank', colorClass: 'section-row', totalId: 'admin', headerColor: '#475569', bg: 'rgba(241, 245, 249, 0.5)' }, // Gray
-                { name: 'Professional', colorClass: 'section-row', totalId: 'prof', headerColor: '#0f766e', bg: 'rgba(204, 251, 241, 0.5)' }, // Teal
-                { name: 'Travel / Auto', colorClass: 'section-row', totalId: 'travel', headerColor: '#ea580c', bg: 'rgba(255, 237, 213, 0.5)' } // Orange
+                { name: 'Employee Costs', colorClass: 'blue', totalId: 'emp', headerColor: '#2c5282', bg: 'rgba(239, 246, 255, 0.5)' },
+                { name: 'Occupancy', colorClass: 'section-row green', totalId: 'util', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
+                { name: 'Marketing & Professional', colorClass: 'section-row green', totalId: 'mktprof', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
+                { name: 'Admin / Bank', colorClass: 'section-row green', totalId: 'admin', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
+                { name: 'Travel / Auto', colorClass: 'section-row green', totalId: 'travel', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' },
+                { name: 'Supplies', colorClass: 'section-row green', totalId: 'supply', headerColor: '#276749', bg: 'rgba(220, 252, 231, 0.5)' }
             ];
 
             expenseSections.forEach(section => {
@@ -1667,7 +1695,7 @@
                 if (!subcats) return;
 
                 // Section Header
-                tbody.innerHTML += `<tr class="section-row ${section.colorClass}" style="color: ${section.headerColor}; border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;"><td colspan="15">${section.name.toUpperCase()}</td></tr>`;
+                tbody.innerHTML += `<tr class="section-row ${section.colorClass}" style="border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;"><td colspan="15">${section.name.toUpperCase()}</td></tr>`;
                 
                 let sectionAllMonthsTotal = Array(12).fill(0);
                 let sectionGrandTotal = 0;
@@ -1689,9 +1717,9 @@
 
                 // Section Total Row
                tbody.innerHTML += `<tr class="section-total-row">
-                    <td style="font-weight: 700; color: ${section.headerColor}; padding-left: 20px;">Total ${section.name}</td>
-                    ${sectionAllMonthsTotal.map((val, i) => `<td class="data-cell" style="text-align: right; padding: 4px 8px; font-weight: 700; color: ${section.headerColor}; background: ${section.bg};">${fmt(val)}</td>`).join('')}
-                    <td style="font-weight: 800; color: ${section.headerColor}; background: ${section.bg};">${fmt(sectionGrandTotal)}</td>
+                    <td style="font-weight: 700; padding-left: 20px;">Total ${section.name}</td>
+                    ${sectionAllMonthsTotal.map((val, i) => `<td class="data-cell" style="text-align: right; padding: 4px 8px; font-weight: 700; background: ${section.bg};">${fmt(val)}</td>`).join('')}
+                    <td style="font-weight: 800; background: ${section.bg};">${fmt(sectionGrandTotal)}</td>
                 </tr>`;
             });
 
@@ -1701,6 +1729,9 @@
                 ${months.map((m, i) => `<td class="data-cell" id="total-month-${i}" style="text-align: right; padding: 4px 8px; font-weight: 800; color: #dc2626;">${fmt(m.total)}</td>`).join('')}
                 <td id="grand-total-year" style="font-weight: 900; background: #fee2e2; color: #991b1b;">${fmt(yTotal)}</td>
             </tr>`;
+
+            // Income Sources Section Header
+            tbody.innerHTML += `<tr class="section-row purple" style="border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0;"><td colspan="15">INCOME SOURCES</td></tr>`;
 
             // NEW Income Breakdown Section (Venmo, Zelle, CC)
             categories['Income Sources'].forEach(sub => {
@@ -1757,7 +1788,7 @@
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
-                utilities: categories['Utilities'].map(name => ({
+                occupancy: categories['Occupancy'].map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
@@ -1777,11 +1808,7 @@
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),
-                supply: categories['Supply'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                other: categories['Other'].map(name => ({
+                supplies: categories['Supplies'].map(name => ({
                     name,
                     months: months.map(m => m.breakdown[name] || 0)
                 })),

@@ -244,8 +244,11 @@
                 <div class="form-group">
                     <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Type</label>
                     <select id="mType" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit;">
-                        <!-- Utilities -->
-                        <optgroup label="Utilities">
+                        <!-- Occupancy -->
+                        <optgroup label="Occupancy">
+                            <option value="Rent">Rent</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Business License & Tax">Business License & Tax</option>
                             <option value="Electricity & Gas">Electricity & Gas</option>
                             <option value="Water & Waste">Water & Waste</option>
                             <option value="Internet & Phone">Internet & Phone</option>
@@ -253,7 +256,7 @@
                         <!-- Marketing -->
                         <optgroup label="Marketing">
                             <option value="Advertising">Advertising</option>
-                            <option value="Software / Subscriptions">Software / Subscriptions</option>
+                            <option value="Subscriptions">Subscriptions</option>
                         </optgroup>
                         <!-- Admin / Bank -->
                         <optgroup label="Admin / Bank">
@@ -361,6 +364,48 @@
                 </div>
             </div>
         </div>
+
+        <!-- Excel Preview Modal -->
+        <div id="excelPreviewModal" onclick="if(event.target === this) closeExcelPreview()" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+            <div style="background: white; border-radius: 24px; padding: 32px; max-width: 90vw; max-height: 90vh; overflow: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); animation: modalSlideIn 0.2s ease-out;">
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                        <div style="width: 64px; height: 64px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-excel" style="font-size: 32px; color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Preview Excel Import</h3>
+                            <p style="color: var(--text-muted); font-size: 14px;">Review the data before saving to cloud</p>
+                        </div>
+                    </div>
+                    <div id="excelPreviewStats" style="background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 16px;"></div>
+                </div>
+                <div style="overflow-x: auto; margin-bottom: 24px; max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px;">
+                    <table id="excelPreviewTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
+                            <tr>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">#</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Date</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Store/Company</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Type</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Items</th>
+                                <th style="padding: 12px; text-align: right; border-bottom: 2px solid var(--border); font-weight: 700;">Total</th>
+                                <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--border); font-weight: 700;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="excelPreviewBody"></tbody>
+                    </table>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button onclick="closeExcelPreview()" class="btn" style="flex: 0; background: #f1f5f9; color: var(--text-main); padding: 12px 24px;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button onclick="confirmExcelImport()" class="btn btn-primary" style="flex: 0; background: #10b981; padding: 12px 24px;">
+                        <i class="fas fa-cloud-upload-alt"></i> Confirm & Save to Cloud
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -370,6 +415,7 @@
 
         let editingState = { type: null, index: null, id: null };
         let deleteState = { type: null, id: null };
+        let excelPreviewData = [];
 
         const fmt = (num) => new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -591,73 +637,218 @@
 
                 if (rows.length === 0) {
                     alert('No data found in Excel file');
+                    input.value = '';
                     return;
                 }
 
                 console.log('Parsed Excel data:', rows);
 
+                // Load existing receipts from database to check for duplicates
+                let existingReceipts = [];
+                try {
+                    const { data: receipts, error } = await supabaseClient
+                        .from('receipts')
+                        .select('date, companystore, transactiontype, total');
+                    if (!error && receipts) {
+                        existingReceipts = receipts;
+                    }
+                } catch (err) {
+                    console.error('Failed to load existing receipts:', err);
+                }
+
+                // Parse and validate all rows
+                excelPreviewData = [];
+                let validCount = 0;
+                let errorCount = 0;
+                let duplicateCount = 0;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+
+                    // Map Excel columns (flexible column names)
+                    const date = row['Date'] || row['date'] || row['DATE'] || row['date '] || row[' date'];
+                    const type = row['transactiontype'] || row['Transaction Type'] || row['Type'] || row['type'] || row['TransactionType'];
+                    const store = row['companystore'] || row['Company/Store'] || row['Store'] || row['Company'] || row['store'];
+                    const items = row['Items'] || row['items'] || row['Description'] || row['description'] || '';
+                    const total = parseFloat(row['Total'] || row['total'] || row['Amount'] || row['amount'] || 0);
+
+                    console.log(`Row ${i + 1}:`, { date, type, store, items, total, rawRow: row });
+
+                    let formattedDate = null;
+                    let error = null;
+                    let isDuplicate = false;
+
+                    // Validate required fields with specific error messages
+                    const missingFields = [];
+                    if (!date && date !== 0) missingFields.push('Date');
+                    if (!type) missingFields.push('Type');
+                    if (!store) missingFields.push('Store');
+                    if (isNaN(total) || total === 0) missingFields.push('Total');
+
+                    if (missingFields.length > 0) {
+                        error = 'Missing: ' + missingFields.join(', ');
+                        errorCount++;
+                    } else {
+                        // Format date to YYYY-MM-DD
+                        try {
+                            if (typeof date === 'number') {
+                                // Excel serial date
+                                const excelDate = XLSX.SSF.parse_date_code(date);
+                                formattedDate = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+                            } else {
+                                // String date - try to parse
+                                const d = new Date(date);
+                                if (isNaN(d.getTime())) throw new Error('Invalid date');
+                                formattedDate = d.toISOString().split('T')[0];
+                            }
+
+                            // Check for duplicates
+                            const duplicate = existingReceipts.find(r =>
+                                r.date === formattedDate &&
+                                r.companystore?.toLowerCase() === store.toLowerCase() &&
+                                r.transactiontype?.toLowerCase() === type.toLowerCase() &&
+                                Math.abs(parseFloat(r.total) - total) < 0.01
+                            );
+
+                            if (duplicate) {
+                                error = 'Duplicate (already exists)';
+                                isDuplicate = true;
+                                duplicateCount++;
+                            } else {
+                                validCount++;
+                            }
+                        } catch (e) {
+                            error = 'Invalid date format';
+                            errorCount++;
+                        }
+                    }
+
+                    excelPreviewData.push({
+                        rowNumber: i + 2,
+                        date: formattedDate,
+                        store: store || '',
+                        type: type || '',
+                        items: items || '',
+                        total: total || 0,
+                        error: error,
+                        valid: !error && !isDuplicate,
+                        isDuplicate: isDuplicate
+                    });
+                }
+
+                // Show preview modal
+                showExcelPreview(validCount, errorCount, duplicateCount);
+
+                // Clear file input
+                input.value = '';
+            } catch (err) {
+                console.error('Excel upload error:', err);
+                alert('Failed to process Excel file: ' + err.message);
+                input.value = '';
+            }
+        }
+
+        function showExcelPreview(validCount, errorCount, duplicateCount) {
+            const modal = document.getElementById('excelPreviewModal');
+            const stats = document.getElementById('excelPreviewStats');
+            const tbody = document.getElementById('excelPreviewBody');
+
+            // Update stats
+            stats.innerHTML = `
+                <div style="display: flex; gap: 24px; align-items: center;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Total Rows</div>
+                        <div style="font-size: 24px; font-weight: 800; color: var(--text-main);">${excelPreviewData.length}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase; margin-bottom: 4px;">New</div>
+                        <div style="font-size: 24px; font-weight: 800; color: #10b981;">${validCount}</div>
+                    </div>
+                    ${duplicateCount > 0 ? `
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #f59e0b; text-transform: uppercase; margin-bottom: 4px;">Duplicates</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #f59e0b;">${duplicateCount}</div>
+                        </div>
+                    ` : ''}
+                    ${errorCount > 0 ? `
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #dc2626; text-transform: uppercase; margin-bottom: 4px;">Errors</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #dc2626;">${errorCount}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Populate table
+            tbody.innerHTML = excelPreviewData.map(row => `
+                <tr style="border-bottom: 1px solid var(--border); ${row.valid ? '' : 'background: #fef2f2;'}">
+                    <td style="padding: 12px; font-weight: 600; color: var(--text-muted);">${row.rowNumber}</td>
+                    <td style="padding: 12px;">${row.date || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px;">${row.store || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px;">${row.type || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${row.items || '—'}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 700;">$${row.total.toFixed(2)}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        ${row.valid
+                            ? '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Valid</span>'
+                            : `<span style="color: #dc2626;"><i class="fas fa-exclamation-circle"></i> ${row.error}</span>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        function closeExcelPreview() {
+            document.getElementById('excelPreviewModal').style.display = 'none';
+            excelPreviewData = [];
+        }
+
+        async function confirmExcelImport() {
+            const validRows = excelPreviewData.filter(row => row.valid);
+
+            if (validRows.length === 0) {
+                alert('No valid rows to import');
+                return;
+            }
+
+            const confirmBtn = event.target;
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
                 let successCount = 0;
                 let errorCount = 0;
                 const errors = [];
 
-                for (let i = 0; i < rows.length; i++) {
-                    const row = rows[i];
-                    
-                    // Map Excel columns (flexible column names)
-                    const date = row['Date'] || row['date'] || row['DATE'];
-                    const type = row['Transaction Type'] || row['Type'] || row['type'] || row['TransactionType'];
-                    const store = row['Company/Store'] || row['Store'] || row['Company'] || row['store'];
-                    const items = row['Items'] || row['items'] || row['Description'] || row['description'] || '';
-                    const total = parseFloat(row['Total'] || row['total'] || row['Amount'] || row['amount'] || 0);
-
-                    // Validate required fields
-                    if (!date || !type || !store || !total) {
-                        errors.push(`Row ${i + 2}: Missing required fields (Date, Type, Store, or Total)`);
-                        errorCount++;
-                        continue;
-                    }
-
-                    // Format date to YYYY-MM-DD
-                    let formattedDate;
-                    try {
-                        if (typeof date === 'number') {
-                            // Excel serial date
-                            const excelDate = XLSX.SSF.parse_date_code(date);
-                            formattedDate = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
-                        } else {
-                            // String date - try to parse
-                            const d = new Date(date);
-                            if (isNaN(d.getTime())) throw new Error('Invalid date');
-                            formattedDate = d.toISOString().split('T')[0];
-                        }
-                    } catch (e) {
-                        errors.push(`Row ${i + 2}: Invalid date format`);
-                        errorCount++;
-                        continue;
-                    }
-
-                    // Insert to database
+                for (const row of validRows) {
                     try {
                         const { error } = await supabaseClient
                             .from('receipts')
                             .insert([{
-                                date: formattedDate,
-                                companystore: store,
-                                total: total,
-                                transactiontype: type,
-                                items: items
+                                date: row.date,
+                                companystore: row.store,
+                                total: row.total,
+                                transactiontype: row.type,
+                                items: row.items
                             }]);
 
                         if (error) throw error;
                         successCount++;
                     } catch (err) {
-                        errors.push(`Row ${i + 2}: ${err.message}`);
+                        errors.push(`Row ${row.rowNumber}: ${err.message}`);
                         errorCount++;
                     }
                 }
 
+                // Close modal
+                closeExcelPreview();
+
                 // Show results
-                let message = `Import complete!\n✅ ${successCount} receipts imported successfully`;
+                let message = `Import complete!\n✅ ${successCount} receipts saved to cloud`;
                 if (errorCount > 0) {
                     message += `\n❌ ${errorCount} rows failed`;
                     if (errors.length > 0) {
@@ -669,12 +860,12 @@
 
                 // Reload receipts
                 await loadReceipts();
-
-                // Clear file input
-                input.value = '';
             } catch (err) {
-                console.error('Excel upload error:', err);
-                alert('Failed to process Excel file: ' + err.message);
+                console.error('Import error:', err);
+                alert('Failed to save to cloud: ' + err.message);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
             }
         }
 
@@ -915,7 +1106,7 @@
                             date: expense.date,
                             amount: expense.total,
                             subcategory: expense.transactionType,
-                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'].includes(expense.transactionType) 
+                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'].includes(expense.transactionType) 
                                       ? 'Employee Costs' 
                                       : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(expense.transactionType) ? 'Income Sources' : 'Operating Expenses'),
                             description: `${expense.companyStore} - ${expense.items || 'Synced Receipt'}`
@@ -1016,7 +1207,7 @@
                         amount: r.total,
                         subcategory: r.transactionType || r.transactiontype,
                         // Determine Category based on Subcategory
-                        category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Federal Unemployment (940)'].includes(r.transactionType || r.transactiontype) 
+                        category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'].includes(r.transactionType || r.transactiontype) 
                                   ? 'Employee Costs' 
                                   : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(r.transactionType || r.transactiontype) ? 'Income Sources' : 'Operating Expenses'),
                         description: `${r.companyStore || r.companystore} - ${r.items || 'Synced Receipt'}`
