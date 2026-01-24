@@ -790,6 +790,23 @@
             const container = document.getElementById('detailedBreakdown');
             let html = '<div class="page-break"></div>';
 
+            // Add header for transaction details section
+            html += `
+                <div class="header" style="margin-top: 20px;">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                        <div class="header-text">
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>TRANSACTION DETAILS BY CATEGORY</h2>
+                        </div>
+                    </div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
+                    </div>
+                </div>
+            `;
+
             // Sort categories alphabetically
             const sortedCategories = Object.keys(receipts).sort();
 
@@ -851,7 +868,8 @@
                 `;
             });
 
-            container.innerHTML = html;
+            // Append to existing content instead of replacing
+            container.innerHTML += html;
         }
         
         function formatDate(dateStr) {
@@ -881,6 +899,9 @@
                 // Render Page 2+: Detailed company breakdown (if receipts available)
                 if (receipts) {
                     renderCompanyDetailReport(receipts);
+
+                    // Render Page 3+: Individual transaction details by category
+                    renderDetailedBreakdown(receipts);
                 }
             } catch (e) {
                 console.error('Error parsing data:', e);
