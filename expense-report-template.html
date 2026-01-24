@@ -280,6 +280,17 @@
             .detail-table thead {
                 display: table-header-group !important;
             }
+
+            /* Prevent table rows from breaking across pages */
+            tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            tbody tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
         }
         
         .detail-table {
