@@ -256,7 +256,6 @@
         /* Detailed Breakdown Styles */
         .page-break {
             page-break-before: always;
-            margin-top: 20px;
         }
 
         .portrait-section {
@@ -268,7 +267,7 @@
         }
 
         .category-breakdown {
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             page-break-inside: avoid;
         }
 
@@ -284,7 +283,7 @@
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin: 0 0 8px 0;
+            margin: 0 0 4px 0;
         }
 
         .category-header-repeat {
@@ -316,7 +315,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 9px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .detail-table thead th {
@@ -521,11 +520,10 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="page-break portrait-section"></div>';
+            let html = '<div class="portrait-section" style="page-break-before: always;">';
 
             html += `
-                <div class="portrait-section">
-                <div class="header" style="margin-top: 20px; margin-bottom: 15px;">
+                <div class="header" style="margin-top: 10px; margin-bottom: 10px;">
                     <div class="header-logo">
                         <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
@@ -538,7 +536,7 @@
                         <div class="orange-shape"></div>
                     </div>
                 </div>
-                <table style="margin-top: 10px; font-size: 7px;">
+                <table style="margin-top: 5px; font-size: 7px;">
                     <thead>
                         <tr>
             `;
@@ -862,13 +860,11 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="page-break portrait-section"></div>';
-
-            html += '<div class="portrait-section">';
+            let html = '<div class="portrait-section" style="page-break-before: always;">';
 
             // Add header for transaction details section
             html += `
-                <div class="header" style="margin-top: 20px; margin-bottom: 15px;">
+                <div class="header" style="margin-top: 10px; margin-bottom: 8px;">
                     <div class="header-logo">
                         <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
