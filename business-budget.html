@@ -881,6 +881,21 @@
                         <button class="report-btn" onclick="forceRefreshFromCloud()" style="background: #06b6d4; color: white;">
                             🔄 Refresh Receipts
                         </button>
+                        <select id="exportMonthSelect" class="year-select" style="margin-right: 0.5rem;">
+                            <option value="all">Full Year</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
                         <button class="report-btn btn-export" onclick="exportReport()">📥 Export</button>
                     </div>
                 </div>
@@ -999,7 +1014,7 @@
     <script>
         const categories = {
             'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
-            'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone'],
+            'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments'],
             'Marketing & Professional': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
             'Admin / Bank': ['Merchant Fees', 'Bank Service Charges'],
             'Travel / Auto': ['Business Meals', 'Auto / Mileage'],
@@ -1769,56 +1784,6 @@
             // Deprecated - always showing unified view
         }
 
-        function exportReport() {
-            const selectedYear = parseInt(document.getElementById('yearSelect').value);
-            
-            // Aggregate data by month and category
-            const months = Array.from({ length: 12 }, () => ({ breakdown: {} }));
-            expenses.forEach(e => {
-                const eDate = new Date(e.date + 'T12:00:00');
-                if (eDate.getFullYear() === selectedYear) {
-                    const eMonth = eDate.getMonth();
-                    months[eMonth].breakdown[e.subcategory] = (months[eMonth].breakdown[e.subcategory] || 0) + e.amount;
-                }
-            });
-            
-            // Prepare data for the report template - organized by category
-            const reportData = {
-                employeeCosts: categories['Employee Costs'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                occupancy: categories['Occupancy'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                marketingProfessional: categories['Marketing & Professional'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                adminBank: categories['Admin / Bank'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                travelAuto: categories['Travel / Auto'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                supplies: categories['Supplies'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                })),
-                incomeSources: categories['Income Sources'].map(name => ({
-                    name,
-                    months: months.map(m => m.breakdown[name] || 0)
-                }))
-            };
-            
-            // Open the report template in a new window with data
-            const dataParam = encodeURIComponent(JSON.stringify(reportData));
-            window.open(`expense-report-template.html?year=${selectedYear}&data=${dataParam}`, '_blank');
-        }
-
         function saveExpenses(markAsUnsaved = true) {
             try {
                 localStorage.setItem('expenses', JSON.stringify(expenses));
@@ -1876,6 +1841,154 @@
             msg.textContent = '✓ All data reset locally!';
             msg.classList.add('show');
             setTimeout(() => msg.classList.remove('show'), 3000);
+        }
+
+        async function exportReport() {
+            const selectedYear = parseInt(document.getElementById('yearSelect').value);
+            const exportMonth = document.getElementById('exportMonthSelect').value;
+            const isMonthlyReport = exportMonth !== 'all';
+
+            // Prepare summary data
+            const data = {
+                employeeCosts: categories['Employee Costs'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                occupancy: categories['Occupancy'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                marketingProfessional: categories['Marketing & Professional'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                adminBank: categories['Admin / Bank'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                travelAuto: categories['Travel / Auto'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                supplies: categories['Supplies'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                })),
+                incomeSources: categories['Income Sources'].map(name => ({
+                    name,
+                    months: Array(12).fill(0).map((_, monthIdx) => {
+                        return expenses
+                            .filter(e => {
+                                const d = new Date(e.date + 'T12:00:00');
+                                return d.getFullYear() === selectedYear &&
+                                       d.getMonth() === monthIdx &&
+                                       e.subcategory === name;
+                            })
+                            .reduce((sum, e) => sum + e.amount, 0);
+                    })
+                }))
+            };
+
+            // Fetch detailed receipts from Supabase
+            setSyncStatus('syncing', 'Fetching receipt details...');
+            try {
+                const { data: receipts, error } = await supabaseClient
+                    .from('receipts')
+                    .select('*')
+                    .gte('date', `${selectedYear}-01-01`)
+                    .lte('date', `${selectedYear}-12-31`)
+                    .order('date', { ascending: false });
+
+                if (error) throw error;
+
+                // Group receipts by category
+                const receiptsByCategory = {};
+                if (receipts && receipts.length > 0) {
+                    receipts.forEach(receipt => {
+                        const category = receipt.subcategory || receipt.transactiontype || 'Other';
+                        if (!receiptsByCategory[category]) {
+                            receiptsByCategory[category] = [];
+                        }
+                        receiptsByCategory[category].push({
+                            date: receipt.date,
+                            company: receipt.companystore || 'N/A',
+                            description: receipt.items || receipt.description || 'N/A',
+                            amount: parseFloat(receipt.total) || 0
+                        });
+                    });
+                }
+
+                setSyncStatus('synced', 'Generating export...');
+
+                // Store data in sessionStorage to avoid URL length limits
+                sessionStorage.setItem('exportData', JSON.stringify(data));
+                sessionStorage.setItem('exportReceipts', JSON.stringify(receiptsByCategory));
+                sessionStorage.setItem('exportYear', selectedYear);
+                sessionStorage.setItem('exportMonth', exportMonth);
+                sessionStorage.setItem('isMonthlyReport', isMonthlyReport);
+
+                // Open the report in a new window
+                const monthParam = isMonthlyReport ? `&month=${exportMonth}` : '';
+                window.open(`expense-report-template.html?year=${selectedYear}${monthParam}`, '_blank');
+            } catch (err) {
+                console.error('Export error:', err);
+                alert('Failed to fetch receipt details: ' + err.message);
+                setSyncStatus('error', 'Export failed');
+            }
         }
 
         // Initialize on load

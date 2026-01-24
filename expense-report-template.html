@@ -6,8 +6,19 @@
     <title>K&T Nails Operation Expenses Report</title>
     <style>
         @page {
-            size: 11in 8.5in;
+            size: landscape;
             margin: 0.3in 0.25in;
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+            }
+
+            body {
+                width: 100%;
+                height: 100%;
+            }
         }
         
         * {
@@ -110,7 +121,7 @@
         
         thead th:first-child {
             text-align: left;
-            width: 160px;
+            min-width: 160px;
             padding-left: 8px;
         }
         
@@ -202,6 +213,88 @@
             background: linear-gradient(135deg, #1a365d, #0d1b2a);
         }
         
+        /* Detailed Breakdown Styles */
+        .page-break {
+            page-break-before: always;
+            margin-top: 20px;
+        }
+        
+        .detailed-breakdown {
+            margin-top: 30px;
+        }
+        
+        .category-breakdown {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .category-breakdown h3 {
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+            color: white;
+            padding: 6px 10px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 8px 0;
+        }
+        
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .detail-table thead th {
+            background: #f1f5f9;
+            color: #1a365d;
+            padding: 4px 6px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 8px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .detail-table thead th:last-child {
+            text-align: right;
+        }
+        
+        .detail-table tbody td {
+            padding: 3px 6px;
+            border: 1px solid #e2e8f0;
+            font-size: 8px;
+        }
+        
+        .detail-table tbody td:first-child {
+            width: 80px;
+        }
+        
+        .detail-table tbody td:nth-child(2) {
+            width: 120px;
+            font-weight: 500;
+        }
+        
+        .detail-table tbody td:last-child {
+            text-align: right;
+            font-weight: 600;
+            width: 80px;
+        }
+        
+        .detail-table tbody tr:nth-child(odd) {
+            background: #f8fafc;
+        }
+        
+        .detail-subtotal {
+            background: #e0f2fe !important;
+            font-weight: 800 !important;
+        }
+        
+        .detail-subtotal td {
+            color: #0c4a6e !important;
+            border-top: 2px solid #2c5282 !important;
+        }
+        
         @media print {
             /* Hide the ZoomInfo widget and other browser extensions */
             #zoom-info-widget, 
@@ -238,6 +331,14 @@
             
             table {
                 width: 100% !important;
+                page-break-inside: avoid;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .category-breakdown {
                 page-break-inside: avoid;
             }
         }
@@ -282,43 +383,290 @@
             <!-- Data will be populated by JavaScript -->
         </tbody>
     </table>
+    
+    <!-- Detailed Breakdown Section -->
+    <div id="detailedBreakdown" class="detailed-breakdown"></div>
     </div>
     
     <button class="print-button" onclick="window.print()">🖨️ Print / Save as PDF</button>
     
     <script>
-        // Get data from URL parameters
+        // Get data from URL parameters OR sessionStorage
         const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('data');
-        const yearParam = urlParams.get('year');
-        
-        if (yearParam) {
-            document.getElementById('reportTitle').textContent = `${yearParam} OPERATION EXPENSES`;
+        let dataParam = urlParams.get('data');
+        let receiptsParam = urlParams.get('receipts');
+        let yearParam = urlParams.get('year');
+        let monthParam = urlParams.get('month');
+        let isMonthlyReport = false;
+
+        // If no data in URL, try sessionStorage
+        if (!dataParam && sessionStorage.getItem('exportData')) {
+            dataParam = sessionStorage.getItem('exportData');
+            receiptsParam = sessionStorage.getItem('exportReceipts');
+            yearParam = sessionStorage.getItem('exportYear');
+            monthParam = sessionStorage.getItem('exportMonth');
+            isMonthlyReport = sessionStorage.getItem('isMonthlyReport') === 'true';
+
+            // Clear sessionStorage after reading
+            sessionStorage.removeItem('exportData');
+            sessionStorage.removeItem('exportReceipts');
+            sessionStorage.removeItem('exportYear');
+            sessionStorage.removeItem('exportMonth');
+            sessionStorage.removeItem('isMonthlyReport');
+        } else if (dataParam) {
+            // Data came from URL, decode it
+            dataParam = decodeURIComponent(dataParam);
+            if (receiptsParam) {
+                receiptsParam = decodeURIComponent(receiptsParam);
+            }
+            isMonthlyReport = monthParam !== null && monthParam !== 'all';
         }
-        
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+
+        // Global variable for selected month (used by renderReport and renderDetailedBreakdown)
+        const selectedMonthIdx = isMonthlyReport && monthParam !== null ? parseInt(monthParam) : null;
+
+        if (yearParam) {
+            if (isMonthlyReport && monthParam !== null) {
+                const monthName = monthNames[parseInt(monthParam)];
+                document.getElementById('reportTitle').textContent = `${monthName} ${yearParam} - MONTHLY REPORT`;
+            } else {
+                document.getElementById('reportTitle').textContent = `${yearParam} OPERATION EXPENSES`;
+            }
+        }
+
         function formatCurrency(amount) {
             if (!amount || amount === 0) return '$0.00';
             return '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
+
+        function renderCompanyDetailReport(receipts) {
+            if (!receipts || Object.keys(receipts).length === 0) {
+                return; // No detailed data, skip
+            }
+
+            const container = document.getElementById('detailedBreakdown');
+            let html = '<div class="page-break"></div>';
+
+            html += `
+                <div class="header" style="margin-top: 20px;">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                        <div class="header-text">
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>DETAILED COMPANY BREAKDOWN</h2>
+                        </div>
+                    </div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
+                    </div>
+                </div>
+                <table style="margin-top: 10px;">
+                    <thead>
+                        <tr>
+            `;
+
+            // Determine which months to show
+            const monthsToShow = isMonthlyReport && selectedMonthIdx !== null
+                ? [selectedMonthIdx]
+                : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+            // Build header
+            html += '<th></th>';
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                html += `<th>${monthNames[selectedMonthIdx]}</th>`;
+            } else {
+                monthNames.forEach(month => {
+                    html += `<th>${month}</th>`;
+                });
+                html += '<th>Total</th>';
+            }
+            html += '</tr></thead><tbody>';
+
+            // Build company-month matrix for each subcategory
+            const subcategoryData = {};
+
+            Object.keys(receipts).forEach(subcategory => {
+                receipts[subcategory].forEach(item => {
+                    const itemDate = new Date(item.date + 'T12:00:00');
+                    const month = itemDate.getMonth();
+                    const company = item.company || 'N/A';
+                    const amount = item.amount || 0;
+
+                    if (!subcategoryData[subcategory]) {
+                        subcategoryData[subcategory] = {};
+                    }
+                    if (!subcategoryData[subcategory][company]) {
+                        subcategoryData[subcategory][company] = Array(12).fill(0);
+                    }
+                    subcategoryData[subcategory][company][month] += amount;
+                });
+            });
+
+            // Category groupings
+            const categoryGroups = {
+                'EMPLOYEE COSTS': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
+                'OCCUPANCY': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments'],
+                'MARKETING & PROFESSIONAL': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
+                'ADMIN / BANK': ['Merchant Fees', 'Bank Service Charges'],
+                'TRAVEL / AUTO': ['Business Meals', 'Auto / Mileage', 'Auto/Mileage'],
+                'SUPPLIES': ['Supply'],
+                'INCOME SOURCES': ['Venmo', 'Zelle', 'Credit Card Deposit']
+            };
+
+            const monthlyExpenseTotals = Array(12).fill(0);
+            const monthlyIncomeTotals = Array(12).fill(0);
+            const colSpan = isMonthlyReport && selectedMonthIdx !== null ? 2 : 14;
+
+            // Render each category
+            Object.entries(categoryGroups).forEach(([categoryName, subcategories]) => {
+                let hasData = subcategories.some(sub => subcategoryData[sub]);
+                if (!hasData) return;
+
+                const isIncome = categoryName === 'INCOME SOURCES';
+                const categoryColor = categoryName === 'EMPLOYEE COSTS' ? '#2c5282' : (isIncome ? '#553c9a' : '#276749');
+
+                html += `<tr class="section-header" style="background: ${categoryColor} !important;"><td colspan="${colSpan}">${categoryName}</td></tr>`;
+
+                subcategories.forEach(subcategory => {
+                    const companies = subcategoryData[subcategory];
+                    if (!companies) return;
+
+                    // Subcategory header
+                    html += `<tr style="background: #f8fafc; font-weight: 700; font-size: 0.75rem;">
+                        <td style="padding-left: 10px;">${subcategory}</td>
+                        <td colspan="${colSpan - 1}"></td>
+                    </tr>`;
+
+                    // Companies under this subcategory
+                    Object.entries(companies).forEach(([company, monthlyAmounts]) => {
+                        html += `<tr class="item-row"><td style="padding-left: 30px; font-size: 0.875rem;">${company}</td>`;
+
+                        // Show only selected months
+                        monthsToShow.forEach(monthIdx => {
+                            const amount = monthlyAmounts[monthIdx];
+                            if (isIncome) {
+                                monthlyIncomeTotals[monthIdx] += amount;
+                            } else {
+                                monthlyExpenseTotals[monthIdx] += amount;
+                            }
+                            html += `<td style="text-align: right;">${amount > 0 ? formatCurrency(amount) : '—'}</td>`;
+                        });
+
+                        // Show total only if showing all months
+                        if (!isMonthlyReport || selectedMonthIdx === null) {
+                            const total = monthlyAmounts.reduce((a, b) => a + b, 0);
+                            html += `<td style="text-align: right; font-weight: 700;">${formatCurrency(total)}</td>`;
+                        }
+
+                        html += `</tr>`;
+                    });
+                });
+            });
+
+            // Expense Total Row
+            html += `<tr style="background: #fee2e2 !important;">
+                <td style="font-weight: 800; color: #991b1b;">TOTAL EXPENSES</td>`;
+            const expenseGrandTotal = monthlyExpenseTotals.reduce((a, b) => a + b, 0);
+            monthsToShow.forEach(monthIdx => {
+                html += `<td style="text-align: right; font-weight: 700; color: #991b1b;">${formatCurrency(monthlyExpenseTotals[monthIdx])}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                html += `<td style="text-align: right; font-weight: 800; color: #991b1b; background: #fecaca;">${formatCurrency(expenseGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
+            // Income Total Row
+            html += `<tr style="background: #dcfce7 !important;">
+                <td style="font-weight: 800; color: #14532d;">TOTAL INCOME</td>`;
+            const incomeGrandTotal = monthlyIncomeTotals.reduce((a, b) => a + b, 0);
+            monthsToShow.forEach(monthIdx => {
+                html += `<td style="text-align: right; font-weight: 700; color: #14532d;">${formatCurrency(monthlyIncomeTotals[monthIdx])}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                html += `<td style="text-align: right; font-weight: 800; color: #14532d; background: #bbf7d0;">${formatCurrency(incomeGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
+            // Net Profit Row
+            html += `<tr style="background: #f1f5f9 !important;">
+                <td style="font-weight: 900;">NET PROFIT / LOSS</td>`;
+            monthsToShow.forEach(monthIdx => {
+                const monthProfit = monthlyIncomeTotals[monthIdx] - monthlyExpenseTotals[monthIdx];
+                const color = monthProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="text-align: right; font-weight: 700; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                const netProfit = incomeGrandTotal - expenseGrandTotal;
+                const profitColor = netProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="text-align: right; font-weight: 900; color: ${profitColor}; background: #e2e8f0;">${formatCurrency(netProfit)}</td>`;
+            }
+            html += `</tr>`;
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
         
         function renderReport(data) {
             const tbody = document.getElementById('reportBody');
+            const thead = document.querySelector('thead tr');
             let html = '';
+
+            // Update table header for monthly reports
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                thead.innerHTML = `
+                    <th></th>
+                    <th>${monthNames[selectedMonthIdx]}</th>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <th></th>
+                    <th>January</th>
+                    <th>February</th>
+                    <th>March</th>
+                    <th>April</th>
+                    <th>May</th>
+                    <th>June</th>
+                    <th>July</th>
+                    <th>August</th>
+                    <th>September</th>
+                    <th>October</th>
+                    <th>November</th>
+                    <th>December</th>
+                    <th>Total</th>
+                `;
+            }
+
             const expenseMonthTotals = Array(12).fill(0);
             const incomeMonthTotals = Array(12).fill(0);
             
             // Employee Costs Section
-            html += `<tr class="section-header"><td colspan="14">EMPLOYEE COSTS</td></tr>`;
+            const colSpan = isMonthlyReport ? 2 : 14;
+            html += `<tr class="section-header"><td colspan="${colSpan}">EMPLOYEE COSTS</td></tr>`;
             if (data.employeeCosts) {
                 data.employeeCosts.forEach(item => {
                     let rowTotal = 0;
                     html += `<tr class="item-row"><td>${item.name}</td>`;
-                    item.months.forEach((val, idx) => {
-                        rowTotal += val || 0;
-                        expenseMonthTotals[idx] += val || 0;
+
+                    if (isMonthlyReport && selectedMonthIdx !== null) {
+                        // Show only selected month
+                        const val = item.months[selectedMonthIdx] || 0;
+                        rowTotal = val;
+                        expenseMonthTotals[selectedMonthIdx] += val;
                         html += `<td>${formatCurrency(val)}</td>`;
-                    });
-                    html += `<td>${formatCurrency(rowTotal)}</td></tr>`;
+                    } else {
+                        // Show all months
+                        item.months.forEach((val, idx) => {
+                            rowTotal += val || 0;
+                            expenseMonthTotals[idx] += val || 0;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        });
+                        html += `<td>${formatCurrency(rowTotal)}</td>`;
+                    }
+                    html += `</tr>`;
                 });
             }
             
@@ -333,16 +681,27 @@
             
             operatingCategories.forEach(category => {
                 if (category.items.length > 0) {
-                    html += `<tr class="section-header green"><td colspan="14">${category.name}</td></tr>`;
+                    html += `<tr class="section-header green"><td colspan="${colSpan}">${category.name}</td></tr>`;
                     category.items.forEach(item => {
                         let rowTotal = 0;
                         html += `<tr class="item-row"><td>${item.name}</td>`;
-                        item.months.forEach((val, idx) => {
-                            rowTotal += val || 0;
-                            expenseMonthTotals[idx] += val || 0;
+
+                        if (isMonthlyReport && selectedMonthIdx !== null) {
+                            // Show only selected month
+                            const val = item.months[selectedMonthIdx] || 0;
+                            rowTotal = val;
+                            expenseMonthTotals[selectedMonthIdx] += val;
                             html += `<td>${formatCurrency(val)}</td>`;
-                        });
-                        html += `<td>${formatCurrency(rowTotal)}</td></tr>`;
+                        } else {
+                            // Show all months
+                            item.months.forEach((val, idx) => {
+                                rowTotal += val || 0;
+                                expenseMonthTotals[idx] += val || 0;
+                                html += `<td>${formatCurrency(val)}</td>`;
+                            });
+                            html += `<td>${formatCurrency(rowTotal)}</td>`;
+                        }
+                        html += `</tr>`;
                     });
                 }
             });
@@ -350,59 +709,185 @@
             // Monthly Expense Total Row
             let expenseGrandTotal = expenseMonthTotals.reduce((a, b) => a + b, 0);
             html += `<tr style="background: #fee2e2 !important;"><td style="font-weight: 800; color: #991b1b;">MONTHLY EXPENSE TOTAL</td>`;
-            expenseMonthTotals.forEach(val => {
-                html += `<td style="font-weight: 700; color: #991b1b;">${formatCurrency(val)}</td>`;
-            });
-            html += `<td style="font-weight: 800; color: #991b1b; background: #fecaca;">${formatCurrency(expenseGrandTotal)}</td></tr>`;
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                html += `<td style="font-weight: 800; color: #991b1b;">${formatCurrency(expenseMonthTotals[selectedMonthIdx])}</td>`;
+            } else {
+                expenseMonthTotals.forEach(val => {
+                    html += `<td style="font-weight: 700; color: #991b1b;">${formatCurrency(val)}</td>`;
+                });
+                html += `<td style="font-weight: 800; color: #991b1b; background: #fecaca;">${formatCurrency(expenseGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
             
             // Income Sources Section
-            html += `<tr class="section-header purple"><td colspan="14">INCOME SOURCES</td></tr>`;
+            html += `<tr class="section-header purple"><td colspan="${colSpan}">INCOME SOURCES</td></tr>`;
             if (data.incomeSources) {
                 data.incomeSources.forEach(item => {
                     let rowTotal = 0;
                     html += `<tr class="item-row"><td>${item.name}</td>`;
-                    item.months.forEach((val, idx) => {
-                        rowTotal += val || 0;
-                        incomeMonthTotals[idx] += val || 0;
+
+                    if (isMonthlyReport && selectedMonthIdx !== null) {
+                        // Show only selected month
+                        const val = item.months[selectedMonthIdx] || 0;
+                        rowTotal = val;
+                        incomeMonthTotals[selectedMonthIdx] += val;
                         html += `<td>${formatCurrency(val)}</td>`;
-                    });
-                    html += `<td>${formatCurrency(rowTotal)}</td></tr>`;
+                    } else {
+                        // Show all months
+                        item.months.forEach((val, idx) => {
+                            rowTotal += val || 0;
+                            incomeMonthTotals[idx] += val || 0;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        });
+                        html += `<td>${formatCurrency(rowTotal)}</td>`;
+                    }
+                    html += `</tr>`;
                 });
             }
             
             // Total Monthly Income Row
             let incomeGrandTotal = incomeMonthTotals.reduce((a, b) => a + b, 0);
             html += `<tr style="background: #dcfce7 !important;"><td style="font-weight: 800; color: #14532d;">TOTAL MONTHLY INCOME</td>`;
-            incomeMonthTotals.forEach(val => {
-                html += `<td style="font-weight: 700; color: #14532d;">${formatCurrency(val)}</td>`;
-            });
-            html += `<td style="font-weight: 800; color: #14532d; background: #bbf7d0;">${formatCurrency(incomeGrandTotal)}</td></tr>`;
-            
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                html += `<td style="font-weight: 800; color: #14532d;">${formatCurrency(incomeMonthTotals[selectedMonthIdx])}</td>`;
+            } else {
+                incomeMonthTotals.forEach(val => {
+                    html += `<td style="font-weight: 700; color: #14532d;">${formatCurrency(val)}</td>`;
+                });
+                html += `<td style="font-weight: 800; color: #14532d; background: #bbf7d0;">${formatCurrency(incomeGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
             // Net Profit/Loss Row
-            let netProfit = incomeGrandTotal - expenseGrandTotal;
             html += `<tr style="background: #f1f5f9 !important;"><td style="font-weight: 900;">NET PROFIT / LOSS</td>`;
-            expenseMonthTotals.forEach((exp, idx) => {
-                let monthProfit = incomeMonthTotals[idx] - exp;
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                let monthProfit = incomeMonthTotals[selectedMonthIdx] - expenseMonthTotals[selectedMonthIdx];
                 let color = monthProfit >= 0 ? '#15803d' : '#dc2626';
-                html += `<td style="font-weight: 700; color: ${color};">${formatCurrency(monthProfit)}</td>`;
-            });
-            let profitColor = netProfit >= 0 ? '#15803d' : '#dc2626';
-            html += `<td style="font-weight: 900; color: ${profitColor}; background: #e2e8f0;">${formatCurrency(netProfit)}</td></tr>`;
+                html += `<td style="font-weight: 900; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+            } else {
+                let netProfit = incomeGrandTotal - expenseGrandTotal;
+                expenseMonthTotals.forEach((exp, idx) => {
+                    let monthProfit = incomeMonthTotals[idx] - exp;
+                    let color = monthProfit >= 0 ? '#15803d' : '#dc2626';
+                    html += `<td style="font-weight: 700; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+                });
+                let profitColor = netProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="font-weight: 900; color: ${profitColor}; background: #e2e8f0;">${formatCurrency(netProfit)}</td>`;
+            }
+            html += `</tr>`;
             
             tbody.innerHTML = html;
+        }
+        
+        function renderDetailedBreakdown(receipts) {
+            if (!receipts || Object.keys(receipts).length === 0) {
+                return; // No detailed data, skip
+            }
+
+            const container = document.getElementById('detailedBreakdown');
+            let html = '<div class="page-break"></div>';
+
+            // Sort categories alphabetically
+            const sortedCategories = Object.keys(receipts).sort();
+
+            sortedCategories.forEach(category => {
+                let items = receipts[category];
+                if (!items || items.length === 0) return;
+
+                // Filter items by month if monthly report
+                if (isMonthlyReport && selectedMonthIdx !== null) {
+                    items = items.filter(item => {
+                        const itemDate = new Date(item.date + 'T12:00:00');
+                        return itemDate.getMonth() === parseInt(selectedMonthIdx);
+                    });
+                }
+
+                if (items.length === 0) return; // Skip if no items for this month
+
+                // Calculate subtotal
+                const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+                html += `
+                    <div class="category-breakdown">
+                        <h3>${category.toUpperCase()} - DETAILED BREAKDOWN</h3>
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Company/Store</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                // Sort items by date (newest first)
+                items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                items.forEach(item => {
+                    const formattedDate = formatDate(item.date);
+                    html += `
+                        <tr>
+                            <td>${formattedDate}</td>
+                            <td>${item.company || 'N/A'}</td>
+                            <td>${item.description || 'N/A'}</td>
+                            <td>${formatCurrency(item.amount)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                <tr class="detail-subtotal">
+                                    <td colspan="3" style="text-align: right; font-weight: 800;">SUBTOTAL:</td>
+                                    <td>${formatCurrency(subtotal)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr + 'T12:00:00');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
         }
         
         // Parse and render data
         if (dataParam) {
             try {
-                const data = JSON.parse(decodeURIComponent(dataParam));
+                // dataParam might already be parsed JSON (from sessionStorage) or a JSON string (from URL)
+                const data = typeof dataParam === 'string' ? JSON.parse(dataParam) : dataParam;
+
+                // Parse receipts if available
+                let receipts = null;
+                if (receiptsParam) {
+                    receipts = typeof receiptsParam === 'string' ? JSON.parse(receiptsParam) : receiptsParam;
+                }
+
+                // Render Page 1: Summary report (category totals only)
                 renderReport(data);
+
+                // Render Page 2+: Detailed company breakdown (if receipts available)
+                if (receipts) {
+                    renderCompanyDetailReport(receipts);
+                }
             } catch (e) {
                 console.error('Error parsing data:', e);
-                document.getElementById('reportBody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#999;">No data available. Please export from the Budget page.</td></tr>';
+                document.getElementById('reportBody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#999;">Error loading data: ' + e.message + '</td></tr>';
             }
         } else {
-            // Show sample data for preview
+            // Show message when no data available
             document.getElementById('reportBody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#999;">No data available. Please export from the Budget page.</td></tr>';
         }
     </script>

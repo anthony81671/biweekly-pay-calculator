@@ -252,6 +252,7 @@
                             <option value="Electricity & Gas">Electricity & Gas</option>
                             <option value="Water & Waste">Water & Waste</option>
                             <option value="Internet & Phone">Internet & Phone</option>
+                            <option value="Salon Equipments">Salon Equipments</option>
                         </optgroup>
                         <!-- Marketing & Professional -->
                         <optgroup label="Marketing & Professional">
@@ -293,6 +294,9 @@
                 <textarea id="mItems" placeholder="List items or add a description..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; min-height: 80px;"></textarea>
             </div>
             <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+                <button id="cancelBtn" onclick="resetForm()" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; display: none;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
                 <button id="saveBtn" onclick="saveManualEntry()" class="btn btn-primary" style="background: #10b981; border-color: #059669;">
                     <i class="fas fa-save"></i> Save to Table
                 </button>
@@ -867,6 +871,7 @@
         function resetForm() {
             const card = document.getElementById('manualEntryCard');
             const btn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             
             // Ensure always visible
             card.style.display = 'block';
@@ -874,8 +879,9 @@
             // Reset state
             editingState = { type: null, index: null, id: null };
             btn.style.background = '#10b981';
-            btn.textContent = 'Save to Table';
+            btn.innerHTML = '<i class="fas fa-save"></i> Save to Table';
             btn.disabled = false;
+            cancelBtn.style.display = 'none';
             
             // Set default date to today in MM/DD/YYYY format
             const today = new Date();
@@ -892,6 +898,7 @@
         async function editReceipt(type, id) {
             const card = document.getElementById('manualEntryCard');
             const btn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             let data = null;
 
             if (type === 'local') {
@@ -900,7 +907,7 @@
                 data = pending[index];
                 editingState = { type: 'local', index: index, id: null };
             } else {
-                // Find in the table or fetch again? Let's just use the current UI data or simplified fetch
+                // Fetch from cloud
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('loading').textContent = 'Fetching record...';
                 const { data: cloudRec, error } = await supabaseClient
@@ -919,6 +926,7 @@
 
             if (data) {
                 card.style.display = 'block';
+                
                 // Convert YYYY-MM-DD to MM/DD/YYYY if coming from cloud
                 let dateVal = data.date;
                 if (dateVal && dateVal.includes('-')) {
@@ -926,15 +934,20 @@
                     dateVal = `${parts[1]}/${parts[2]}/${parts[0]}`;
                 }
 
+                // Handle both local (camelCase) and cloud (lowercase) field names
+                const store = data.companyStore || data.companystore || '';
+                const transType = data.transactionType || data.transactiontype || data.subcategory || 'Expense';
+                
                 document.getElementById('mDate').value = dateVal || '';
-                document.getElementById('mMerchant').value = data.companyStore || '';
-                document.getElementById('mType').value = data.transactionType || 'Expense';
+                document.getElementById('mMerchant').value = store;
+                document.getElementById('mType').value = transType;
                 document.getElementById('mTotal').value = data.total || '';
                 document.getElementById('mItems').value = data.items || '';
                 
                 btn.style.background = '#f59e0b';
-                btn.textContent = 'Update Record';
-                card.scrollIntoView({ behavior: 'smooth' });
+                btn.innerHTML = '<i class="fas fa-save"></i> Update Record';
+                cancelBtn.style.display = 'inline-block';
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
@@ -1042,13 +1055,12 @@
                 const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
                 pending[editingState.index] = expense;
                 localStorage.setItem('pendingReceipts', JSON.stringify(pending));
-                editingState = { type: null, index: null, id: null };
-                btn.style.background = '#10b981';
-                btn.textContent = 'Save to Table';
+                resetForm();
+                await loadReceipts();
             } else if (editingState.type === 'cloud') {
                 // Update cloud record
                 btn.disabled = true;
-                btn.textContent = 'Updating...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
                 try {
                     const { error } = await supabaseClient
                         .from('receipts')
@@ -1057,18 +1069,19 @@
                             companystore: expense.companyStore, // Lowercase key for DB
                             total: expense.total,
                             transactiontype: expense.transactionType, // Lowercase key for DB
+                            subcategory: expense.transactionType, // Keep subcategory in sync
                             items: expense.items
                         })
                         .eq('id', editingState.id);
                     if (error) throw error;
-                    editingState = { type: null, index: null, id: null };
-                    resetForm(); // Reset form after update
+                    
+                    resetForm();
+                    await loadReceipts();
                 } catch (err) {
                     alert('Update failed: ' + err.message);
-                    return;
-                } finally {
                     btn.disabled = false;
-                    btn.textContent = 'Save to Table';
+                    btn.innerHTML = '<i class="fas fa-save"></i> Update Record';
+                    return;
                 }
             } else {
                 // Save New (Try Cloud First, Fallback to Local)
@@ -1084,6 +1097,7 @@
                             companystore: expense.companyStore, 
                             total: expense.total,
                             transactiontype: expense.transactionType,
+                            subcategory: expense.transactionType,
                             items: expense.items
                         }])
                         .select();
