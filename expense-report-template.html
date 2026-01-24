@@ -10,14 +10,24 @@
             margin: 0.3in 0.25in;
         }
 
-        @media print {
-            @page {
-                size: landscape;
-            }
+        @page :first {
+            size: landscape;
+        }
 
+        @media print {
             body {
                 width: 100%;
                 height: 100%;
+            }
+
+            /* Portrait for detailed sections */
+            .portrait-section {
+                page-break-before: always;
+            }
+
+            @page portrait {
+                size: portrait;
+                margin: 0.5in 0.5in;
             }
         }
         
@@ -118,11 +128,22 @@
             font-size: 8px;
             border: 1px solid #1a365d;
         }
-        
+
+        .portrait-section thead th {
+            font-size: 7px;
+            padding: 3px 1px;
+        }
+
         thead th:first-child {
             text-align: left;
             min-width: 160px;
             padding-left: 8px;
+        }
+
+        .portrait-section thead th:first-child {
+            min-width: 120px;
+            padding-left: 6px;
+            font-size: 7px;
         }
         
         thead th:last-child {
@@ -135,12 +156,22 @@
             text-align: right;
             font-size: 8px;
         }
-        
+
+        .portrait-section tbody td {
+            padding: 2px 1px;
+            font-size: 7px;
+        }
+
         tbody td:first-child {
             text-align: left;
             font-weight: 500;
             padding-left: 10px;
             font-size: 9px;
+        }
+
+        .portrait-section tbody td:first-child {
+            padding-left: 6px;
+            font-size: 7px;
         }
         
         tbody td:last-child {
@@ -158,6 +189,11 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
+
+        .portrait-section .section-header td {
+            font-size: 7px !important;
+            padding: 3px 4px !important;
+        }
         
         .section-header.green td {
             background: #276749 !important;
@@ -170,9 +206,13 @@
         .item-row td {
             background: white;
         }
-        
+
         .item-row:nth-child(odd) td {
             background: #f8fafc;
+        }
+
+        .portrait-section .item-row td {
+            padding: 2px 1px;
         }
         
         .total-row td {
@@ -218,16 +258,24 @@
             page-break-before: always;
             margin-top: 20px;
         }
-        
+
+        .portrait-section {
+            page: portrait;
+        }
+
         .detailed-breakdown {
             margin-top: 30px;
         }
-        
+
         .category-breakdown {
             margin-bottom: 25px;
             page-break-inside: avoid;
         }
-        
+
+        .category-breakdown.page-break-category {
+            page-break-before: always;
+        }
+
         .category-breakdown h3 {
             background: linear-gradient(135deg, #2c5282, #1a365d);
             color: white;
@@ -238,47 +286,72 @@
             letter-spacing: 0.5px;
             margin: 0 0 8px 0;
         }
+
+        .category-header-repeat {
+            display: none;
+        }
+
+        @media print {
+            .category-breakdown {
+                page-break-inside: auto;
+            }
+
+            .category-header-repeat {
+                display: block;
+                background: linear-gradient(135deg, #2c5282, #1a365d);
+                color: white;
+                padding: 8px 12px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+            }
+
+            .detail-table thead {
+                display: table-header-group;
+            }
+        }
         
         .detail-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8px;
-            margin-bottom: 8px;
+            font-size: 9px;
+            margin-bottom: 12px;
         }
-        
+
         .detail-table thead th {
             background: #f1f5f9;
             color: #1a365d;
-            padding: 4px 6px;
+            padding: 6px 8px;
             text-align: left;
             font-weight: 700;
-            font-size: 8px;
+            font-size: 9px;
             border: 1px solid #cbd5e1;
         }
-        
+
         .detail-table thead th:last-child {
             text-align: right;
         }
-        
+
         .detail-table tbody td {
-            padding: 3px 6px;
+            padding: 4px 8px;
             border: 1px solid #e2e8f0;
-            font-size: 8px;
+            font-size: 9px;
         }
-        
+
         .detail-table tbody td:first-child {
-            width: 80px;
+            width: 90px;
         }
-        
+
         .detail-table tbody td:nth-child(2) {
-            width: 120px;
+            width: 160px;
             font-weight: 500;
         }
-        
+
         .detail-table tbody td:last-child {
             text-align: right;
             font-weight: 600;
-            width: 80px;
+            width: 100px;
         }
         
         .detail-table tbody tr:nth-child(odd) {
@@ -448,10 +521,11 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="page-break"></div>';
+            let html = '<div class="page-break portrait-section"></div>';
 
             html += `
-                <div class="header" style="margin-top: 20px;">
+                <div class="portrait-section">
+                <div class="header" style="margin-top: 20px; margin-bottom: 15px;">
                     <div class="header-logo">
                         <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
@@ -464,7 +538,7 @@
                         <div class="orange-shape"></div>
                     </div>
                 </div>
-                <table style="margin-top: 10px;">
+                <table style="margin-top: 10px; font-size: 7px;">
                     <thead>
                         <tr>
             `;
@@ -536,14 +610,14 @@
                     if (!companies) return;
 
                     // Subcategory header
-                    html += `<tr style="background: #f8fafc; font-weight: 700; font-size: 0.75rem;">
-                        <td style="padding-left: 10px;">${subcategory}</td>
+                    html += `<tr style="background: #f8fafc; font-weight: 700; font-size: 7px;">
+                        <td style="padding-left: 6px;">${subcategory}</td>
                         <td colspan="${colSpan - 1}"></td>
                     </tr>`;
 
                     // Companies under this subcategory
                     Object.entries(companies).forEach(([company, monthlyAmounts]) => {
-                        html += `<tr class="item-row"><td style="padding-left: 30px; font-size: 0.875rem;">${company}</td>`;
+                        html += `<tr class="item-row"><td style="padding-left: 15px; font-size: 7px;">${company}</td>`;
 
                         // Show only selected months
                         monthsToShow.forEach(monthIdx => {
@@ -606,7 +680,7 @@
             }
             html += `</tr>`;
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             container.innerHTML = html;
         }
         
@@ -788,11 +862,13 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="page-break"></div>';
+            let html = '<div class="page-break portrait-section"></div>';
+
+            html += '<div class="portrait-section">';
 
             // Add header for transaction details section
             html += `
-                <div class="header" style="margin-top: 20px;">
+                <div class="header" style="margin-top: 20px; margin-bottom: 15px;">
                     <div class="header-logo">
                         <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
                         <div class="header-text">
@@ -810,7 +886,7 @@
             // Sort categories alphabetically
             const sortedCategories = Object.keys(receipts).sort();
 
-            sortedCategories.forEach(category => {
+            sortedCategories.forEach((category, index) => {
                 let items = receipts[category];
                 if (!items || items.length === 0) return;
 
@@ -827,16 +903,20 @@
                 // Calculate subtotal
                 const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
 
+                // Add page break class for categories after a certain number of items
+                const pageBreakClass = index > 0 && items.length > 15 ? 'page-break-category' : '';
+
                 html += `
-                    <div class="category-breakdown">
+                    <div class="category-breakdown ${pageBreakClass}">
+                        <div class="category-header-repeat">${category.toUpperCase()} - K&T Nails and Spa - Transaction Details</div>
                         <h3>${category.toUpperCase()} - DETAILED BREAKDOWN</h3>
                         <table class="detail-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Company/Store</th>
+                                    <th style="width: 80px;">Date</th>
+                                    <th style="width: 150px;">Company/Store</th>
                                     <th>Description</th>
-                                    <th>Amount</th>
+                                    <th style="width: 100px; text-align: right;">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -852,7 +932,7 @@
                             <td>${formattedDate}</td>
                             <td>${item.company || 'N/A'}</td>
                             <td>${item.description || 'N/A'}</td>
-                            <td>${formatCurrency(item.amount)}</td>
+                            <td style="text-align: right;">${formatCurrency(item.amount)}</td>
                         </tr>
                     `;
                 });
@@ -860,13 +940,15 @@
                 html += `
                                 <tr class="detail-subtotal">
                                     <td colspan="3" style="text-align: right; font-weight: 800;">SUBTOTAL:</td>
-                                    <td>${formatCurrency(subtotal)}</td>
+                                    <td style="text-align: right;">${formatCurrency(subtotal)}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 `;
             });
+
+            html += '</div>';
 
             // Append to existing content instead of replacing
             container.innerHTML += html;
