@@ -561,7 +561,10 @@
                 const isIncome = categoryName === 'INCOME SOURCES';
                 const categoryColor = categoryName === 'EMPLOYEE COSTS' ? '#2c5282' : (isIncome ? '#553c9a' : '#276749');
 
-                html += `<tr class="section-header" style="background: ${categoryColor} !important;"><td colspan="${colSpan}">${categoryName}</td></tr>`;
+                // Add page break before Marketing & Professional
+                const pageBreakStyle = categoryName === 'MARKETING & PROFESSIONAL' ? 'page-break-before: always;' : '';
+
+                html += `<tr class="section-header" style="background: ${categoryColor} !important; ${pageBreakStyle}"><td colspan="${colSpan}">${categoryName}</td></tr>`;
 
                 subcategories.forEach(subcategory => {
                     const companies = subcategoryData[subcategory];
