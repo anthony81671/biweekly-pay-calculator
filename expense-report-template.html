@@ -304,7 +304,7 @@
             word-break: break-word;
             white-space: normal;
             max-width: 300px;
-            text-align: right;
+            text-align: left;
         }
 
         .detail-table tbody td:last-child {
@@ -483,20 +483,20 @@
             let html = '<div style="page-break-before: always;">';
 
             html += `
-                <div class="header" style="margin-top: 10px; margin-bottom: 0; padding-bottom: 0; border-bottom: none;">
-                    <div class="header-logo">
-                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 4px; border-bottom: 2px solid #2c5282;">
+                    <div class="header-logo" style="gap: 6px;">
+                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 28px; height: 28px;" onerror="this.style.display='none'">
                         <div class="header-text">
-                            <h1>K&T Nails and Spa</h1>
-                            <h2>DETAILED COMPANY BREAKDOWN</h2>
+                            <h1 style="font-size: 10px; margin-bottom: 1px;">K&T Nails and Spa</h1>
+                            <h2 style="font-size: 11px; margin: 0;">DETAILED COMPANY BREAKDOWN</h2>
                         </div>
                     </div>
-                    <div class="decorative-element">
-                        <div class="blue-shape"></div>
-                        <div class="orange-shape"></div>
+                    <div class="decorative-element" style="width: 60px; height: 35px;">
+                        <div class="blue-shape" style="width: 40px; height: 30px;"></div>
+                        <div class="orange-shape" style="width: 20px; height: 20px; right: 30px; top: 8px;"></div>
                     </div>
                 </div>
-                <table style="margin-top: 0;">
+                <table style="margin-top: 4px;">
                     <thead>
                         <tr>
             `;
