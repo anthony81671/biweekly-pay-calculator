@@ -35,8 +35,8 @@
         .header {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            padding-bottom: 6px;
+            margin-bottom: 4px;
+            padding-bottom: 3px;
             border-bottom: 2px solid #2c5282;
             position: relative;
         }
@@ -215,11 +215,11 @@
         }
 
         .detailed-breakdown {
-            margin-top: 30px;
+            margin-top: 2px;
         }
 
         .category-breakdown {
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             page-break-inside: avoid;
         }
 
@@ -230,12 +230,12 @@
         .category-breakdown h3 {
             background: linear-gradient(135deg, #2c5282, #1a365d);
             color: white;
-            padding: 6px 10px;
-            font-size: 10px;
+            padding: 3px 6px;
+            font-size: 9px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0 0 4px 0;
+            letter-spacing: 0.3px;
+            margin: 2px 0 2px 0;
         }
 
         .category-header-repeat {
@@ -483,20 +483,20 @@
             let html = '<div style="page-break-before: always;">';
 
             html += `
-                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 4px; border-bottom: 2px solid #2c5282;">
-                    <div class="header-logo" style="gap: 6px;">
-                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 28px; height: 28px;" onerror="this.style.display='none'">
+                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 2px; border-bottom: 1px solid #2c5282;">
+                    <div class="header-logo" style="gap: 4px;">
+                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 20px; height: 20px;" onerror="this.style.display='none'">
                         <div class="header-text">
-                            <h1 style="font-size: 10px; margin-bottom: 1px;">K&T Nails and Spa</h1>
-                            <h2 style="font-size: 11px; margin: 0;">DETAILED COMPANY BREAKDOWN</h2>
+                            <h1 style="font-size: 8px; margin: 0; line-height: 1;">K&T Nails and Spa</h1>
+                            <h2 style="font-size: 9px; margin: 0; line-height: 1.2;">DETAILED COMPANY BREAKDOWN</h2>
                         </div>
                     </div>
-                    <div class="decorative-element" style="width: 60px; height: 35px;">
-                        <div class="blue-shape" style="width: 40px; height: 30px;"></div>
-                        <div class="orange-shape" style="width: 20px; height: 20px; right: 30px; top: 8px;"></div>
+                    <div class="decorative-element" style="width: 45px; height: 25px;">
+                        <div class="blue-shape" style="width: 30px; height: 22px;"></div>
+                        <div class="orange-shape" style="width: 15px; height: 15px; right: 22px; top: 6px;"></div>
                     </div>
                 </div>
-                <table style="margin-top: 4px;">
+                <table style="margin-top: 2px;">
                     <thead>
                         <tr>
             `;
@@ -824,17 +824,17 @@
 
             // Add header for transaction details section
             html += `
-                <div class="header" style="margin-top: 10px; margin-bottom: 8px;">
-                    <div class="header-logo">
-                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                <div class="header" style="margin-top: 0; margin-bottom: 0; padding-bottom: 2px; border-bottom: 1px solid #2c5282;">
+                    <div class="header-logo" style="gap: 4px;">
+                        <img src="kntlogo2026.png" alt="K&T Nails" style="width: 20px; height: 20px;" onerror="this.style.display='none'">
                         <div class="header-text">
-                            <h1>K&T Nails and Spa</h1>
-                            <h2>TRANSACTION DETAILS BY CATEGORY</h2>
+                            <h1 style="font-size: 8px; margin: 0; line-height: 1;">K&T Nails and Spa</h1>
+                            <h2 style="font-size: 9px; margin: 0; line-height: 1.2;">TRANSACTION DETAILS BY CATEGORY</h2>
                         </div>
                     </div>
-                    <div class="decorative-element">
-                        <div class="blue-shape"></div>
-                        <div class="orange-shape"></div>
+                    <div class="decorative-element" style="width: 45px; height: 25px;">
+                        <div class="blue-shape" style="width: 30px; height: 22px;"></div>
+                        <div class="orange-shape" style="width: 15px; height: 15px; right: 22px; top: 6px;"></div>
                     </div>
                 </div>
             `;
