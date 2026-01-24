@@ -10,24 +10,10 @@
             margin: 0.3in 0.25in;
         }
 
-        @page :first {
-            size: landscape;
-        }
-
         @media print {
             body {
                 width: 100%;
                 height: 100%;
-            }
-
-            /* Portrait for detailed sections */
-            .portrait-section {
-                page-break-before: always;
-            }
-
-            @page portrait {
-                size: portrait;
-                margin: 0.5in 0.5in;
             }
         }
         
@@ -129,21 +115,10 @@
             border: 1px solid #1a365d;
         }
 
-        .portrait-section thead th {
-            font-size: 7px;
-            padding: 3px 1px;
-        }
-
         thead th:first-child {
             text-align: left;
             min-width: 160px;
             padding-left: 8px;
-        }
-
-        .portrait-section thead th:first-child {
-            min-width: 120px;
-            padding-left: 6px;
-            font-size: 7px;
         }
         
         thead th:last-child {
@@ -157,21 +132,11 @@
             font-size: 8px;
         }
 
-        .portrait-section tbody td {
-            padding: 2px 1px;
-            font-size: 7px;
-        }
-
         tbody td:first-child {
             text-align: left;
             font-weight: 500;
             padding-left: 10px;
             font-size: 9px;
-        }
-
-        .portrait-section tbody td:first-child {
-            padding-left: 6px;
-            font-size: 7px;
         }
         
         tbody td:last-child {
@@ -189,11 +154,6 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-
-        .portrait-section .section-header td {
-            font-size: 7px !important;
-            padding: 3px 4px !important;
-        }
         
         .section-header.green td {
             background: #276749 !important;
@@ -209,10 +169,6 @@
 
         .item-row:nth-child(odd) td {
             background: #f8fafc;
-        }
-
-        .portrait-section .item-row td {
-            padding: 2px 1px;
         }
         
         .total-row td {
@@ -256,10 +212,6 @@
         /* Detailed Breakdown Styles */
         .page-break {
             page-break-before: always;
-        }
-
-        .portrait-section {
-            page: portrait;
         }
 
         .detailed-breakdown {
@@ -345,6 +297,13 @@
         .detail-table tbody td:nth-child(2) {
             width: 160px;
             font-weight: 500;
+        }
+
+        .detail-table tbody td:nth-child(3) {
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            max-width: 300px;
         }
 
         .detail-table tbody td:last-child {
@@ -520,7 +479,7 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="portrait-section" style="page-break-before: always;">';
+            let html = '<div style="page-break-before: always;">';
 
             html += `
                 <div class="header" style="margin-top: 10px; margin-bottom: 10px;">
@@ -536,7 +495,7 @@
                         <div class="orange-shape"></div>
                     </div>
                 </div>
-                <table style="margin-top: 5px; font-size: 7px;">
+                <table style="margin-top: 5px;">
                     <thead>
                         <tr>
             `;
@@ -608,14 +567,14 @@
                     if (!companies) return;
 
                     // Subcategory header
-                    html += `<tr style="background: #f8fafc; font-weight: 700; font-size: 7px;">
-                        <td style="padding-left: 6px;">${subcategory}</td>
+                    html += `<tr style="background: #f8fafc; font-weight: 700;">
+                        <td style="padding-left: 10px;">${subcategory}</td>
                         <td colspan="${colSpan - 1}"></td>
                     </tr>`;
 
                     // Companies under this subcategory
                     Object.entries(companies).forEach(([company, monthlyAmounts]) => {
-                        html += `<tr class="item-row"><td style="padding-left: 15px; font-size: 7px;">${company}</td>`;
+                        html += `<tr class="item-row"><td style="padding-left: 30px;">${company}</td>`;
 
                         // Show only selected months
                         monthsToShow.forEach(monthIdx => {
@@ -860,7 +819,7 @@
             }
 
             const container = document.getElementById('detailedBreakdown');
-            let html = '<div class="portrait-section" style="page-break-before: always;">';
+            let html = '<div style="page-break-before: always;">';
 
             // Add header for transaction details section
             html += `
