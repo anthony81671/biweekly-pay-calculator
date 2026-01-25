@@ -1782,19 +1782,67 @@
               document.getElementById("loading-worker").style.display = "none";
               return;
           }
-          
+
+          // Remove duplicates within the import data itself
+          // Keep only the last occurrence of each date+worker combination
+          const uniqueRecords = [];
+          const seen = new Map();
+
+          records.forEach(record => {
+              const key = `${record.entry_date}|${record.worker_name}`;
+              seen.set(key, record); // This will overwrite if duplicate
+          });
+
+          seen.forEach(record => uniqueRecords.push(record));
+
+          const duplicatesRemoved = records.length - uniqueRecords.length;
+
+          // Check if any of these records already exist in the database
+          const dateRange = [...new Set(uniqueRecords.map(r => r.entry_date))];
+          const { data: existingData } = await supabaseClient
+              .from("sales_records")
+              .select("entry_date, worker_name")
+              .in("entry_date", dateRange);
+
+          let overwriteCount = 0;
+          if (existingData && existingData.length > 0) {
+              const existingKeys = new Set(existingData.map(r => `${r.entry_date}|${r.worker_name}`));
+              overwriteCount = uniqueRecords.filter(r => existingKeys.has(`${r.entry_date}|${r.worker_name}`)).length;
+          }
+
+          // Show confirmation if there are duplicates or overwrites
+          if (duplicatesRemoved > 0 || overwriteCount > 0) {
+              let confirmMsg = "Import Summary:\n\n";
+              confirmMsg += `• ${uniqueRecords.length} records will be imported\n`;
+              if (duplicatesRemoved > 0) {
+                  confirmMsg += `• ${duplicatesRemoved} duplicate entries removed from Excel file\n`;
+              }
+              if (overwriteCount > 0) {
+                  confirmMsg += `• ${overwriteCount} existing records will be OVERWRITTEN\n`;
+              }
+              confirmMsg += "\nDo you want to proceed?";
+
+              if (!confirm(confirmMsg)) {
+                  document.getElementById("loading-worker").style.display = "none";
+                  return;
+              }
+          }
+
           // Upsert to cloud
          const { error } = await supabaseClient
           .from("sales_records")
-          .upsert(records, { onConflict: "entry_date, worker_name" });
+          .upsert(uniqueRecords, { onConflict: "entry_date, worker_name" });
 
          if (error) {
            alert("Import Error: " + error.message);
          } else {
-           showToast(`Imported ${records.length} entries! (${skipped} skipped)`);
-           
+           let msg = `Imported ${uniqueRecords.length} entries!`;
+           if (skipped > 0) msg += ` (${skipped} skipped)`;
+           if (duplicatesRemoved > 0) msg += ` (${duplicatesRemoved} duplicates removed)`;
+           showToast(msg);
+
            // Update cache (optimized)
-           records.forEach(r => {
+           uniqueRecords.forEach(r => {
              if (!cloudCache[r.entry_date]) cloudCache[r.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
              cloudCache[r.entry_date].incomes[r.worker_name] = r.amount;
            });
