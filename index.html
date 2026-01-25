@@ -1126,6 +1126,13 @@
         console.log('📊 YoY Comparison: Rendering', months.length, 'months');
         console.log(`📊 Year Stats for ${selectedYear}:`, yearStats[selectedYear]);
 
+        // Build data summary for all years
+        const yearsWithData = Object.keys(yearStats).sort().filter(y => Object.keys(yearStats[y]).length > 0);
+        const dataSummary = yearsWithData.map(y => {
+            const monthCount = Object.keys(yearStats[y]).length;
+            return `<strong>${y}</strong>: ${monthCount} month${monthCount !== 1 ? 's' : ''}`;
+        }).join(' | ');
+
         let html = `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
                  <h3 style="margin:0; font-family: 'Playfair Display', serif;">📅 Year Over Year Comparison</h3>
@@ -1133,7 +1140,16 @@
             <div style="font-size:14px; color:var(--text-muted); margin-bottom:12px; font-weight:500;">
                 Comparing <span style="color:var(--primary); font-weight:700;">${selectedYear}</span> vs ${prevYear}
             </div>
-            
+            ${yearsWithData.length > 0 ? `
+                <div style="padding: 12px; background: rgba(79, 70, 229, 0.1); border-radius: 8px; margin-bottom: 12px; font-size:13px;">
+                    <div style="font-weight:600; margin-bottom:4px; color:var(--primary);">📊 Data in Database:</div>
+                    <div style="color:var(--text-main);">${dataSummary}</div>
+                    <div style="margin-top:8px; font-size:11px; color:var(--text-muted);">
+                        💡 Tip: Use the year selector at the top to switch between years
+                    </div>
+                </div>
+            ` : ''}
+
             <div style="overflow-x: auto; overflow-y: visible; max-height: none; border: 1px solid var(--border); border-radius: 12px;">
             <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif;">
                 <thead>
