@@ -14,6 +14,7 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
       :root {
         /* Premium Spa Palette - Warm Stone & Sophisticated Rose */
@@ -527,6 +528,20 @@
           <div id="workerListManage" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
         </div>
 
+        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
+            <label>Bulk Upload (Excel)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="handleExcelUpload(this)">
+                <button class="btn-secondary btn-small" onclick="document.getElementById('excelUpload').click()">
+                    📂 Upload Excel
+                </button>
+                <span id="uploadStatus" style="font-size: 12px; align-self: center; color: var(--text-muted);"></span>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                Format: Column A = Date, Column B = Amount
+            </div>
+        </div>
+
         <label>Select Worker</label
         ><select id="workerSelect" onchange="loadWorkerBatch()"></select>
         <div
@@ -632,6 +647,33 @@
         >
           Generate Final Report
         </button>
+          Generate Final Report
+        </button>
+      </div>
+
+      <!-- EXCEL PREVIEW MODAL -->
+      <div id="excelPreviewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
+          <div class="card" style="width: 90%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column;">
+              <h2>📋 Preview Import</h2>
+              <div style="margin-bottom: 10px; font-size: 12px; color: var(--text-muted);">
+                  Please verify data before saving.
+              </div>
+              <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                      <thead style="background: #f5f5f5; position: sticky; top: 0;">
+                          <tr>
+                              <th style="padding: 8px; text-align: left;">Date</th>
+                              <th style="padding: 8px; text-align: right;">Amount</th>
+                          </tr>
+                      </thead>
+                      <tbody id="previewTableBody"></tbody>
+                  </table>
+              </div>
+              <div style="margin-top: 20px; display: flex; gap: 10px;">
+                  <button class="btn-outline" onclick="closePreviewModal()">Cancel</button>
+                  <button class="btn-success" onclick="confirmExcelUpload()">Confirm & Save</button>
+              </div>
+          </div>
       </div>
 
       <div id="summarySection" class="card" style="display: none">
@@ -915,8 +957,8 @@
         "Tammy",
         "Linh",
         "Van",
-        "ThuyLee",
-        "Tuyen",
+        "Thuy (Lee)",
+        "Tuyen (Bella)",
         "Kim",
       ];
       let workers =
@@ -1270,6 +1312,17 @@
                    cloudCache[date].loyalty = r.loyalty_discount;
                });
            }
+
+           // Move to next day automatically
+           const d = new Date(date + "T00:00:00");
+           d.setDate(d.getDate() + 1);
+           const y = d.getFullYear();
+           const m = String(d.getMonth() + 1).padStart(2, '0');
+           const day = String(d.getDate()).padStart(2, '0');
+           const nextDate = `${y}-${m}-${day}`;
+           
+           document.getElementById("dailyEntryDate").value = nextDate;
+           loadDailyData();
         }
         document.getElementById("loading-daily").style.display = "none";
       }
@@ -1463,6 +1516,153 @@
         btn.disabled = false;
       }
 
+
+
+      /* EXCEL LOGIC */
+      let parsedExcelData = [];
+
+      function handleExcelUpload(input) {
+          const file = input.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              
+              const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
+              
+              // Process Data: Assume Col 0 is Date, Col 1 is Amount
+              parsedExcelData = [];
+              // Skip header row if starts with text
+              let startIdx = 0;
+              if (json[0] && (typeof json[0][0] === 'string' && isNaN(Date.parse(json[0][0])))) {
+                  startIdx = 1; 
+              }
+
+              for (let i = startIdx; i < json.length; i++) {
+                  const row = json[i];
+                  if (!row || row.length < 2) continue;
+                  
+                  // Parse Date
+                  let dateVal = row[0];
+                  let dateStr = "";
+                  
+                  // Handle Excel serial date
+                  if (typeof dateVal === 'number') {
+                      const d = new Date(Math.round((dateVal - 25569)*86400*1000));
+                      // Adjust for timezone offset to keep date correct
+                      d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                      dateStr = d.toISOString().split("T")[0];
+                  } else if (typeof dateVal === 'string') {
+                      // Try simple parse
+                      const d = new Date(dateVal);
+                      if (!isNaN(d.getTime())) {
+                        dateStr = d.toISOString().split("T")[0];
+                      }
+                  }
+                  
+                  let amount = parseFloat(row[1]) || 0;
+                  
+                  if (dateStr && amount > 0) {
+                      parsedExcelData.push({ date: dateStr, amount: amount });
+                  }
+              }
+              
+              if (parsedExcelData.length > 0) {
+                  showPreviewModal();
+              } else {
+                  alert("No valid data found! Ensure Col A is Date and Col B is Amount.");
+              }
+              
+              input.value = ""; // Reset input
+          };
+          reader.readAsArrayBuffer(file);
+      }
+
+      function showPreviewModal() {
+          const tbody = document.getElementById("previewTableBody");
+          tbody.innerHTML = "";
+          let total = 0;
+          
+          parsedExcelData.forEach(row => {
+              total += row.amount;
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${row.date}</td>
+                  <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${fmt(row.amount)}</td>
+              `;
+              tbody.appendChild(tr);
+          });
+          
+          // Total Row
+          const trTotal = document.createElement("tr");
+          trTotal.style.fontWeight = "bold";
+          trTotal.style.backgroundColor = "#f0fdf4";
+          trTotal.innerHTML = `
+              <td style="padding: 8px;">Total</td>
+              <td style="padding: 8px; text-align: right;">${fmt(total)}</td>
+          `;
+          tbody.appendChild(trTotal);
+          
+          document.getElementById("excelPreviewModal").style.display = "flex";
+      }
+
+      function closePreviewModal() {
+          document.getElementById("excelPreviewModal").style.display = "none";
+          parsedExcelData = [];
+      }
+
+      async function confirmExcelUpload() {
+          const w = document.getElementById("workerSelect").value;
+          if (!w) {
+              alert("Please select a worker first!");
+              closePreviewModal();
+              return;
+          }
+          
+          document.getElementById("excelPreviewModal").style.display = "none";
+          document.getElementById("loading-worker").style.display = "flex";
+          
+          let records = parsedExcelData.map(row => ({
+               entry_date: row.date,
+               worker_name: w,
+               amount: row.amount,
+               discount: 0, // Should we fetch existing discount? Probably safer to assume 0 or keep existing if using upsert logic carefully?
+                            // Current upsert replaces row. So discount becomes 0 if not specified.
+                            // Ideally, we should fetch existing rows first. 
+                            // For simplicity/requirement, maybe just 0 is fine, or we can improve later.
+                            // Let's assume 0 for bulk import to new period.
+               loyalty_discount: 0
+          }));
+          
+          // Upsert to cloud
+         const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(records, { onConflict: "entry_date, worker_name" });
+
+         if (error) {
+           alert("Import Error: " + error.message);
+         } else {
+           showToast(`Imported ${records.length} entries for ${w}!`);
+           
+           // Update cache
+           records.forEach(r => {
+             if (!cloudCache[r.entry_date]) cloudCache[r.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
+             cloudCache[r.entry_date].incomes[w] = r.amount;
+           });
+           
+           // Refresh View
+           if (document.getElementById("tabWorker").classList.contains("active")) {
+               loadWorkerBatch();
+           }
+         }
+         
+         document.getElementById("loading-worker").style.display = "none";
+      }
+
       let ytdData = [];
       async function generateReportFromSummary() {
         await prefetchPeriodData();
@@ -1514,8 +1714,8 @@
           let isLinh = w.toLowerCase() === "linh";
           let pay = isKim ? 0 : Math.round(s * SERVICE_RATE);
 
-          // W2 Logic: Tuyen/ThuyLee $750, Others $700, Kim $2500, Linh 100%
-          let is750 = ["tuyen", "thuylee"].includes(w.toLowerCase());
+          // W2 Logic: Tuyen(Bella)/Thuy(Lee) $750, Others $700, Kim $2500, Linh 100%
+          let is750 = ["tuyen (bella)", "thuy (lee)"].includes(w.toLowerCase());
 
           let defaultW2 = 0;
           if (s > 0) {

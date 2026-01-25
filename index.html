@@ -661,7 +661,8 @@
       <div class="dashboard-header">
         <h1>Dashboard Overview</h1>
         <div id="cacheStatus" style="font-size: 12px; color: var(--success); margin-bottom: 4px; font-weight: 600;"></div>
-        <div id="periodLabel" style="font-size: 14px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.03); display: inline-block; padding: 4px 12px; border-radius: 20px;">Loading Period...</div>
+        <select id="yearSelect" onchange="handleYearChange(this.value)" style="font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 12px; background: rgba(0,0,0,0.03); display: inline-block; padding: 6px 16px; border-radius: 20px; border: 1px solid var(--primary); outline: none; cursor: pointer;">
+        </select>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 8px;">
           <button id="forceRefreshBtn" class="action-btn" style="padding: 8px 16px; font-size: 14px; max-width: 200px; margin: 0;">
             🔄 Force Refresh
@@ -743,9 +744,12 @@
         <div id="modalBody" class="worker-list">
           <!-- Worker items will be injected here -->
         </div>
-        <div class="modal-total">
-          <div class="total-label">Total Sales</div>
-          <div class="total-amount" id="modalTotalAmount">$0</div>
+        <div class="modal-total" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="total-label">Total Sales</div>
+            <div class="total-amount" id="modalTotalAmount">$0</div>
+          </div>
+          <button id="modalEditBtn" class="action-btn secondary" style="padding: 8px 16px; font-size: 13px;">✏️ Edit</button>
         </div>
       </div>
     </div>
@@ -758,9 +762,8 @@
       const SERVICE_RATE = 0.55;
       const ANCHOR_DATE = new Date("2026-01-01T00:00:00");
 
-      let currentPeriodDates = [];
-      let periodStart = "";
-      let cloudCache = {};
+      let selectedYear = new Date().getFullYear();
+      let yearDataCache = {};
       let ytdData = [];
       let currentViewMonth = new Date(); // For calendar navigation
       let monthDataCache = {}; // Cache for monthly data
@@ -826,45 +829,68 @@
 
       async function initializeDashboard() {
         updateStatus("Initializing...");
-
-        // Set current month for calendar
-        currentViewMonth = new Date();
-
-        // Calculate current pay period for stats
-        const today = new Date();
-        const snappedStart = getAutoPeriodStart(today);
-        periodStart = snappedStart;
-        generatePeriod();
-
-        // Load all data - try cache first for speed, then update
-        console.log("Auto-initializing dashboard with staggered boot...");
         
-        // Give the browser 500ms to settle the network stack (critical for file:// origins)
+        // 1. Load Saved Year
+        const savedYear = localStorage.getItem("selectedYear");
+        if (savedYear) {
+            selectedYear = parseInt(savedYear);
+        }
+        
+        populateYearSelect();
+
+        // Set current month for calendar (Default to Jan of selected year if past, or current month if current year)
+        const now = new Date();
+        if (selectedYear === now.getFullYear()) {
+            currentViewMonth = now;
+        } else {
+            currentViewMonth = new Date(selectedYear, 11, 1); // Dec of that year
+        }
+
+        // Load data
+        console.log("Auto-initializing dashboard...");
         await new Promise(resolve => setTimeout(resolve, 500));
 
         try {
-          await loadDashboardData(false); // false = attempt to use cache for YTD part
+          await loadDashboardData();
           console.log("✅ Initial load successful");
         } catch (err) {
-          console.error("Initial load failed, entering retry loop", err);
-          
-          let retries = 0;
-          const maxRetries = 2;
-          while (retries < maxRetries) {
-            retries++;
-            updateStatus(`Connection jittery. Retrying (${retries}/${maxRetries})...`, "var(--warning)");
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            try {
-              await loadDashboardData(true); // Force on retry to be sure
-              console.log("✅ Retry successful");
-              break;
-            } catch (retryErr) {
-              if (retries === maxRetries) {
-                updateStatus("System busy. Please click 'Force Refresh'.", "var(--danger)");
-              }
-            }
-          }
+          console.error("Initial load failed", err);
+          updateStatus("Connection issue. Please retry.", "var(--danger)");
         }
+      }
+
+      function populateYearSelect() {
+          const select = document.getElementById("yearSelect");
+          if(!select) return;
+          select.innerHTML = "";
+          
+          const currentY = new Date().getFullYear();
+          // Show range of years, e.g. 2024 to Current + 1
+          const startY = 2024;
+          const endY = currentY + 1;
+          
+          for(let y = startY; y <= endY; y++) {
+              const opt = document.createElement("option");
+              opt.value = y;
+              opt.textContent = y;
+              if (y === selectedYear) opt.selected = true;
+              select.appendChild(opt);
+          }
+      }
+
+      function handleYearChange(val) {
+          selectedYear = parseInt(val);
+          localStorage.setItem("selectedYear", selectedYear);
+          
+          // Reset view month
+          const now = new Date();
+          if (selectedYear === now.getFullYear()) {
+             currentViewMonth = now;
+          } else {
+             currentViewMonth = new Date(selectedYear, 0, 1); // Jan
+          }
+          
+          loadDashboardData(true);
       }
 
       function updateStatus(msg, color = "var(--warning)") {
@@ -875,123 +901,40 @@
         }
       }
 
-      function getAutoPeriodStart(targetDate) {
-        const t = new Date(targetDate);
-        t.setHours(0, 0, 0, 0);
-        const diff = t - ANCHOR_DATE;
-        const daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
-        let periodIndex = Math.floor(daysSince / 14);
-        if (periodIndex < 0) periodIndex = 0;
-        const start = new Date(ANCHOR_DATE);
-        start.setDate(start.getDate() + periodIndex * 14);
-        return start.toISOString().split("T")[0];
-      }
-
-      function generatePeriod() {
-        console.log("Generating period dates for:", periodStart);
-        currentPeriodDates = [];
-        let sd = new Date(periodStart + "T00:00:00");
-        for (let i = 0; i < 14; i++) {
-          let d = new Date(sd);
-          d.setDate(sd.getDate() + i);
-          currentPeriodDates.push(d.toISOString().split("T")[0]);
-        }
-        let ed = new Date(sd);
-        ed.setDate(sd.getDate() + 13);
-
-        const opt = { year: "numeric", month: "short", day: "numeric" };
-        const rangeText = `${sd.toLocaleDateString("en-US", opt)} - ${ed.toLocaleDateString("en-US", opt)}`;
-        
-        const label = document.getElementById("periodLabel");
-        if (label) {
-          label.textContent = rangeText;
-        } else {
-          console.warn("Element 'periodLabel' not found in UI");
-        }
-        console.log("✅ Period generation complete.");
-      }
-
       async function manualForceRefresh() {
         console.log("Manual force refresh triggered");
         updateStatus("Refreshing data...", "var(--warning)");
-
-        // Clear cache immediately for visual feedback
-        const periodEnd = currentPeriodDates[currentPeriodDates.length - 1];
-        const cacheKey = YTD_CACHE_PREFIX + periodEnd;
-        localStorage.removeItem(cacheKey);
-        console.log("Cache cleared for:", cacheKey);
-
-        try {
-          await loadDashboardData(true);
-        } catch (err) {
-          console.error("Manual refresh failed:", err);
-          updateStatus("Refresh failed: " + err.message, "var(--danger)");
-        }
+        await loadDashboardData(true);
       }
 
       async function loadDashboardData(forceRefresh = false) {
         try {
-          console.log("loadDashboardData called, forceRefresh:", forceRefresh);
-          updateStatus("Connecting to Supabase...");
-
-          const yearStart = "2026-01-01";
-          const periodEnd = currentPeriodDates[currentPeriodDates.length - 1];
-          const cacheKey = YTD_CACHE_PREFIX + periodEnd;
-
-          // 1. Check cache for YTD data first (for immediate display)
-          let cachedYtd = null;
-          if (!forceRefresh) {
-            try {
-              const cached = localStorage.getItem(cacheKey);
-              if (cached) cachedYtd = JSON.parse(cached);
-            } catch (e) { console.warn("Cache read error", e); }
-          }
-
-          // 2. Prepare Parallel Fetches
-          console.log("Starting parallel fetches...");
+          updateStatus("Loading Year Data...");
           
-          // Current Period Fetch (Always Fresh)
-          const periodPromise = supabaseClient
+          const startStr = `${selectedYear}-01-01`;
+          const endStr = `${selectedYear}-12-31`;
+
+          // Check cache if needed (optional implementation, for now direct fetch for simplicity or minimal caching)
+          // Simple in-memory cache for years?
+          if (!forceRefresh && yearDataCache[selectedYear]) {
+              await processAndRender(yearDataCache[selectedYear]);
+              updateStatus("✓ Data Loaded (Cached)", "var(--success)");
+              return;
+          }
+          
+          const { data, error } = await supabaseClient
             .from("sales_records")
             .select("*")
-            .in("entry_date", currentPeriodDates);
+            .gte("entry_date", startStr)
+            .lte("entry_date", endStr);
 
-          // YTD Fetch (Only if not cached or force refresh)
-          const ytdPromise = (!cachedYtd || forceRefresh) 
-            ? supabaseClient.from("sales_records").select("*").gte("entry_date", yearStart).lte("entry_date", periodEnd)
-            : Promise.resolve({ data: cachedYtd, error: null });
+          if (error) throw new Error(error.message);
 
-          // 3. Wait for basic data
-          const [periodRes, ytdRes] = await Promise.all([periodPromise, ytdPromise]);
-
-          if (periodRes.error) throw new Error("Period data error: " + periodRes.error.message);
-          if (ytdRes.error) throw new Error("YTD data error: " + ytdRes.error.message);
-
-          const periodData = periodRes.data || [];
-          ytdData = ytdRes.data || [];
-
-          // Update cache if we fetched fresh YTD data
-          if (!cachedYtd || forceRefresh) {
-            try {
-              localStorage.setItem(cacheKey, JSON.stringify(ytdData));
-              cleanOldCache(periodEnd);
-            } catch (e) { console.warn("Cache write error", e); }
-          }
-
-          // 4. Update UI Status
-          const statusEl = document.getElementById("cacheStatus");
-          if (statusEl) {
-            if (cachedYtd && !forceRefresh) {
-              statusEl.textContent = "✓ Dashboard loaded (Optimized)";
-              statusEl.style.color = "var(--success)";
-            } else {
-              statusEl.textContent = "✓ Data Sync Complete";
-              statusEl.style.color = "var(--primary)";
-            }
-          }
-
-          // 5. Render Core Stats and start Calendar render (Calendar also fetches its own month data)
-          await processAndRender(periodData, ytdData);
+          const records = data || [];
+          yearDataCache[selectedYear] = records;
+          
+          updateStatus("✓ Data Sync Complete", "var(--primary)");
+          await processAndRender(records);
 
         } catch (err) {
           console.error("Dashboard Load Error:", err);
@@ -1000,31 +943,17 @@
         }
       }
 
-      async function processAndRender(periodData, ytdList) {
+      async function processAndRender(records) {
         try {
-            // Process data for rendering
-            cloudCache = {};
             const workers = new Set();
-    
-            if (periodData) {
-              periodData.forEach((row) => {
-                workers.add(row.worker_name);
-                if (!cloudCache[row.entry_date]) {
-                  cloudCache[row.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
-                }
-                cloudCache[row.entry_date].incomes[row.worker_name] = parseFloat(row.amount) || 0;
-                cloudCache[row.entry_date].discount = parseFloat(row.discount) || 0;
-                cloudCache[row.entry_date].loyalty = parseFloat(row.loyalty_discount || 0);
-              });
-            }
-    
-            // Also add workers found in YTD data to ensure complete list
-            if(ytdList) {
-                 ytdList.forEach(row => workers.add(row.worker_name));
-            }
-    
-            // Render dashboard - AWAIT this
-            await renderDashboard(Array.from(workers));
+            // We need ytdData for the Yearly Tracker (maybe fetch more history?)
+            // For now, populate ytdData with just this year's records so the tracker works for this year.
+            // Or ideally, we should fetch multiple years for the tracker. 
+            // Let's assume for this specific view request, we focus on the selected year.
+            ytdData = records; 
+            
+            records.forEach(r => workers.add(r.worker_name));
+            await renderDashboard(Array.from(workers), records);
         } catch (e) {
             console.error("Error in processAndRender:", e);
             throw e;
@@ -1035,153 +964,86 @@
         const errHTML = `<div style="padding: 20px; color: var(--danger); text-align: center;">
           <p><strong>⚠️ Error</strong></p>
           <p>${msg}</p>
-          <button onclick="location.reload()" style="margin-top:10px; padding:8px 16px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer;">Retry</button>
         </div>`;
-        
-        const cal = document.getElementById("calendarGrid");
-        if(cal) cal.innerHTML = errHTML;
-        
-        const yearly = document.getElementById("yearlySales");
-        if(yearly) yearly.innerHTML = errHTML;
+        document.getElementById("calendarGrid").innerHTML = errHTML;
       }
 
-      function cleanOldCache(currentPeriodEnd) {
-        // Keep cache for current period and 2 previous periods
-        const currentDate = new Date(currentPeriodEnd);
-        const keepCutoff = new Date(currentDate);
-        keepCutoff.setDate(keepCutoff.getDate() - (14 * 3)); // 3 periods back
-
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith(YTD_CACHE_PREFIX)) {
-            const dateStr = key.replace(YTD_CACHE_PREFIX, "");
-            const cacheDate = new Date(dateStr);
-            if (cacheDate < keepCutoff) {
-              localStorage.removeItem(key);
-              console.log("Removed old cache:", key);
-            }
-          }
-        }
-      }
-
-      async function renderDashboard(workers) {
-        // Calculate period stats
+      async function renderDashboard(workers, records) {
+        // Calculate Year stats
         let grossSales = 0;
         let totalDiscounts = 0;
-        let totalDays = 0;
-        let workerStats = {};
-
-        workers.forEach(w => {
-          workerStats[w] = { sales: 0, days: 0, pay: 0 };
-        });
-
-        currentPeriodDates.forEach(date => {
-          const entry = cloudCache[date] || { incomes: {}, discount: 0, loyalty: 0 };
-          totalDiscounts += entry.discount + entry.loyalty;
-
-          workers.forEach(w => {
-            const income = entry.incomes[w] || 0;
-            if (income > 0) {
-              workerStats[w].sales += income;
-              workerStats[w].days++;
-              totalDays++;
-            }
-            grossSales += income;
-          });
-        });
-
-        // Calculate pay (excluding Kim)
         let totalStaffPay = 0;
+        
+        let workerStats = {}; 
+        workers.forEach(w => workerStats[w] = { sales: 0, pay: 0 });
+
+        // Deduplicate days for discount calculation
+        let dailyMap = {};
+        // workerStats already initialized above
+
+        records.forEach(r => {
+             // Sales
+             let amt = parseFloat(r.amount) || 0;
+             if (workerStats[r.worker_name]) {
+                workerStats[r.worker_name].sales += amt;
+             }
+             
+             // Daily Aggregation for Global Stats
+             if (!dailyMap[r.entry_date]) {
+                 dailyMap[r.entry_date] = { sales: 0, discount: 0 };
+             }
+             dailyMap[r.entry_date].sales += amt;
+             
+             // Track max discount seen for this day (assuming it's duplicated across rows)
+             let d = (parseFloat(r.discount) || 0) + (parseFloat(r.loyalty_discount) || 0);
+             if (d > dailyMap[r.entry_date].discount) {
+                 dailyMap[r.entry_date].discount = d;
+             }
+        });
+        
+        // Sum totals
+        Object.values(dailyMap).forEach(day => {
+            grossSales += day.sales;
+            totalDiscounts += day.discount;
+        });
+
+        // Calculate Pay
         workers.forEach(w => {
-          if (w.toLowerCase() !== 'kim') {
-            workerStats[w].pay = Math.round(workerStats[w].sales * SERVICE_RATE);
-            totalStaffPay += workerStats[w].pay;
-          }
+           if (w.toLowerCase() !== 'kim') {
+               const pay = Math.round(workerStats[w].sales * SERVICE_RATE);
+               workerStats[w].pay = pay;
+               totalStaffPay += pay;
+           }
         });
 
         const netIncome = grossSales - totalDiscounts - totalStaffPay;
 
-        // Calculate YTD stats
-        let ytdGross = 0;
-        let ytdDisc = 0;
-        let ytdPay = 0;
+        // Render Cards
+        document.getElementById("statGrossSales").textContent = fmt(grossSales - totalDiscounts); // Net Sales (Gross - Discount) usually
+        // Actually, usually Gross Sales in this app context includes discounts? 
+        // Let's look at previous logic: "ytdGross - ytdDisc".
+        // Label is "Gross Sales". Previous logic was: ytdGross (sum of amounts) + periodGross.
+        // Wait, "Gross Sales" usually means Pre-Discount. "Net Sales" is Post-Discount.
+        // The previous code did: `document.getElementById("statGrossSales").textContent = fmt(ytdGross - ytdDisc);`
+        // So it displayed (Gross - Discount). I will stick to that.
+        
+        document.getElementById("statGrossChange").textContent = `Total in ${selectedYear}`;
 
-        const sd = new Date(periodStart + "T00:00:00");
-        const currentPIdx = Math.floor((sd - ANCHOR_DATE) / (1000 * 60 * 60 * 24 * 14));
+        document.getElementById("statNetIncome").textContent = fmt(netIncome);
+        document.getElementById("statNetChange").textContent = `Profit in ${selectedYear}`;
 
-        let periods = {};
-        ytdData.forEach((row) => {
-          const d = new Date(row.entry_date + "T00:00:00");
-          const daysSince = Math.floor((d - ANCHOR_DATE) / (1000 * 60 * 60 * 24));
-          const pIdx = Math.floor(daysSince / 14);
+        document.getElementById("statStaffPay").textContent = fmt(totalStaffPay);
+        document.getElementById("statStaffChange").textContent = `Staff Pay in ${selectedYear}`;
 
-          if (pIdx >= 0 && pIdx < currentPIdx) {
-            if (!periods[pIdx]) periods[pIdx] = { records: [], days: new Set() };
-            periods[pIdx].records.push(row);
-            periods[pIdx].days.add(row.entry_date);
-          }
-        });
-
-        Object.keys(periods).forEach((pIdx) => {
-          let p = periods[pIdx];
-          let pGross = 0, pDisc = 0, pPay = 0;
-          let pWorkerSums = {};
-          let pDaysSeen = new Set();
-
-          p.records.forEach((r) => {
-            let amt = parseFloat(r.amount) || 0;
-            pGross += amt;
-            pWorkerSums[r.worker_name] = (pWorkerSums[r.worker_name] || 0) + amt;
-            if (!pDaysSeen.has(r.entry_date)) {
-              pDisc += (parseFloat(r.discount) || 0) + (parseFloat(r.loyalty_discount) || 0);
-              pDaysSeen.add(r.entry_date);
-            }
-          });
-
-          Object.keys(pWorkerSums).forEach((w) => {
-            if (w.toLowerCase() !== "kim") {
-              pPay += Math.round(pWorkerSums[w] * SERVICE_RATE);
-            }
-          });
-
-          ytdGross += pGross;
-          ytdDisc += pDisc;
-          ytdPay += pPay;
-        });
-
-        ytdGross += grossSales;
-        ytdDisc += totalDiscounts;
-        ytdPay += totalStaffPay;
-
-        const ytdNet = ytdGross - ytdDisc - ytdPay;
-
-        // Update stats cards with YTD data
-        document.getElementById("statGrossSales").textContent = fmt(ytdGross - ytdDisc);
-        document.getElementById("statGrossChange").textContent = `Since Jan 1, 2026`;
-
-        document.getElementById("statNetIncome").textContent = fmt(ytdNet);
-        document.getElementById("statNetChange").textContent = `Profit YTD`;
-
-        document.getElementById("statStaffPay").textContent = fmt(ytdPay);
-        document.getElementById("statStaffChange").textContent = `All staff YTD`;
-
-
-
-        // Render calendar with safe fallback
+        // Render Calendar
         try {
             await renderCalendar();
-        } catch(e) {
-            console.error("Calendar render error:", e);
-            document.getElementById("calendarGrid").innerHTML = `<div style="padding:20px; text-align:center; color:var(--danger)">Failed to load calendar</div>`;
-        }
+        } catch(e) { console.error(e); }
 
-        // Render yearly sales with safe fallback
+        // Render Yearly List
         try {
             renderYearlySales();
-        } catch(e) {
-            console.error("Yearly sales render error:", e);
-            document.getElementById("yearlySales").innerHTML = `<div style="padding:20px; text-align:center; color:var(--danger)">Failed to load yearly sales</div>`;
-        }
+        } catch(e) { console.error(e); }
       }
 
       async function renderCalendar() {
@@ -1257,7 +1119,7 @@
 
               const isToday = currentDate.getTime() === today.getTime();
               const isCurrentMonth = currentDate.getMonth() === month;
-              const inPeriod = currentPeriodDates.includes(dateStr);
+              // const inPeriod = currentPeriodDates.includes(dateStr); // Removed to prevent error
 
               const cell = document.createElement("div");
               cell.className = "day-cell";
@@ -1271,10 +1133,9 @@
               } else {
                 cell.classList.add("no-sales");
               }
+              
+              // No longer highlighting "in-period" since we are in year view
 
-              if (inPeriod) {
-                cell.classList.add("in-period");
-              }
 
               if (isToday) {
                 cell.classList.add("selected");
@@ -1424,6 +1285,14 @@
         
         document.getElementById('modalTotalAmount').textContent = fmt(total);
         
+        // Setup Edit Button
+        const editBtn = document.getElementById('modalEditBtn');
+        if(editBtn) {
+            editBtn.onclick = () => {
+                window.location.href = `dashboard.html?date=${dateStr}`;
+            };
+        }
+        
         // Show modal
         const modal = document.getElementById('dayDetailsModal');
         modal.classList.add('active');
@@ -1440,6 +1309,8 @@
       }
       
       // Close on Escape key
+      // Remove default Escape listener if it conflicts or keep it.
+      // Keeping it.
       document.addEventListener('keydown', function(event) {
         if (event.key === "Escape") {
            closeModal();
