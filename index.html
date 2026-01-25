@@ -1063,7 +1063,7 @@
         const netIncome = grossSales - totalDiscounts - totalStaffPay;
 
         // Render Cards
-        document.getElementById("statGrossSales").textContent = fmt(grossSales - totalDiscounts); 
+        document.getElementById("statGrossSales").textContent = fmt(grossSales); 
         document.getElementById("statGrossChange").textContent = `Total in ${selectedYear}`;
 
         document.getElementById("statNetIncome").textContent = fmt(netIncome);
@@ -1157,7 +1157,7 @@
                     sales += day.sales;
                     discs += day.disc;
                 });
-                yearStats[y][m].netSales = sales - discs;
+                yearStats[y][m].netSales = sales;
             });
         });
 
@@ -1451,8 +1451,8 @@
 
         container.innerHTML = years.map(year => {
           const data = yearlyData[year];
-          const grossSales = data.sales - data.discounts;
-          const profit = grossSales - data.pay;
+          const grossSales = data.sales;
+          const profit = grossSales - data.discounts - data.pay;
 
           // Calculate projection for current year
           let projectionHTML = '';
