@@ -1295,7 +1295,6 @@
         if (error) {
            alert("Error saving: " + error.message);
         } else {
-           showToast("Daily Entry Saved!");
            // Update cache if we are in the same period
            if(currentPeriodDates.includes(date)) {
                // Update cache manually
@@ -1314,9 +1313,18 @@
            const m = String(d.getMonth() + 1).padStart(2, '0');
            const day = String(d.getDate()).padStart(2, '0');
            const nextDate = `${y}-${m}-${day}`;
-           
-           document.getElementById("dailyEntryDate").value = nextDate;
-           loadDailyData();
+
+           // Format date for display
+           const nextDateObj = new Date(nextDate + "T00:00:00");
+           const displayDate = nextDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+           showToast(`Saved! Moving to ${displayDate}...`);
+
+           // Small delay to show the message before advancing
+           setTimeout(() => {
+               document.getElementById("dailyEntryDate").value = nextDate;
+               loadDailyData();
+           }, 800);
         }
         document.getElementById("loading-daily").style.display = "none";
       }
