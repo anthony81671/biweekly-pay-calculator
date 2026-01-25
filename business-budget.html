@@ -1152,7 +1152,7 @@
 
     <script>
         const categories = {
-            'Employee Costs': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
+            'Employee Costs': ['Wages', 'CA PIT/SDI/SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
             'Occupancy': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments', 'Supplies'],
             'Marketing & Professional': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
             'Admin / Bank': ['Merchant Fees', 'Bank Service Charges'],
@@ -1242,6 +1242,13 @@
                         }
                         if (mappedSubcategory === 'Supply') {
                             mappedSubcategory = 'Supplies';
+                        }
+                        if (mappedSubcategory === 'Auto/Mileage') {
+                            mappedSubcategory = 'Auto / Mileage';
+                        }
+                        // Combine CA PIT/SDI and CA SUI/ETT into one combined row
+                        if (mappedSubcategory === 'CA PIT/SDI' || mappedSubcategory === 'CA SUI/ETT') {
+                            mappedSubcategory = 'CA PIT/SDI/SUI/ETT';
                         }
 
                         return {

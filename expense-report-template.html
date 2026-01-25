@@ -720,7 +720,7 @@
 
             // Category groupings
             const categoryGroups = {
-                'EMPLOYEE COSTS': ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
+                'EMPLOYEE COSTS': ['Wages', 'CA PIT/SDI/SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
                 'OCCUPANCY': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments', 'Supplies'],
                 'MARKETING & PROFESSIONAL': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
                 'ADMIN / BANK': ['Merchant Fees', 'Bank Service Charges'],
@@ -1340,10 +1340,36 @@
                     receipts = attemptDataParsing(localStorage.getItem('exportReceipts'));
                 }
 
-                // Map old "Supply" to new "Supplies" for backward compatibility
-                if (receipts && receipts['Supply']) {
-                    receipts['Supplies'] = receipts['Supply'];
-                    delete receipts['Supply'];
+                // Map old subcategories to new ones for backward compatibility
+                if (receipts) {
+                    // Map Supply to Supplies
+                    if (receipts['Supply']) {
+                        receipts['Supplies'] = receipts['Supply'];
+                        delete receipts['Supply'];
+                    }
+
+                    // Combine CA PIT/SDI and CA SUI/ETT into CA PIT/SDI/SUI/ETT
+                    const combinedCA = [];
+                    if (receipts['CA PIT/SDI']) {
+                        combinedCA.push(...receipts['CA PIT/SDI']);
+                        delete receipts['CA PIT/SDI'];
+                    }
+                    if (receipts['CA SUI/ETT']) {
+                        combinedCA.push(...receipts['CA SUI/ETT']);
+                        delete receipts['CA SUI/ETT'];
+                    }
+                    if (combinedCA.length > 0) {
+                        receipts['CA PIT/SDI/SUI/ETT'] = combinedCA;
+                    }
+
+                    // Map Auto/Mileage (no space) to Auto / Mileage (with space)
+                    if (receipts['Auto/Mileage']) {
+                        if (!receipts['Auto / Mileage']) {
+                            receipts['Auto / Mileage'] = [];
+                        }
+                        receipts['Auto / Mileage'].push(...receipts['Auto/Mileage']);
+                        delete receipts['Auto/Mileage'];
+                    }
                 }
 
                 // Safe rendering
