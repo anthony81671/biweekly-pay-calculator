@@ -647,29 +647,23 @@
         >
           Generate Final Report
         </button>
-          Generate Final Report
-        </button>
       </div>
 
       <!-- EXCEL PREVIEW MODAL -->
       <div id="excelPreviewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
-          <div class="card" style="width: 90%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column;">
+          <div class="card" style="width: 95%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
               <h2>📋 Preview Import</h2>
               <div style="margin-bottom: 10px; font-size: 12px; color: var(--text-muted);">
-                  Please verify data before saving.
+                  Showing all columns found in the file. Only <b>Date</b> and <b>Amount</b> (auto-detected) will be saved.
               </div>
-              <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
-                  <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                      <thead style="background: #f5f5f5; position: sticky; top: 0;">
-                          <tr>
-                              <th style="padding: 8px; text-align: left;">Date</th>
-                              <th style="padding: 8px; text-align: right;">Amount</th>
-                          </tr>
+              <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 400px;">
+                      <thead style="background: #f5f5f5; position: sticky; top: 0;" id="previewTableHead">
                       </thead>
                       <tbody id="previewTableBody"></tbody>
                   </table>
               </div>
-              <div style="margin-top: 20px; display: flex; gap: 10px;">
+              <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
                   <button class="btn-outline" onclick="closePreviewModal()">Cancel</button>
                   <button class="btn-success" onclick="confirmExcelUpload()">Confirm & Save</button>
               </div>
@@ -1520,6 +1514,8 @@
 
       /* EXCEL LOGIC */
       let parsedExcelData = [];
+      let parsedHeaders = [];
+      let detectedMapping = { date: -1, amount: -1, worker: -1 };
 
       function handleExcelUpload(input) {
           const file = input.files[0];
@@ -1532,111 +1528,252 @@
               const firstSheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[firstSheetName];
               
+              // Get all data including headers
               const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
               
-              // Process Data: Assume Col 0 is Date, Col 1 is Amount
-              parsedExcelData = [];
-              // Skip header row if starts with text
-              let startIdx = 0;
-              if (json[0] && (typeof json[0][0] === 'string' && isNaN(Date.parse(json[0][0])))) {
-                  startIdx = 1; 
+              if (!json || json.length === 0) {
+                  alert("File is empty");
+                  return;
               }
+
+              parsedExcelData = [];
+              parsedHeaders = [];
+              
+              // Attempt to detect header row
+              let startIdx = 0;
+              let firstRow = json[0];
+              
+              // Simple Header Detection
+              if (firstRow && firstRow.some(c => typeof c === 'string')) {
+                  parsedHeaders = firstRow.map((h, i) => h || `Col ${i+1}`);
+                  startIdx = 1;
+              } else {
+                  parsedHeaders = firstRow.map((_, i) => `Col ${i+1}`);
+                  startIdx = 0;
+              }
+              
+              // Analyze columns for Date/Amount/Worker suggestions
+              detectedMapping = { date: 0, amount: 1, worker: -1 }; // Default defaults
+              
+              parsedHeaders.forEach((h, i) => {
+                  const lower = String(h).toLowerCase();
+                  if (lower.includes('date') || lower.includes('day')) detectedMapping.date = i;
+                  if (lower.includes('amount') || lower.includes('total') || lower.includes('cost') || lower.includes('price')) detectedMapping.amount = i;
+                  if (lower.includes('worker') || lower.includes('name') || lower.includes('employee') || lower.includes('staff')) detectedMapping.worker = i;
+              });
 
               for (let i = startIdx; i < json.length; i++) {
                   const row = json[i];
-                  if (!row || row.length < 2) continue;
-                  
-                  // Parse Date
-                  let dateVal = row[0];
-                  let dateStr = "";
-                  
-                  // Handle Excel serial date
-                  if (typeof dateVal === 'number') {
-                      const d = new Date(Math.round((dateVal - 25569)*86400*1000));
-                      // Adjust for timezone offset to keep date correct
-                      d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                      dateStr = d.toISOString().split("T")[0];
-                  } else if (typeof dateVal === 'string') {
-                      // Try simple parse
-                      const d = new Date(dateVal);
-                      if (!isNaN(d.getTime())) {
-                        dateStr = d.toISOString().split("T")[0];
-                      }
-                  }
-                  
-                  let amount = parseFloat(row[1]) || 0;
-                  
-                  if (dateStr && amount > 0) {
-                      parsedExcelData.push({ date: dateStr, amount: amount });
-                  }
+                  if (!row || row.length === 0) continue;
+                  // Store raw row for later mapped parsing
+                  parsedExcelData.push({ _rawRow: row });
               }
               
               if (parsedExcelData.length > 0) {
                   showPreviewModal();
               } else {
-                  alert("No valid data found! Ensure Col A is Date and Col B is Amount.");
+                  alert("No data found to import.");
               }
               
-              input.value = ""; // Reset input
+              input.value = ""; 
           };
           reader.readAsArrayBuffer(file);
       }
 
       function showPreviewModal() {
-          const tbody = document.getElementById("previewTableBody");
-          tbody.innerHTML = "";
-          let total = 0;
+          const contentDiv = document.querySelector("#excelPreviewModal .card");
           
-          parsedExcelData.forEach(row => {
-              total += row.amount;
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                  <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${row.date}</td>
-                  <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${fmt(row.amount)}</td>
-              `;
-              tbody.appendChild(tr);
-          });
+          // Inject Column Mappers if not exists
+          let mapperDiv = document.getElementById("columnMappers");
+          if (!mapperDiv) {
+              mapperDiv = document.createElement("div");
+              mapperDiv.id = "columnMappers";
+              mapperDiv.style.marginBottom = "15px";
+              mapperDiv.style.padding = "10px";
+              mapperDiv.style.background = "#fff"; // bg
+              mapperDiv.style.border = "1px solid var(--primary)";
+              mapperDiv.style.borderRadius = "8px";
+              mapperDiv.style.display = "flex";
+              mapperDiv.style.gap = "15px";
+              mapperDiv.style.flexWrap = "wrap";
+              
+              // Insert after title
+              contentDiv.insertBefore(mapperDiv, contentDiv.children[2]); // After description
+          }
           
-          // Total Row
-          const trTotal = document.createElement("tr");
-          trTotal.style.fontWeight = "bold";
-          trTotal.style.backgroundColor = "#f0fdf4";
-          trTotal.innerHTML = `
-              <td style="padding: 8px;">Total</td>
-              <td style="padding: 8px; text-align: right;">${fmt(total)}</td>
+          // Render Mappers
+          const options = parsedHeaders.map((h, i) => `<option value="${i}">${h}</option>`).join("");
+          const noneOpt = `<option value="-1">-- None (Use Dropdown) --</option>`;
+          
+          mapperDiv.innerHTML = `
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Worker Column</label>
+               <select id="mapWorker" onchange="refreshPreviewTable()" style="width:100%">${noneOpt}${options}</select>
+             </div>
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Date Column</label>
+               <select id="mapDate" onchange="refreshPreviewTable()" style="width:100%">${options}</select>
+             </div>
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Amount Column</label>
+               <select id="mapAmount" onchange="refreshPreviewTable()" style="width:100%">${options}</select>
+             </div>
           `;
-          tbody.appendChild(trTotal);
+          
+          // Set Defaults
+          document.getElementById("mapWorker").value = detectedMapping.worker;
+          document.getElementById("mapDate").value = detectedMapping.date > -1 ? detectedMapping.date : 0;
+          document.getElementById("mapAmount").value = detectedMapping.amount > -1 ? detectedMapping.amount : 1;
+
+          refreshPreviewTable();
           
           document.getElementById("excelPreviewModal").style.display = "flex";
       }
 
-      function closePreviewModal() {
-          document.getElementById("excelPreviewModal").style.display = "none";
-          parsedExcelData = [];
+      function refreshPreviewTable() {
+         const wIdx = parseInt(document.getElementById("mapWorker").value);
+         const dIdx = parseInt(document.getElementById("mapDate").value);
+         const aIdx = parseInt(document.getElementById("mapAmount").value);
+         
+         const thead = document.getElementById("previewTableHead");
+         const tbody = document.getElementById("previewTableBody");
+         thead.innerHTML = "";
+         tbody.innerHTML = "";
+         
+         // Headers
+         let hRow = document.createElement("tr");
+         parsedHeaders.forEach((h, i) => {
+             let th = document.createElement("th");
+             th.style.padding = "8px";
+             th.style.textAlign = "left";
+             th.style.borderBottom = "2px solid #ddd";
+             // Highlight mapped columns
+             if (i === wIdx) th.style.background = "#eef2ff"; // Indigo
+             if (i === dIdx) th.style.background = "#f0fdf4"; // Green
+             if (i === aIdx) th.style.background = "#fffbeb"; // Yellow
+             th.textContent = h;
+             hRow.appendChild(th);
+         });
+         thead.appendChild(hRow);
+
+         // Rows
+         let limit = 50; // Performance limit for preview
+         parsedExcelData.slice(0, limit).forEach(item => {
+             let row = item._rawRow;
+             let tr = document.createElement("tr");
+             
+             parsedHeaders.forEach((_, i) => {
+                  let val = row[i];
+                  let displayVal = val !== undefined ? val : "";
+                  
+                  // Format checks
+                  if (i === dIdx) {
+                      // Attempt parse date for preview
+                      displayVal = parseExcelDateSafe(val);
+                  }
+                  if (i === aIdx) {
+                      if(typeof val === 'number') displayVal = fmt(val);
+                  }
+                  
+                  let td = document.createElement("td");
+                  td.style.padding = "6px 8px";
+                  td.style.borderBottom = "1px solid #eee";
+                  if (i === aIdx) td.style.textAlign = "right";
+                  if (i === wIdx || i === dIdx || i === aIdx) td.style.fontWeight = "600";
+                  
+                  td.textContent = displayVal;
+                  tr.appendChild(td);
+             });
+             tbody.appendChild(tr);
+         });
+         
+         if(parsedExcelData.length > limit) {
+             let tr = document.createElement("tr");
+             tr.innerHTML = `<td colspan="${parsedHeaders.length}" style="padding:10px;text-align:center;color:#666;">... and ${parsedExcelData.length - limit} more rows</td>`;
+             tbody.appendChild(tr);
+         }
+      }
+
+      function parseExcelDateSafe(val) {
+          if (typeof val === 'number') {
+              const d = new Date(Math.round((val - 25569)*86400*1000));
+              d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+              return d.toISOString().split("T")[0];
+          } else if (typeof val === 'string') {
+              const d = new Date(val);
+              if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+          }
+          return val; // Fallback
       }
 
       async function confirmExcelUpload() {
-          const w = document.getElementById("workerSelect").value;
-          if (!w) {
-              alert("Please select a worker first!");
-              closePreviewModal();
+          const globalWorker = document.getElementById("workerSelect").value;
+          
+          const wIdx = parseInt(document.getElementById("mapWorker").value);
+          const dIdx = parseInt(document.getElementById("mapDate").value);
+          const aIdx = parseInt(document.getElementById("mapAmount").value);
+
+          // Validation
+          if (wIdx === -1 && !globalWorker) {
+              alert("Please either Select a Worker from the dropdown OR map a Worker Column!");
               return;
           }
           
           document.getElementById("excelPreviewModal").style.display = "none";
           document.getElementById("loading-worker").style.display = "flex";
           
-          let records = parsedExcelData.map(row => ({
-               entry_date: row.date,
-               worker_name: w,
-               amount: row.amount,
-               discount: 0, // Should we fetch existing discount? Probably safer to assume 0 or keep existing if using upsert logic carefully?
-                            // Current upsert replaces row. So discount becomes 0 if not specified.
-                            // Ideally, we should fetch existing rows first. 
-                            // For simplicity/requirement, maybe just 0 is fine, or we can improve later.
-                            // Let's assume 0 for bulk import to new period.
-               loyalty_discount: 0
-          }));
+          let records = [];
+          let skipped = 0;
+          
+          parsedExcelData.forEach(item => {
+              const row = item._rawRow;
+              
+              // Get Worker Name
+              let wName = globalWorker;
+              if (wIdx !== -1 && row[wIdx]) {
+                  wName = String(row[wIdx]).trim();
+              }
+              
+              if (!wName) {
+                  skipped++;
+                  return; 
+              }
+              
+              // Get Date
+              let dateStr = parseExcelDateSafe(row[dIdx]);
+              // Basic date validation YYYY-MM-DD
+              if (!dateStr || dateStr.length !== 10) {
+                   // Try to see if it's already ISO string or fallback? handled by parseExcelDateSafe returning val
+                   // We strict check if it matches YYYY-MM-DD
+                   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                       skipped++;
+                       return;
+                   }
+              }
+              
+              // Get Amount
+              let amount = parseFloat(row[aIdx]);
+              if (!amount || isNaN(amount) || amount <= 0) {
+                  // Allow 0? usually sales > 0
+                  // skipped++; 
+                  // Let's skip invalid amounts
+                  return;
+              }
+              
+              records.push({
+                   entry_date: dateStr,
+                   worker_name: wName,
+                   amount: amount,
+                   discount: 0, 
+                   loyalty_discount: 0
+               });
+          });
+          
+          if (records.length === 0) {
+              alert("No valid records found to import. Check your column mappings.");
+              document.getElementById("loading-worker").style.display = "none";
+              return;
+          }
           
           // Upsert to cloud
          const { error } = await supabaseClient
@@ -1646,12 +1783,12 @@
          if (error) {
            alert("Import Error: " + error.message);
          } else {
-           showToast(`Imported ${records.length} entries for ${w}!`);
+           showToast(`Imported ${records.length} entries! (${skipped} skipped)`);
            
-           // Update cache
+           // Update cache (optimized)
            records.forEach(r => {
              if (!cloudCache[r.entry_date]) cloudCache[r.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
-             cloudCache[r.entry_date].incomes[w] = r.amount;
+             cloudCache[r.entry_date].incomes[r.worker_name] = r.amount;
            });
            
            // Refresh View

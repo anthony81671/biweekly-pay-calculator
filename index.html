@@ -909,15 +909,13 @@
 
       async function loadDashboardData(forceRefresh = false) {
         try {
-          updateStatus("Loading Year Data...");
+          updateStatus("Loading Data...");
           
-          const startStr = `${selectedYear}-01-01`;
-          const endStr = `${selectedYear}-12-31`;
-
-          // Check cache if needed (optional implementation, for now direct fetch for simplicity or minimal caching)
-          // Simple in-memory cache for years?
-          if (!forceRefresh && yearDataCache[selectedYear]) {
-              await processAndRender(yearDataCache[selectedYear]);
+          // Fetch ALL history for YoY comparison
+          // We rely on client-side filtering for the specific year view
+          
+          if (!forceRefresh && yearDataCache['all']) {
+              await processAndRender(yearDataCache['all']);
               updateStatus("✓ Data Loaded (Cached)", "var(--success)");
               return;
           }
@@ -925,16 +923,16 @@
           const { data, error } = await supabaseClient
             .from("sales_records")
             .select("*")
-            .gte("entry_date", startStr)
-            .lte("entry_date", endStr);
+            .order("entry_date", { ascending: true })
+            .range(0, 9999); // Fetch up to 10k records to bypass default 1000 limit
 
           if (error) throw new Error(error.message);
 
-          const records = data || [];
-          yearDataCache[selectedYear] = records;
+          const allRecords = data || [];
+          yearDataCache['all'] = allRecords;
           
           updateStatus("✓ Data Sync Complete", "var(--primary)");
-          await processAndRender(records);
+          await processAndRender(allRecords);
 
         } catch (err) {
           console.error("Dashboard Load Error:", err);
@@ -943,17 +941,24 @@
         }
       }
 
-      async function processAndRender(records) {
+      async function processAndRender(allRecords) {
         try {
+            // Store full history globally for other uses if needed
+            ytdData = allRecords; 
+
+            // Filter for Selected Year for the Main Dashboard view (Cards, Charts)
+            const yearStr = String(selectedYear);
+            const currentYearRecords = allRecords.filter(r => r.entry_date.startsWith(yearStr));
+
             const workers = new Set();
-            // We need ytdData for the Yearly Tracker (maybe fetch more history?)
-            // For now, populate ytdData with just this year's records so the tracker works for this year.
-            // Or ideally, we should fetch multiple years for the tracker. 
-            // Let's assume for this specific view request, we focus on the selected year.
-            ytdData = records; 
+            currentYearRecords.forEach(r => workers.add(r.worker_name));
             
-            records.forEach(r => workers.add(r.worker_name));
-            await renderDashboard(Array.from(workers), records);
+            // Pass filtered records for dashboard stats, but we will call renderYoYComparison independently or pass allRecords
+            await renderDashboard(Array.from(workers), currentYearRecords);
+            
+            // Render YoY Comparison using ALL data
+            renderYoYComparison(allRecords);
+
         } catch (e) {
             console.error("Error in processAndRender:", e);
             throw e;
@@ -974,12 +979,12 @@
         let totalDiscounts = 0;
         let totalStaffPay = 0;
         
-        let workerStats = {}; 
+        // Define workerStats
+        let workerStats = {};
         workers.forEach(w => workerStats[w] = { sales: 0, pay: 0 });
 
         // Deduplicate days for discount calculation
         let dailyMap = {};
-        // workerStats already initialized above
 
         records.forEach(r => {
              // Sales
@@ -994,7 +999,7 @@
              }
              dailyMap[r.entry_date].sales += amt;
              
-             // Track max discount seen for this day (assuming it's duplicated across rows)
+             // Track max discount seen for this day
              let d = (parseFloat(r.discount) || 0) + (parseFloat(r.loyalty_discount) || 0);
              if (d > dailyMap[r.entry_date].discount) {
                  dailyMap[r.entry_date].discount = d;
@@ -1019,14 +1024,7 @@
         const netIncome = grossSales - totalDiscounts - totalStaffPay;
 
         // Render Cards
-        document.getElementById("statGrossSales").textContent = fmt(grossSales - totalDiscounts); // Net Sales (Gross - Discount) usually
-        // Actually, usually Gross Sales in this app context includes discounts? 
-        // Let's look at previous logic: "ytdGross - ytdDisc".
-        // Label is "Gross Sales". Previous logic was: ytdGross (sum of amounts) + periodGross.
-        // Wait, "Gross Sales" usually means Pre-Discount. "Net Sales" is Post-Discount.
-        // The previous code did: `document.getElementById("statGrossSales").textContent = fmt(ytdGross - ytdDisc);`
-        // So it displayed (Gross - Discount). I will stick to that.
-        
+        document.getElementById("statGrossSales").textContent = fmt(grossSales - totalDiscounts); 
         document.getElementById("statGrossChange").textContent = `Total in ${selectedYear}`;
 
         document.getElementById("statNetIncome").textContent = fmt(netIncome);
@@ -1037,13 +1035,156 @@
 
         // Render Calendar
         try {
+            // We need to ensure cached month data is refreshed if we fetched new data
+            // Since we rely on Supabase fetch in renderCalendar which filters by date, 
+            // we should probably refactor renderCalendar to use our local `records` if they are fully loaded?
+            // Existing renderCalendar fetches from Supabase again. That's fine for now to keep it isolated,
+            // or we could optimize it. Given the instruction to keep changes focused, I'll leave renderCalendar as is.
             await renderCalendar();
         } catch(e) { console.error(e); }
+        
+        // renderYoYComparison is called in processAndRender
+      }
 
-        // Render Yearly List
-        try {
-            renderYearlySales();
-        } catch(e) { console.error(e); }
+      function renderYoYComparison(allRecords) {
+        const container = document.getElementById("yearlySales");
+        const prevYear = selectedYear - 1;
+
+        const yearStats = {};
+        const initMonth = () => ({ sales: 0, discounts: 0 });
+
+        // Process all records
+        allRecords.forEach(r => {
+            // Robust date parsing
+            // entry_date is YYYY-MM-DD. 
+            const parts = r.entry_date.split('-');
+            const y = parseInt(parts[0]);
+            const m = parseInt(parts[1]) - 1; // 0-indexed
+
+            if (!yearStats[y]) yearStats[y] = {};
+            if (!yearStats[y][m]) yearStats[y][m] = initMonth();
+            
+            if(!yearStats[y][m].days) yearStats[y][m].days = {};
+            if(!yearStats[y][m].days[r.entry_date]) yearStats[y][m].days[r.entry_date] = { sales: 0, disc: 0 };
+            
+            yearStats[y][m].days[r.entry_date].sales += (parseFloat(r.amount)||0);
+            
+            let d = (parseFloat(r.discount)||0) + (parseFloat(r.loyalty_discount)||0);
+            if (d > yearStats[y][m].days[r.entry_date].disc) {
+                yearStats[y][m].days[r.entry_date].disc = d;
+            }
+        });
+
+        // Summarize
+        Object.keys(yearStats).forEach(y => {
+            Object.keys(yearStats[y]).forEach(m => {
+                let sales = 0;
+                let discs = 0;
+                Object.values(yearStats[y][m].days).forEach(day => {
+                    sales += day.sales;
+                    discs += day.disc;
+                });
+                yearStats[y][m].netSales = sales - discs;
+            });
+        });
+
+        const months = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        let html = `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                 <h3 style="margin:0; font-family: 'Playfair Display', serif;">📅 Year Over Year Comparison</h3>
+            </div>
+            <div style="font-size:14px; color:var(--text-muted); margin-bottom:12px; font-weight:500;">
+                Comparing <span style="color:var(--primary); font-weight:700;">${selectedYear}</span> vs ${prevYear}
+            </div>
+            
+            <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 12px;">
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif;">
+                <thead>
+                    <tr style="background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border);">
+                        <th style="text-align: left; padding: 12px 16px; color: var(--text-muted); font-size:12px; text-transform:uppercase;">Month</th>
+                        <th style="text-align: right; padding: 12px 16px; color: var(--text-muted); font-size:12px; text-transform:uppercase;">${prevYear}</th>
+                        <th style="text-align: right; padding: 12px 16px; color: var(--primary); font-size:12px; text-transform:uppercase;">${selectedYear}</th>
+                        <th style="text-align: right; padding: 12px 16px; color: var(--text-muted); font-size:12px; text-transform:uppercase;">Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let currentTotal = 0;
+        let prevTotal = 0;
+
+        months.forEach((monthName, i) => {
+            const valCurr = (yearStats[selectedYear] && yearStats[selectedYear][i]) ? yearStats[selectedYear][i].netSales : 0;
+            const valPrev = (yearStats[prevYear] && yearStats[prevYear][i]) ? yearStats[prevYear][i].netSales : 0;
+            
+            currentTotal += valCurr;
+            prevTotal += valPrev;
+
+            let changePct = 0;
+            let changeClass = "neutral";
+            let changeIcon = "";
+
+            if (valPrev > 0) {
+                changePct = ((valCurr - valPrev) / valPrev) * 100;
+                if (changePct > 0) { changeClass = "positive"; changeIcon = "▲"; } // Unified font arrows
+                else if (changePct < 0) { changeClass = "negative"; changeIcon = "▼"; }
+            } else if (valCurr > 0) {
+                changePct = 100;
+                changeClass = "positive";
+                changeIcon = "★"; // New
+            }
+
+            const pctStr = Math.abs(changePct).toFixed(1) + "%";
+            const color = changeClass === "positive" ? "var(--success)" : changeClass === "negative" ? "var(--danger)" : "var(--text-muted)";
+            
+            // Logic: Show row if verifyCurrent has data OR verifyPrev has data.
+            // Always show all months for structure? Yes looks better.
+            
+            html += `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 12px 16px; font-weight: 500; font-size: 14px;">${monthName}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-family: 'Inter', sans-serif; color: var(--text-muted);">${valPrev > 0 ? fmt(valPrev) : '-'}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-family: 'Inter', sans-serif; font-weight: 600; color:var(--text-main);">${valCurr > 0 ? fmt(valCurr) : '-'}</td>
+                    <td style="padding: 12px 16px; text-align: right; color: ${color}; font-weight: 600; font-size:13px;">
+                        ${(valCurr === 0 && valPrev === 0) ? '' : `${changeIcon} ${pctStr}`}
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Totals
+         let totalChangePct = 0;
+         let totalIcon = "";
+         let totalColor = "var(--text-muted)";
+         
+         if (prevTotal > 0) {
+            totalChangePct = ((currentTotal - prevTotal) / prevTotal) * 100;
+            if (totalChangePct > 0) { totalIcon = "▲"; totalColor = "var(--success)"; }
+            else if (totalChangePct < 0) { totalIcon = "▼"; totalColor = "var(--danger)"; }
+         } else if (currentTotal > 0) {
+             totalChangePct = 100;
+             totalIcon = "★";
+             totalColor = "var(--success)";
+         }
+
+        html += `
+                <tr style="background: rgba(0,0,0,0.02);">
+                    <td style="padding: 12px 16px; font-weight: 700;">TOTAL</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 700;">${fmt(prevTotal)}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 700; color: var(--primary);">${fmt(currentTotal)}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 800; color: ${totalColor};">
+                        ${totalIcon} ${Math.abs(totalChangePct).toFixed(1)}%
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        </div>`;
+
+        container.innerHTML = html;
       }
 
       async function renderCalendar() {
