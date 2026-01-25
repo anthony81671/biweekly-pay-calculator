@@ -1080,6 +1080,33 @@
         console.log('🔍 Processing', allRecords.length, 'records for YoY comparison');
         console.log('📅 Selected Year:', selectedYear, '| Previous Year:', prevYear);
 
+        // Detailed data analysis
+        const datesByYear = {};
+        allRecords.forEach(r => {
+            const year = r.entry_date.substring(0, 4);
+            if (!datesByYear[year]) datesByYear[year] = new Set();
+            datesByYear[year].add(r.entry_date);
+        });
+
+        console.log('📊 DATABASE SUMMARY:');
+        Object.keys(datesByYear).sort().forEach(year => {
+            const dates = Array.from(datesByYear[year]).sort();
+            console.log(`   ${year}: ${dates.length} unique dates`);
+            console.log(`      Range: ${dates[0]} to ${dates[dates.length - 1]}`);
+
+            // Show month breakdown
+            const monthCounts = {};
+            dates.forEach(date => {
+                const month = date.substring(5, 7);
+                monthCounts[month] = (monthCounts[month] || 0) + 1;
+            });
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthSummary = Object.entries(monthCounts).map(([m, count]) => {
+                return `${monthNames[parseInt(m)-1]}(${count})`;
+            }).join(', ');
+            console.log(`      Months: ${monthSummary}`);
+        });
+
         allRecords.forEach(r => {
             // Robust date parsing
             // entry_date is YYYY-MM-DD.
