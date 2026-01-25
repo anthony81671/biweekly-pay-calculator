@@ -943,15 +943,31 @@
               return;
           }
           
-          const { data, error } = await supabaseClient
-            .from("sales_records")
-            .select("*")
-            .order("entry_date", { ascending: true })
-            .range(0, 9999); // Fetch up to 10k records to bypass default 1000 limit
+          // Fetch ALL records - Supabase default limit is 1000, so we need to handle pagination
+          let allRecords = [];
+          let from = 0;
+          const batchSize = 1000;
+          let hasMore = true;
 
-          if (error) throw new Error(error.message);
+          while (hasMore) {
+            const { data, error } = await supabaseClient
+              .from("sales_records")
+              .select("*")
+              .order("entry_date", { ascending: true })
+              .range(from, from + batchSize - 1);
 
-          const allRecords = data || [];
+            if (error) throw new Error(error.message);
+
+            if (data && data.length > 0) {
+              allRecords = allRecords.concat(data);
+              from += batchSize;
+              hasMore = data.length === batchSize; // Continue if we got a full batch
+            } else {
+              hasMore = false;
+            }
+          }
+
+          console.log(`📥 Loaded ${allRecords.length} total records from database (fetched in batches)`);
           yearDataCache['all'] = allRecords;
           
           updateStatus("✓ Data Sync Complete", "var(--primary)");
