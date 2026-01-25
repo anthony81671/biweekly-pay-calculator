@@ -1256,22 +1256,32 @@
          let totalChangePct = 0;
          let totalIcon = "";
          let totalColor = "var(--text-muted)";
-         
+         let currentTotalColor = "var(--text-main)"; // Default color for current year total
+
          if (prevTotal > 0) {
             totalChangePct = ((currentTotal - prevTotal) / prevTotal) * 100;
-            if (totalChangePct > 0) { totalIcon = "▲"; totalColor = "var(--success)"; }
-            else if (totalChangePct < 0) { totalIcon = "▼"; totalColor = "var(--danger)"; }
+            if (totalChangePct > 0) {
+                totalIcon = "▲";
+                totalColor = "var(--success)";
+                currentTotalColor = "var(--success)"; // Green if higher
+            }
+            else if (totalChangePct < 0) {
+                totalIcon = "▼";
+                totalColor = "var(--danger)";
+                currentTotalColor = "var(--danger)"; // Red if lower
+            }
          } else if (currentTotal > 0) {
              totalChangePct = 100;
              totalIcon = "★";
              totalColor = "var(--success)";
+             currentTotalColor = "var(--success)";
          }
 
         html += `
                 <tr style="background: rgba(0,0,0,0.02);">
                     <td style="padding: 12px 16px; font-weight: 700;">TOTAL</td>
                     <td style="padding: 12px 16px; text-align: right; font-weight: 700;">${fmt(prevTotal)}</td>
-                    <td style="padding: 12px 16px; text-align: right; font-weight: 700; color: var(--primary);">${fmt(currentTotal)}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 700; color: ${currentTotalColor};">${fmt(currentTotal)}</td>
                     <td style="padding: 12px 16px; text-align: right; font-weight: 800; color: ${totalColor};">
                         ${totalIcon} ${Math.abs(totalChangePct).toFixed(1)}%
                     </td>
