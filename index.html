@@ -206,6 +206,8 @@
         grid-template-columns: 2fr 1fr;
         gap: 20px;
         margin-bottom: 32px;
+        /* Allow items to have different heights */
+        align-items: start;
       }
 
       .chart-card {
@@ -362,6 +364,8 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         border: 1px solid var(--border);
         max-height: none;
+        height: auto;
+        min-height: auto;
         overflow: visible;
       }
 
@@ -374,12 +378,18 @@
       /* Ensure YoY comparison table is fully scrollable */
       .yearly-sales #yearlySales {
         max-height: none;
+        height: auto;
         overflow: visible;
       }
 
       .yearly-sales table {
         width: 100%;
         table-layout: fixed;
+      }
+
+      /* Ensure table tbody can display all rows */
+      .yearly-sales tbody {
+        display: table-row-group;
       }
 
       .year-item {
@@ -1102,9 +1112,12 @@
         });
 
         const months = [
-            "January", "February", "March", "April", "May", "June", 
+            "January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"
         ];
+
+        console.log('📊 YoY Comparison: Rendering', months.length, 'months');
+        console.log(`📊 Year Stats for ${selectedYear}:`, yearStats[selectedYear]);
 
         let html = `
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
@@ -1114,7 +1127,7 @@
                 Comparing <span style="color:var(--primary); font-weight:700;">${selectedYear}</span> vs ${prevYear}
             </div>
             
-            <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 12px;">
+            <div style="overflow-x: auto; overflow-y: visible; max-height: none; border: 1px solid var(--border); border-radius: 12px;">
             <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif;">
                 <thead>
                     <tr style="background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--border);">
@@ -1197,6 +1210,7 @@
         </table>
         </div>`;
 
+        console.log('✅ YoY Comparison: Rendered all 12 months successfully');
         container.innerHTML = html;
       }
 
