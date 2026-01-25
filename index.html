@@ -1077,26 +1077,33 @@
         const initMonth = () => ({ sales: 0, discounts: 0 });
 
         // Process all records
+        console.log('🔍 Processing', allRecords.length, 'records for YoY comparison');
+        console.log('📅 Selected Year:', selectedYear, '| Previous Year:', prevYear);
+
         allRecords.forEach(r => {
             // Robust date parsing
-            // entry_date is YYYY-MM-DD. 
+            // entry_date is YYYY-MM-DD.
             const parts = r.entry_date.split('-');
             const y = parseInt(parts[0]);
             const m = parseInt(parts[1]) - 1; // 0-indexed
 
             if (!yearStats[y]) yearStats[y] = {};
             if (!yearStats[y][m]) yearStats[y][m] = initMonth();
-            
+
             if(!yearStats[y][m].days) yearStats[y][m].days = {};
             if(!yearStats[y][m].days[r.entry_date]) yearStats[y][m].days[r.entry_date] = { sales: 0, disc: 0 };
-            
+
             yearStats[y][m].days[r.entry_date].sales += (parseFloat(r.amount)||0);
-            
+
             let d = (parseFloat(r.discount)||0) + (parseFloat(r.loyalty_discount)||0);
             if (d > yearStats[y][m].days[r.entry_date].disc) {
                 yearStats[y][m].days[r.entry_date].disc = d;
             }
         });
+
+        console.log('📊 Year Stats After Processing:', yearStats);
+        console.log(`📊 ${selectedYear} months with data:`, Object.keys(yearStats[selectedYear] || {}).length);
+        console.log(`📊 ${prevYear} months with data:`, Object.keys(yearStats[prevYear] || {}).length);
 
         // Summarize
         Object.keys(yearStats).forEach(y => {
@@ -1146,7 +1153,11 @@
         months.forEach((monthName, i) => {
             const valCurr = (yearStats[selectedYear] && yearStats[selectedYear][i]) ? yearStats[selectedYear][i].netSales : 0;
             const valPrev = (yearStats[prevYear] && yearStats[prevYear][i]) ? yearStats[prevYear][i].netSales : 0;
-            
+
+            if (valCurr > 0 || valPrev > 0) {
+                console.log(`📅 ${monthName}: ${selectedYear}=$${valCurr.toFixed(2)} | ${prevYear}=$${valPrev.toFixed(2)}`);
+            }
+
             currentTotal += valCurr;
             prevTotal += valPrev;
 
@@ -1211,6 +1222,7 @@
         </div>`;
 
         console.log('✅ YoY Comparison: Rendered all 12 months successfully');
+        console.log(`💰 TOTALS: ${selectedYear}=$${currentTotal.toFixed(2)} | ${prevYear}=$${prevTotal.toFixed(2)}`);
         container.innerHTML = html;
       }
 
