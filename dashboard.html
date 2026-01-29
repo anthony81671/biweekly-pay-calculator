@@ -126,9 +126,10 @@
         letter-spacing: -0.02em;
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: 1024px) {
         .sidebar { display: none; }
         .container { margin-left: 0; padding: 20px; max-width: 100%; }
+        /* Add a mobile header or toggle in future if needed, for now just full width */
       }
       .card {
         background: var(--card-bg);
@@ -632,21 +633,9 @@
 
       <div class="card no-print">
         <h2>📊 3. Biweekly Summary</h2>
-        <div style="margin-bottom: 15px">
-          <label>Select Date within Period</label>
-          <input
-            type="date"
-            id="summaryPeriodPicker"
-            onchange="handleSummaryDateSelect(this.value)"
-          />
+        <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 10px;">
+            Summary will automatically update based on the selected Pay Period.
         </div>
-        <button
-          class="btn-secondary"
-          id="btn-gen-report"
-          onclick="generateReportFromSummary()"
-        >
-          Generate Final Report
-        </button>
       </div>
 
       <!-- EXCEL PREVIEW MODAL -->
@@ -1019,14 +1008,12 @@
         const snappedStart = getAutoPeriodStart(new Date(val + "T00:00:00"));
         document.getElementById("startDate").value = snappedStart;
         document.getElementById("periodPicker").value = val;
-        document.getElementById("summaryPeriodPicker").value = val;
+        // document.getElementById("summaryPeriodPicker").value = val; // Eliminated
         generatePeriod();
       }
 
-      function handleSummaryDateSelect(val) {
-        handleDateSelect(val);
-        generateReportFromSummary();
-      }
+      // Eliminated handleSummaryDateSelect
+      // function handleSummaryDateSelect(val) { ... }
 
       function getAutoPeriodStart(targetDate) {
         const t = new Date(targetDate);
@@ -1146,7 +1133,11 @@
           });
         }
         if (dbWorkersFound) refreshWorkerUI();
+        if (dbWorkersFound) refreshWorkerUI();
         loadDayFromCloud();
+        
+        // Auto-generate report once data is fetched
+        await generateReportFromSummary();
       }
 
       function switchTab(mode) {
@@ -1858,7 +1849,9 @@
 
       let ytdData = [];
       async function generateReportFromSummary() {
-        await prefetchPeriodData();
+        // We assume prefetchPeriodData() has already run to populate local cache and currentPeriodDates
+        if (!currentPeriodDates.length) return;
+        
         // Fetch YTD (Start of Year to end of current period)
         const yearStart = "2026-01-01";
         const periodEnd = currentPeriodDates[currentPeriodDates.length - 1];
