@@ -1420,13 +1420,15 @@
           let isLinh = w.toLowerCase() === "linh";
           let pay = isKim ? 0 : Math.round(s * SERVICE_RATE);
 
-          // W2 Logic: Tuyen/ThuyLee $750, Others $700, Kim $2500, Linh 100%
+          // W2 Logic: Tuyen/ThuyLee $750, Tammy $675, Others $700, Kim $2500, Linh 100%
           let is750 = ["tuyen", "thuylee"].includes(w.toLowerCase());
+          let isTammy = w.toLowerCase() === "tammy";
 
           let defaultW2 = 0;
           if (s > 0) {
             if (isKim) defaultW2 = 2500;
             else if (isLinh) defaultW2 = pay;
+            else if (isTammy) defaultW2 = 675;
             else if (is750) defaultW2 = 750;
             else defaultW2 = 700;
           }

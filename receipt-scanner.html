@@ -492,6 +492,7 @@
                 resultCard.style.display = 'block';
                 previewContainer.style.display = 'none';
             } catch (err) {
+                console.error('OCR Error:', err);
                 alert('Analysis failed: ' + err.message);
             } finally {
                 loadingOverlay.style.display = 'none';
