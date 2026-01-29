@@ -1928,43 +1928,46 @@
           let yDays = yDaysSet.size;
           let yPay = isKim ? 0 : Math.round(ySales * SERVICE_RATE);
           if(!isKim) tableYtdPaySum += yPay;
+          
+          // Only list workers who have sales this period
+          if (s > 0) {
+              let avg = d > 0 ? pay / d : 0;
+              let yAvg = yDays > 0 ? yPay / yDays : 0;
 
-          let avg = d > 0 ? pay / d : 0;
-          let yAvg = yDays > 0 ? yPay / yDays : 0;
+              let tr = document.createElement("tr");
+              tr.dataset.workerName = w; // Store raw name for logic
+              tr.innerHTML = `<td style="font-weight:700;">${w}</td>
+            <td style="text-align:right;">${fmt(s)}</td>
+            <td style="text-align:right;">${d}</td>
+            <td style="text-align:right; font-weight:700; color:var(--secondary);">${fmt(
+              pay
+            )}</td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; align-items:center; background:white; border:1px solid var(--border); border-radius:8px; padding:0 4px;">
+                <span style="font-size:12px; color:var(--text-muted); margin-right:2px;">$</span>
+                <input type="number" class="w2-entry" value="${Math.round(
+                  defaultW2
+                )}" style="width:70px; text-align:right; border:none; outline:none; padding:4px 2px;" oninput="updateFoot()">
+              </div>
+            </td>
+            <td style="text-align:right; font-weight:700; color:var(--success);" class="c-cell">${fmt(
+              0
+            )}</td>`;
+              body.appendChild(tr);
 
-          let tr = document.createElement("tr");
-          tr.dataset.workerName = w; // Store raw name for logic
-          tr.innerHTML = `<td style="font-weight:700;">${w}</td>
-        <td style="text-align:right;">${fmt(s)}</td>
-        <td style="text-align:right;">${d}</td>
-        <td style="text-align:right; font-weight:700; color:var(--secondary);">${fmt(
-          pay
-        )}</td>
-        <td style="text-align:right;">
-          <div style="display:inline-flex; align-items:center; background:white; border:1px solid var(--border); border-radius:8px; padding:0 4px;">
-            <span style="font-size:12px; color:var(--text-muted); margin-right:2px;">$</span>
-            <input type="number" class="w2-entry" value="${Math.round(
-              defaultW2
-            )}" style="width:70px; text-align:right; border:none; outline:none; padding:4px 2px;" oninput="updateFoot()">
-          </div>
-        </td>
-        <td style="text-align:right; font-weight:700; color:var(--success);" class="c-cell">${fmt(
-          0
-        )}</td>`;
-          body.appendChild(tr);
-
-          // Populate the new stats table
-          if (statsBody && !isKim) {
-             let trStat = document.createElement("tr");
-             trStat.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
-             trStat.innerHTML = `
-                <td style="padding: 6px 4px; font-weight: 700;">${w}</td>
-                <td style="padding: 6px 4px; text-align: right;">${fmt(ySales)}</td>
-                <td style="padding: 6px 4px; text-align: right;">${fmt(avg)}</td>
-                <td style="padding: 6px 4px; text-align: right; color:var(--secondary); font-weight:700;">${fmt(yPay)}</td>
-                <td style="padding: 6px 4px; text-align: right;">${fmt(yAvg)}</td>
-             `;
-             statsBody.appendChild(trStat);
+              // Populate the new stats table
+              if (statsBody && !isKim) {
+                 let trStat = document.createElement("tr");
+                 trStat.style.borderBottom = "1px solid rgba(0,0,0,0.05)";
+                 trStat.innerHTML = `
+                    <td style="padding: 6px 4px; font-weight: 700;">${w}</td>
+                    <td style="padding: 6px 4px; text-align: right;">${fmt(ySales)}</td>
+                    <td style="padding: 6px 4px; text-align: right;">${fmt(avg)}</td>
+                    <td style="padding: 6px 4px; text-align: right; color:var(--secondary); font-weight:700;">${fmt(yPay)}</td>
+                    <td style="padding: 6px 4px; text-align: right;">${fmt(yAvg)}</td>
+                 `;
+                 statsBody.appendChild(trStat);
+              }
           }
         });
         
