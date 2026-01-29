@@ -52,14 +52,27 @@
         margin: 0;
       }
       
-      /* Sidebar */
-      .sidebar {
-        width: 280px;
-        background: var(--sidebar-bg);
-        padding: 32px 24px;
-        position: fixed;
+      /* 1. Force the layout to stay side-by-side */
+      .dashboard-wrapper {
+        display: flex;
+        flex-wrap: nowrap; /* Prevents the content from pushing the menu out */
+        width: 100vw;
         height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* 2. Lock the Sidebar in place */
+      .sidebar {
+        width: 260px;
+        min-width: 260px; /* This ensures it is never "lost" */
+        flex-shrink: 0;   /* This prevents the browser from squishing it */
+        height: 100%;
+        background-color: #ffffff;
+        z-index: 10;      /* Keeps it on top of content */
+        padding: 32px 24px;
+        transition: all 0.3s ease;
         border-right: 1px solid var(--border);
+        overflow-y: auto; /* Ensure sidebar content supports scrolling if tall */
       }
       .logo-section {
         text-align: center;
@@ -102,11 +115,21 @@
         color: white;
       }
 
-      .container {
-        margin-left: 280px;
-        padding: 40px;
-        flex: 1;
-        max-width: calc(100% - 280px);
+      /* 3. Make the Sales Entry area flexible */
+      .main-content {
+        flex-grow: 1;
+        min-width: 0;      /* Magic fix: allows the content to be smaller than its children */
+        padding: 20px;
+        overflow-y: auto;
+      }
+      
+      /* 4. Fix the input fields so they don't break the page width */
+      input[type="text"], 
+      input[type="number"],
+      .sales-card,
+      .card {
+        max-width: 100%;   /* Ensures inputs don't push the screen wide */
+        box-sizing: border-box;
       }
       
       header {
@@ -126,10 +149,29 @@
         letter-spacing: -0.02em;
       }
 
-      @media (max-width: 1024px) {
-        .sidebar { display: none; }
-        .container { margin-left: 0; padding: 20px; max-width: 100%; }
-        /* Add a mobile header or toggle in future if needed, for now just full width */
+      /* 4. The "Browser Close" (Narrow Window) Fix */
+      @media (max-width: 768px) {
+        .dashboard-wrapper {
+          flex-direction: column; /* Moves sidebar to the top when browser is narrow */
+          height: auto; /* Allow height to grow on mobile */
+          overflow-x: auto;
+        }
+
+        .sidebar {
+          width: 100%; /* Sidebar takes full width at the top */
+          min-width: 0; /* reset min-width for mobile */
+          height: auto;
+        }
+        
+        .main-content {
+           overflow-y: visible; /* Let body scroll on mobile */
+           height: auto;
+        }
+        
+        .yearly-sales-tracker, .comparison-cards {
+          display: block;
+          width: 100%;
+        }
       }
       .card {
         background: var(--card-bg);
@@ -366,7 +408,8 @@
     </style>
   </head>
   <body>
-    <div class="sidebar">
+    <div class="dashboard-wrapper">
+      <div class="sidebar">
         <div class="logo-section">
             <img src="kntlogo2026.png" alt="K&T Nails">
             <h2>K&T NAILS</h2>
@@ -380,7 +423,7 @@
         </nav>
     </div>
 
-    <div class="container">
+    <div class="main-content">
       <header>
         <h1>Sales Entry</h1>
         <div class="sync-status" style="text-align: left; margin-top: 4px;">● Cloud Sync Connected</div>
@@ -927,6 +970,9 @@
         </div>
       </div>
     </div>
+
+    </div>
+    </div> <!-- End .dashboard-wrapper -->
 
     <div id="toast" class="toast">Data Synced!</div>
 
