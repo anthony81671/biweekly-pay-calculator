@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K&T Nails Operation Expenses Report</title>
+    <style>
+        @page {
+            size: landscape;
+            margin-top: 1cm;
+            margin-bottom: 1cm;
+            margin-left: 0.25in;
+            margin-right: 0.25in;
+        }
+
+        @media print {
+            body {
+                width: 100%;
+                height: 100%;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            color: #1a1a2e;
+            padding: 0;
+            margin: 0;
+            font-size: 10px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: 2px solid #2c5282;
+            position: relative;
+        }
+        
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-logo img {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+        }
+        
+        .header-text h1 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c5282;
+            margin-bottom: 2px;
+        }
+        
+        .header-text h2 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1a365d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .decorative-element {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 100px;
+            height: 60px;
+        }
+        
+        .decorative-element .blue-shape {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 60px;
+            height: 50px;
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+            clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%);
+        }
+        
+        .decorative-element .orange-shape {
+            position: absolute;
+            right: 50px;
+            top: 15px;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse !important;
+            font-size: 9px;
+        }
+
+        .company-breakdown-table {
+            width: 100%;
+            border-collapse: collapse !important;
+            font-size: 9px;
+        }
+        
+        thead tr {
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+        }
+        
+        thead th {
+            color: white;
+            padding: 4px 2px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 8px;
+            border: 1px solid #1a365d;
+        }
+
+        thead th:first-child {
+            text-align: left;
+            min-width: 160px;
+            padding-left: 8px;
+        }
+        
+        thead th:last-child {
+            background: linear-gradient(135deg, #1a365d, #0d1b2a);
+        }
+        
+        tbody td {
+            padding: 3px 2px;
+            border: 1px solid #e2e8f0;
+            text-align: right;
+            font-size: 8px;
+        }
+
+        tbody td:first-child {
+            text-align: left;
+            font-weight: 500;
+            padding-left: 10px;
+            font-size: 9px;
+        }
+        
+        tbody td:last-child {
+            font-weight: 700;
+            background: #f8fafc;
+        }
+        
+        .section-header td {
+            background: #2c5282 !important;
+            color: white !important;
+            font-weight: 800 !important;
+            font-size: 8px !important;
+            text-align: left !important;
+            padding: 4px 6px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: none !important;
+        }
+
+        .section-header.green td {
+            background: #276749 !important;
+        }
+
+        .section-header.purple td {
+            background: #553c9a !important;
+        }
+
+        .item-row td {
+            background: white;
+            padding-top: 3px !important;
+            border-top: none !important;
+        }
+
+        .item-row:nth-child(odd) td {
+            background: #f8fafc;
+        }
+
+        /* Remove spacing between section header and first row */
+        .section-header + .item-row td {
+            border-top: none !important;
+        }
+        
+        .total-row td {
+            background: #edf2f7 !important;
+            font-weight: 800 !important;
+            color: #1a365d;
+            border-top: 2px solid #2c5282;
+        }
+        
+        .grand-total-row td {
+            background: #2c5282 !important;
+            color: white !important;
+            font-weight: 900 !important;
+            font-size: 8px !important;
+            border-top: 2px solid #1a365d;
+        }
+        
+        .currency::before {
+            content: '$ ';
+        }
+        
+        .print-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .print-button:hover {
+            background: linear-gradient(135deg, #1a365d, #0d1b2a);
+        }
+        
+        /* Detailed Breakdown Styles */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .detailed-breakdown {
+            margin-top: 0;
+        }
+
+        .category-breakdown {
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+
+        .category-breakdown.page-break-category {
+            page-break-before: always;
+        }
+
+        /* Ensure company detail page header and table stay together */
+        .company-detail-page {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .company-detail-page .header {
+            margin-bottom: 10px;
+            page-break-after: avoid;
+        }
+
+        .company-detail-page .company-breakdown-table {
+            page-break-before: avoid;
+            page-break-inside: avoid;
+        }
+
+        .category-breakdown h3 {
+            background: linear-gradient(135deg, #2c5282, #1a365d);
+            color: white;
+            padding: 3px 6px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin: 2px 0 2px 0;
+        }
+
+        .category-header-repeat {
+            display: none;
+        }
+
+        @media print {
+            /* Ensure clean page breaks */
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Force page breaks for different report sections */
+            #detailedBreakdown > div {
+                page-break-before: always;
+            }
+
+            .category-breakdown {
+                page-break-inside: avoid;
+            }
+
+            .category-header-repeat {
+                display: block;
+                background: linear-gradient(135deg, #2c5282, #1a365d);
+                color: white;
+                padding: 8px 12px;
+                font-size: 11px;
+                font-weight: 800;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+            }
+
+            /* Make all table headers repeat on each printed page */
+            thead {
+                display: table-header-group !important;
+            }
+
+            .company-breakdown-table, 
+            .detail-table {
+                width: 100%;
+                page-break-inside: avoid;
+            }
+
+            .company-breakdown-table thead,
+            .detail-table thead {
+                display: table-header-group !important;
+            }
+
+            .company-breakdown-table tbody,
+            .detail-table tbody {
+                display: table-row-group;
+            }
+
+            /* Ensure tables have proper structure */
+            table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+
+            /* Prevent table rows from breaking across pages */
+            tr {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            thead tr, 
+            tbody tr:first-child {
+                page-break-inside: avoid;
+            }
+
+            /* Specific page break rules */
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse !important;
+            font-size: 9px;
+            margin-bottom: 8px;
+        }
+
+        .detail-table thead th {
+            background: #f1f5f9;
+            color: #1a365d;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 9px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .detail-table thead th:last-child {
+            text-align: right;
+        }
+
+        .detail-table tbody td {
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 9px;
+        }
+
+        .detail-table tbody td:first-child {
+            width: 90px;
+        }
+
+        .detail-table tbody td:nth-child(2) {
+            width: 160px;
+            font-weight: 500;
+        }
+
+        .detail-table tbody td:nth-child(3) {
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            max-width: 300px;
+            text-align: left;
+        }
+
+        .detail-table tbody td:last-child {
+            text-align: right;
+            font-weight: 600;
+            width: 100px;
+        }
+        
+        .detail-table tbody tr:nth-child(odd) {
+            background: #f8fafc;
+        }
+        
+        .detail-subtotal {
+            background: #e0f2fe !important;
+            font-weight: 800 !important;
+        }
+        
+        .detail-subtotal td {
+            color: #0c4a6e !important;
+            border-top: 2px solid #2c5282 !important;
+        }
+        
+        @media print {
+            /* Hide unwanted elements */
+            #zoom-info-widget, 
+            .zoom-info-overlay,
+            iframe[title="cex-reachout-package"],
+            div[id^="zi-"],
+            .print-button,
+            button, 
+            .no-print, 
+            nav,
+            .sidebar {
+                display: none !important;
+            }
+
+            /* Ensure clean, full-page printing */
+            html, body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            
+            body {
+                padding: 10px !important;
+                margin: 0 !important;
+                font-size: 10px !important;
+            }
+            
+            /* Ensure all content is visible */
+            .header, table, thead, tbody, tr, td, th {
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+            
+            /* Page break and layout rules */
+            table {
+                width: 100% !important;
+                page-break-inside: avoid !important;
+                border-collapse: collapse !important;
+            }
+            
+            /* Force page breaks */
+            #detailedBreakdown > div {
+                page-break-before: always !important;
+            }
+            
+            .page-break {
+                page-break-before: always !important;
+            }
+            
+            .category-breakdown {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Ensure headers repeat on each page */
+            thead {
+                display: table-header-group !important;
+                break-inside: avoid !important;
+            }
+            
+            /* Prevent row breaks */
+            tr {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            
+            /* Additional print-specific styling */
+            .header {
+                margin-bottom: 10px !important;
+            }
+            
+            /* Landscape orientation */
+            @page {
+                size: landscape;
+                margin: 10mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 10px 15px;">
+    <div class="header">
+        <div class="header-logo">
+            <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+            <div class="header-text">
+                <h1>K&T Nails and Spa</h1>
+                <h2 id="reportTitle">2025 OPERATION EXPENSES</h2>
+            </div>
+        </div>
+        <div class="decorative-element">
+            <div class="blue-shape"></div>
+            <div class="orange-shape"></div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>January</th>
+                <th>February</th>
+                <th>March</th>
+                <th>April</th>
+                <th>May</th>
+                <th>June</th>
+                <th>July</th>
+                <th>August</th>
+                <th>September</th>
+                <th>October</th>
+                <th>November</th>
+                <th>December</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="reportBody">
+            <!-- Data will be populated by JavaScript -->
+        </tbody>
+    </table>
+    
+    <!-- Detailed Breakdown Section -->
+    <div id="detailedBreakdown" class="detailed-breakdown"></div>
+    </div>
+    
+    <button id="printButton" class="print-button">🖨️ Print / Save as PDF</button>
+    
+    <script>
+        // Event listener for print button
+        document.getElementById('printButton').addEventListener('click', function() {
+            window.print();
+        });
+
+        // Get data from URL parameters OR localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        let dataParam = urlParams.get('data');
+        let receiptsParam = urlParams.get('receipts');
+        let yearParam = urlParams.get('year');
+        let monthParam = urlParams.get('month');
+        let isMonthlyReport = false;
+
+        // Comprehensive debug logging
+        console.group('Report Data Initialization');
+        console.log('URL Parameters:', {
+            data: dataParam,
+            receipts: receiptsParam,
+            year: yearParam,
+            month: monthParam
+        });
+        console.log('Local Storage:', {
+            exportData: localStorage.getItem('exportData'),
+            exportReceipts: localStorage.getItem('exportReceipts'),
+            exportYear: localStorage.getItem('exportYear'),
+            exportMonth: localStorage.getItem('exportMonth'),
+            isMonthlyReport: localStorage.getItem('isMonthlyReport')
+        });
+        console.groupEnd();
+
+        // Development mode: allow manual data input for testing
+        window.loadTestData = function() {
+            const testData = prompt('Paste JSON data for testing:');
+            const testReceipts = prompt('Paste receipts JSON (optional):');
+            
+            if (testData) {
+                try {
+                    // Attempt to parse even if it looks like an object
+                    const parsedData = typeof testData === 'string' ? JSON.parse(testData) : testData;
+                    const parsedReceipts = testReceipts ? 
+                        (typeof testReceipts === 'string' ? JSON.parse(testReceipts) : testReceipts) 
+                        : null;
+                    
+                    console.log('Parsed Data:', parsedData);
+                    console.log('Parsed Receipts:', parsedReceipts);
+                    
+                    renderReport(parsedData);
+                    if (parsedReceipts) {
+                        renderCompanyDetailReport(parsedReceipts);
+                        renderDetailedBreakdown(parsedReceipts);
+                    }
+                } catch (e) {
+                    console.error('Full error details:', e);
+                    alert('Error parsing test data: ' + e.message + '\nCheck console for full details');
+                }
+            }
+        };
+        
+        // Add a diagnostic function to help understand current data
+        window.checkCurrentData = function() {
+            console.log('Current dataParam:', dataParam);
+            console.log('Current receiptsParam:', receiptsParam);
+            console.log('Current yearParam:', yearParam);
+            console.log('Current monthParam:', monthParam);
+            console.log('Is Monthly Report:', isMonthlyReport);
+        };
+
+        // If no data in URL, try localStorage
+        if (!dataParam && localStorage.getItem('exportData')) {
+            console.log('Reading from localStorage...');
+            dataParam = localStorage.getItem('exportData');
+            receiptsParam = localStorage.getItem('exportReceipts');
+            yearParam = localStorage.getItem('exportYear');
+            monthParam = localStorage.getItem('exportMonth');
+            isMonthlyReport = localStorage.getItem('isMonthlyReport') === 'true';
+
+            console.log('LocalStorage data retrieved:', {
+                dataLength: dataParam?.length,
+                receiptsLength: receiptsParam?.length,
+                year: yearParam,
+                month: monthParam
+            });
+
+            // Don't clear localStorage immediately - keep it for debugging
+            // Will auto-clear on next export
+        } else if (dataParam) {
+            // Data came from URL, decode it
+            dataParam = decodeURIComponent(dataParam);
+            if (receiptsParam) {
+                receiptsParam = decodeURIComponent(receiptsParam);
+            }
+            isMonthlyReport = monthParam !== null && monthParam !== 'all';
+        }
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+
+        // Global variable for selected month (used by renderReport and renderDetailedBreakdown)
+        const selectedMonthIdx = isMonthlyReport && monthParam !== null ? parseInt(monthParam) : null;
+
+        if (yearParam) {
+            if (isMonthlyReport && monthParam !== null) {
+                const monthName = monthNames[parseInt(monthParam)];
+                document.getElementById('reportTitle').textContent = `${monthName} ${yearParam} - MONTHLY REPORT`;
+            } else {
+                document.getElementById('reportTitle').textContent = `${yearParam} OPERATION EXPENSES`;
+            }
+        }
+
+        function formatCurrency(amount) {
+            if (!amount || amount === 0) return '$0.00';
+            return '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function renderCompanyDetailReport(receipts) {
+            // Defensive rendering for company detail report
+            try {
+                // Validate inputs
+                if (!receipts || Object.keys(receipts).length === 0) {
+                    console.warn('No receipts data for company detail report');
+                    return;
+                }
+
+                const container = document.getElementById('detailedBreakdown');
+                if (!container) {
+                    console.error('Detailed breakdown container not found');
+                    return;
+                }
+
+                let html = '<div class="company-detail-page" style="page-break-before: always;">';
+
+            html += `
+                <div class="header">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                        <div class="header-text">
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>DETAILED COMPANY BREAKDOWN</h2>
+                        </div>
+                    </div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
+                    </div>
+                </div>
+                <table class="company-breakdown-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            ${isMonthlyReport && selectedMonthIdx !== null
+                                ? `<th>${monthNames[selectedMonthIdx]}</th>`
+                                : monthNames.map(month => `<th>${month}</th>`).join('') + '<th>Total</th>'
+                            }
+                        </tr>
+                    </thead>
+                    <tbody class="company-breakdown-body">`;
+
+            // Build company-month matrix for each subcategory
+            const subcategoryData = {};
+
+            Object.keys(receipts).forEach(subcategory => {
+                receipts[subcategory].forEach(item => {
+                    const itemDate = new Date(item.date + 'T12:00:00');
+                    const month = itemDate.getMonth();
+                    const company = item.company || 'N/A';
+                    const amount = item.amount || 0;
+
+                    if (!subcategoryData[subcategory]) {
+                        subcategoryData[subcategory] = {};
+                    }
+                    if (!subcategoryData[subcategory][company]) {
+                        subcategoryData[subcategory][company] = Array(12).fill(0);
+                    }
+                    subcategoryData[subcategory][company][month] += amount;
+                });
+            });
+
+            // Category groupings
+            const categoryGroups = {
+                'EMPLOYEE COSTS': ['Wages', 'CA PIT/SDI/SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'],
+                'OCCUPANCY': ['Rent', 'Insurance', 'Business License & Tax', 'Electricity & Gas', 'Water & Waste', 'Internet & Phone', 'Salon Equipments', 'Supplies'],
+                'MARKETING & PROFESSIONAL': ['Advertising', 'Subscriptions', 'Accounting & Legal'],
+                'ADMIN / BANK': ['Merchant Fees', 'Bank Service Charges'],
+                'TRAVEL / AUTO': ['Business Meals', 'Auto / Mileage', 'Auto/Mileage'],
+                'INCOME SOURCES': ['Venmo', 'Zelle', 'Credit Card Deposit']
+            };
+
+            const monthlyExpenseTotals = Array(12).fill(0);
+            const monthlyIncomeTotals = Array(12).fill(0);
+            const colSpan = isMonthlyReport && selectedMonthIdx !== null ? 2 : 14;
+
+            // Determine which months to show
+            const monthsToShow = isMonthlyReport && selectedMonthIdx !== null
+                ? [selectedMonthIdx]
+                : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+            // Render each category
+            Object.entries(categoryGroups).forEach(([categoryName, subcategories]) => {
+                let hasData = subcategories.some(sub => subcategoryData[sub]);
+                if (!hasData) return;
+
+                const isIncome = categoryName === 'INCOME SOURCES';
+                const categoryColor = categoryName === 'EMPLOYEE COSTS' ? '#2c5282' : (isIncome ? '#553c9a' : '#276749');
+
+                // Add page break before Marketing & Professional
+                const pageBreakStyle = categoryName === 'MARKETING & PROFESSIONAL' ? 'page-break-before: always;' : '';
+
+                html += `<tr class="section-header" style="background: ${categoryColor} !important; ${pageBreakStyle}"><td colspan="${colSpan}">${categoryName}</td></tr>`;
+
+                subcategories.forEach(subcategory => {
+                    const companies = subcategoryData[subcategory];
+                    if (!companies) return;
+
+                    // Subcategory header
+                    html += `<tr style="background: #f8fafc; font-weight: 700;">
+                        <td style="padding-left: 10px;">${subcategory}</td>
+                        <td colspan="${colSpan - 1}"></td>
+                    </tr>`;
+
+                    // Companies under this subcategory
+                    Object.entries(companies).forEach(([company, monthlyAmounts]) => {
+                        html += `<tr class="item-row"><td style="padding-left: 30px;">${company}</td>`;
+
+                        // Show only selected months
+                        monthsToShow.forEach(monthIdx => {
+                            const amount = monthlyAmounts[monthIdx];
+                            if (isIncome) {
+                                monthlyIncomeTotals[monthIdx] += amount;
+                            } else {
+                                monthlyExpenseTotals[monthIdx] += amount;
+                            }
+                            html += `<td style="text-align: right;">${amount > 0 ? formatCurrency(amount) : '—'}</td>`;
+                        });
+
+                        // Show total only if showing all months
+                        if (!isMonthlyReport || selectedMonthIdx === null) {
+                            const total = monthlyAmounts.reduce((a, b) => a + b, 0);
+                            html += `<td style="text-align: right; font-weight: 700;">${formatCurrency(total)}</td>`;
+                        }
+
+                        html += `</tr>`;
+                    });
+                });
+            });
+
+            // Expense Total Row
+            html += `<tr style="background: #fee2e2 !important;">
+                <td style="font-weight: 800; color: #991b1b;">TOTAL EXPENSES</td>`;
+            const expenseGrandTotal = monthlyExpenseTotals.reduce((a, b) => a + b, 0);
+            monthsToShow.forEach(monthIdx => {
+                html += `<td style="text-align: right; font-weight: 700; color: #991b1b;">${formatCurrency(monthlyExpenseTotals[monthIdx])}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                html += `<td style="text-align: right; font-weight: 800; color: #991b1b; background: #fecaca;">${formatCurrency(expenseGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
+            // Income Total Row
+            html += `<tr style="background: #dcfce7 !important;">
+                <td style="font-weight: 800; color: #14532d;">TOTAL INCOME</td>`;
+            const incomeGrandTotal = monthlyIncomeTotals.reduce((a, b) => a + b, 0);
+            monthsToShow.forEach(monthIdx => {
+                html += `<td style="text-align: right; font-weight: 700; color: #14532d;">${formatCurrency(monthlyIncomeTotals[monthIdx])}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                html += `<td style="text-align: right; font-weight: 800; color: #14532d; background: #bbf7d0;">${formatCurrency(incomeGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
+            // Net Profit Row
+            html += `<tr style="background: #f1f5f9 !important;">
+                <td style="font-weight: 900;">NET PROFIT / LOSS</td>`;
+            monthsToShow.forEach(monthIdx => {
+                const monthProfit = monthlyIncomeTotals[monthIdx] - monthlyExpenseTotals[monthIdx];
+                const color = monthProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="text-align: right; font-weight: 700; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+            });
+            if (!isMonthlyReport || selectedMonthIdx === null) {
+                const netProfit = incomeGrandTotal - expenseGrandTotal;
+                const profitColor = netProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="text-align: right; font-weight: 900; color: ${profitColor}; background: #e2e8f0;">${formatCurrency(netProfit)}</td>`;
+            }
+            html += `</tr>`;
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+            } catch (error) {
+                console.error('Error rendering company detail report:', error);
+            }
+        }
+
+        function renderReport(data) {
+            // Defensive programming and error handling
+            try {
+                const tbody = document.getElementById('reportBody');
+                const thead = document.querySelector('thead tr');
+                
+                // Validate inputs
+                if (!tbody) {
+                    console.error('Report body element not found');
+                    return;
+                }
+                
+                if (!thead) {
+                    console.error('Table header not found');
+                    return;
+                }
+                
+                // Validate data
+                if (!data || typeof data !== 'object') {
+                    console.error('Invalid data provided to renderReport');
+                    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; color:red;">No data available</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+
+            // Update table header for monthly reports
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                thead.innerHTML = `
+                    <th></th>
+                    <th>${monthNames[selectedMonthIdx]}</th>
+                `;
+            } else {
+                thead.innerHTML = `
+                    <th></th>
+                    <th>January</th>
+                    <th>February</th>
+                    <th>March</th>
+                    <th>April</th>
+                    <th>May</th>
+                    <th>June</th>
+                    <th>July</th>
+                    <th>August</th>
+                    <th>September</th>
+                    <th>October</th>
+                    <th>November</th>
+                    <th>December</th>
+                    <th>Total</th>
+                `;
+            }
+
+            const expenseMonthTotals = Array(12).fill(0);
+            const incomeMonthTotals = Array(12).fill(0);
+            
+            // Employee Costs Section
+            const colSpan = isMonthlyReport ? 2 : 14;
+            html += `<tr class="section-header"><td colspan="${colSpan}">EMPLOYEE COSTS</td></tr>`;
+            if (data.employeeCosts) {
+                data.employeeCosts.forEach(item => {
+                    let rowTotal = 0;
+                    html += `<tr class="item-row"><td>${item.name}</td>`;
+
+                    if (isMonthlyReport && selectedMonthIdx !== null) {
+                        // Show only selected month
+                        const val = item.months[selectedMonthIdx] || 0;
+                        rowTotal = val;
+                        expenseMonthTotals[selectedMonthIdx] += val;
+                        html += `<td>${formatCurrency(val)}</td>`;
+                    } else {
+                        // Show all months
+                        item.months.forEach((val, idx) => {
+                            rowTotal += val || 0;
+                            expenseMonthTotals[idx] += val || 0;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        });
+                        html += `<td>${formatCurrency(rowTotal)}</td>`;
+                    }
+                    html += `</tr>`;
+                });
+            }
+            
+            // Operating Expenses - Show each category separately
+            const operatingCategories = [
+                { name: 'OCCUPANCY', items: data.occupancy || [] },
+                { name: 'MARKETING & PROFESSIONAL', items: data.marketingProfessional || [] },
+                { name: 'ADMIN / BANK', items: data.adminBank || [] },
+                { name: 'TRAVEL / AUTO', items: data.travelAuto || [] },
+                { name: 'SUPPLIES', items: data.supplies || [] }
+            ];
+            
+            operatingCategories.forEach(category => {
+                if (category.items.length > 0) {
+                    html += `<tr class="section-header green"><td colspan="${colSpan}">${category.name}</td></tr>`;
+                    category.items.forEach(item => {
+                        let rowTotal = 0;
+                        html += `<tr class="item-row"><td>${item.name}</td>`;
+
+                        if (isMonthlyReport && selectedMonthIdx !== null) {
+                            // Show only selected month
+                            const val = item.months[selectedMonthIdx] || 0;
+                            rowTotal = val;
+                            expenseMonthTotals[selectedMonthIdx] += val;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        } else {
+                            // Show all months
+                            item.months.forEach((val, idx) => {
+                                rowTotal += val || 0;
+                                expenseMonthTotals[idx] += val || 0;
+                                html += `<td>${formatCurrency(val)}</td>`;
+                            });
+                            html += `<td>${formatCurrency(rowTotal)}</td>`;
+                        }
+                        html += `</tr>`;
+                    });
+                }
+            });
+            
+            // Monthly Expense Total Row
+            let expenseGrandTotal = expenseMonthTotals.reduce((a, b) => a + b, 0);
+            html += `<tr style="background: #fee2e2 !important;"><td style="font-weight: 800; color: #991b1b;">MONTHLY EXPENSE TOTAL</td>`;
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                html += `<td style="font-weight: 800; color: #991b1b;">${formatCurrency(expenseMonthTotals[selectedMonthIdx])}</td>`;
+            } else {
+                expenseMonthTotals.forEach(val => {
+                    html += `<td style="font-weight: 700; color: #991b1b;">${formatCurrency(val)}</td>`;
+                });
+                html += `<td style="font-weight: 800; color: #991b1b; background: #fecaca;">${formatCurrency(expenseGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+            
+            // Income Sources Section
+            html += `<tr class="section-header purple"><td colspan="${colSpan}">INCOME SOURCES</td></tr>`;
+            if (data.incomeSources) {
+                data.incomeSources.forEach(item => {
+                    let rowTotal = 0;
+                    html += `<tr class="item-row"><td>${item.name}</td>`;
+
+                    if (isMonthlyReport && selectedMonthIdx !== null) {
+                        // Show only selected month
+                        const val = item.months[selectedMonthIdx] || 0;
+                        rowTotal = val;
+                        incomeMonthTotals[selectedMonthIdx] += val;
+                        html += `<td>${formatCurrency(val)}</td>`;
+                    } else {
+                        // Show all months
+                        item.months.forEach((val, idx) => {
+                            rowTotal += val || 0;
+                            incomeMonthTotals[idx] += val || 0;
+                            html += `<td>${formatCurrency(val)}</td>`;
+                        });
+                        html += `<td>${formatCurrency(rowTotal)}</td>`;
+                    }
+                    html += `</tr>`;
+                });
+            }
+            
+            // Total Monthly Income Row
+            let incomeGrandTotal = incomeMonthTotals.reduce((a, b) => a + b, 0);
+            html += `<tr style="background: #dcfce7 !important;"><td style="font-weight: 800; color: #14532d;">TOTAL MONTHLY INCOME</td>`;
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                html += `<td style="font-weight: 800; color: #14532d;">${formatCurrency(incomeMonthTotals[selectedMonthIdx])}</td>`;
+            } else {
+                incomeMonthTotals.forEach(val => {
+                    html += `<td style="font-weight: 700; color: #14532d;">${formatCurrency(val)}</td>`;
+                });
+                html += `<td style="font-weight: 800; color: #14532d; background: #bbf7d0;">${formatCurrency(incomeGrandTotal)}</td>`;
+            }
+            html += `</tr>`;
+
+            // Net Profit/Loss Row
+            html += `<tr style="background: #f1f5f9 !important;"><td style="font-weight: 900;">NET PROFIT / LOSS</td>`;
+
+            if (isMonthlyReport && selectedMonthIdx !== null) {
+                let monthProfit = incomeMonthTotals[selectedMonthIdx] - expenseMonthTotals[selectedMonthIdx];
+                let color = monthProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="font-weight: 900; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+            } else {
+                let netProfit = incomeGrandTotal - expenseGrandTotal;
+                expenseMonthTotals.forEach((exp, idx) => {
+                    let monthProfit = incomeMonthTotals[idx] - exp;
+                    let color = monthProfit >= 0 ? '#15803d' : '#dc2626';
+                    html += `<td style="font-weight: 700; color: ${color};">${formatCurrency(monthProfit)}</td>`;
+                });
+                let profitColor = netProfit >= 0 ? '#15803d' : '#dc2626';
+                html += `<td style="font-weight: 900; color: ${profitColor}; background: #e2e8f0;">${formatCurrency(netProfit)}</td>`;
+            }
+            html += `</tr>`;
+
+            tbody.innerHTML = html;
+            } catch (error) {
+                console.error('Error rendering report:', error);
+                const tbody = document.getElementById('reportBody');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; color:red;">Error rendering report</td></tr>';
+                }
+            }
+        }
+
+        function renderDetailedBreakdown(receipts) {
+            // Robust error handling for detailed breakdown
+            try {
+                // Validate inputs
+                if (!receipts || Object.keys(receipts).length === 0) {
+                    console.warn('No receipts data for detailed breakdown');
+                    return;
+                }
+
+                const container = document.getElementById('detailedBreakdown');
+                if (!container) {
+                    console.error('Detailed breakdown container not found');
+                    return;
+                }
+
+                let html = '<div style="page-break-before: always;">';
+
+            // Add header for transaction details section
+            html += `
+                <div class="header">
+                    <div class="header-logo">
+                        <img src="kntlogo2026.png" alt="K&T Nails" onerror="this.style.display='none'">
+                        <div class="header-text">
+                            <h1>K&T Nails and Spa</h1>
+                            <h2>TRANSACTION DETAILS BY CATEGORY</h2>
+                        </div>
+                    </div>
+                    <div class="decorative-element">
+                        <div class="blue-shape"></div>
+                        <div class="orange-shape"></div>
+                    </div>
+                </div>
+            `;
+
+            // Sort categories alphabetically
+            const sortedCategories = Object.keys(receipts).sort();
+
+            sortedCategories.forEach((category, index) => {
+                let items = receipts[category];
+                if (!items || items.length === 0) return;
+
+                // Filter items by month if monthly report
+                if (isMonthlyReport && selectedMonthIdx !== null) {
+                    items = items.filter(item => {
+                        const itemDate = new Date(item.date + 'T12:00:00');
+                        return itemDate.getMonth() === parseInt(selectedMonthIdx);
+                    });
+                }
+
+                if (items.length === 0) return; // Skip if no items for this month
+
+                // Calculate subtotal
+                const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+                // Add page break class for categories after a certain number of items
+                const pageBreakClass = index > 0 && items.length > 15 ? 'page-break-category' : '';
+
+                html += `
+                    <div class="category-breakdown ${pageBreakClass}">
+                        <div class="category-header-repeat">${category.toUpperCase()} - K&T Nails and Spa - Transaction Details</div>
+                        <h3>${category.toUpperCase()} - DETAILED BREAKDOWN</h3>
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Date</th>
+                                    <th style="width: 150px;">Company/Store</th>
+                                    <th>Description</th>
+                                    <th style="width: 100px; text-align: right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                // Sort items by date (newest first)
+                items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                items.forEach(item => {
+                    const formattedDate = formatDate(item.date);
+                    html += `
+                        <tr>
+                            <td>${formattedDate}</td>
+                            <td>${item.company || 'N/A'}</td>
+                            <td>${item.description || 'N/A'}</td>
+                            <td style="text-align: right;">${formatCurrency(item.amount)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                                <tr class="detail-subtotal">
+                                    <td colspan="3" style="text-align: right; font-weight: 800;">SUBTOTAL:</td>
+                                    <td style="text-align: right;">${formatCurrency(subtotal)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // Append to existing content instead of replacing
+            container.innerHTML += html;
+            } catch (error) {
+                console.error('Error rendering detailed breakdown:', error);
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr + 'T12:00:00');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+        
+        // Enhanced global error handling
+        window.addEventListener('error', function(event) {
+            console.group('Unhandled Error');
+            console.error('Error message:', event.message);
+            console.error('Source:', event.filename);
+            console.error('Line:', event.lineno);
+            console.error('Column:', event.colno);
+            console.error('Error object:', event.error);
+            console.groupEnd();
+
+            // Provide user-friendly error notification
+            const errorContainer = document.createElement('div');
+            errorContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                background-color: red;
+                color: white;
+                padding: 10px;
+                text-align: center;
+                z-index: 9999;
+            `;
+            errorContainer.innerHTML = `
+                An unexpected error occurred. 
+                <a href="#" onclick="location.reload(); return false;" style="color: white; text-decoration: underline;">
+                    Reload Page
+                </a>
+            `;
+            document.body.insertBefore(errorContainer, document.body.firstChild);
+        });
+
+        // Diagnostic logging function
+        function logDiagnosticInfo() {
+            console.group('Diagnostic Information');
+            console.log('Window Location:', window.location.toString());
+            console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
+            console.log('Session Storage:', {
+                exportData: localStorage.getItem('exportData'),
+                exportReceipts: localStorage.getItem('exportReceipts'),
+                exportYear: localStorage.getItem('exportYear'),
+                exportMonth: localStorage.getItem('exportMonth'),
+                isMonthlyReport: localStorage.getItem('isMonthlyReport')
+            });
+            console.groupEnd();
+        }
+
+        // Function to attempt parsing data from multiple sources
+        function attemptDataParsing(dataSource) {
+            console.group('Data Parsing Attempt');
+            console.log('Data source:', dataSource);
+
+            // Parse attempts array
+            const parseAttempts = [
+                // Direct parsing
+                () => {
+                    try {
+                        // If it's already an object, return it
+                        if (typeof dataSource === 'object') return dataSource;
+                        
+                        // Try direct JSON parse
+                        return JSON.parse(dataSource);
+                    } catch (e) {
+                        console.error('Direct parse failed:', e);
+                        return null;
+                    }
+                },
+                // URL Decoding attempt
+                () => {
+                    try {
+                        const decoded = decodeURIComponent(dataSource);
+                        return JSON.parse(decoded);
+                    } catch (e) {
+                        console.error('Decoded parse failed:', e);
+                        return null;
+                    }
+                },
+                // Cleaning attempt
+                () => {
+                    try {
+                        // Remove potential extra quotes or whitespace
+                        const cleaned = dataSource.trim().replace(/^["']/, '').replace(/["']$/, '');
+                        return JSON.parse(cleaned);
+                    } catch (e) {
+                        console.error('Cleaned parse failed:', e);
+                        return null;
+                    }
+                }
+            ];
+
+            // Try parsing methods
+            for (let attempt of parseAttempts) {
+                const result = attempt();
+                if (result !== null) {
+                    console.log('Successful parse:', result);
+                    console.groupEnd();
+                    return result;
+                }
+            }
+
+            console.error('All parsing attempts failed');
+            console.groupEnd();
+            return null;
+        }
+
+        // Enhanced data parsing and error handling
+        window.debugReportGeneration = function() {
+            console.group('Report Generation Debug');
+            console.log('URL Parameters:', {
+                data: dataParam,
+                receipts: receiptsParam,
+                year: yearParam,
+                month: monthParam
+            });
+            console.log('Session Storage:', {
+                exportData: localStorage.getItem('exportData'),
+                exportReceipts: localStorage.getItem('exportReceipts')
+            });
+            console.groupEnd();
+        };
+
+        // Comprehensive data parsing and rendering
+        function safeRenderReport(data, receipts) {
+            try {
+                console.group('Safe Report Rendering');
+                console.log('Data type:', typeof data);
+                console.log('Data keys:', data ? Object.keys(data) : 'No data');
+                console.log('Receipts type:', typeof receipts);
+                console.log('Receipts keys:', receipts ? Object.keys(receipts) : 'No receipts');
+
+                // Validate data before rendering
+                if (!data || typeof data !== 'object') {
+                    console.error('Invalid data structure');
+                    document.getElementById('reportBody').innerHTML = `
+                        <tr>
+                            <td colspan="14" style="text-align:center; color:red; padding:20px;">
+                                Unable to generate report. Invalid data format.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // Render reports
+                renderReport(data);
+                
+                if (receipts && Object.keys(receipts).length > 0) {
+                    renderCompanyDetailReport(receipts);
+                    renderDetailedBreakdown(receipts);
+                } else {
+                    console.warn('No receipts data available');
+                }
+
+                console.groupEnd();
+            } catch (renderError) {
+                console.error('Report rendering error:', renderError);
+                document.getElementById('reportBody').innerHTML = `
+                    <tr>
+                        <td colspan="14" style="text-align:center; color:red; padding:20px;">
+                            Error generating report: ${renderError.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Parse and render data
+        if (dataParam) {
+            try {
+                // Try parsing from multiple potential sources
+                let data = attemptDataParsing(dataParam);
+
+                // Fallback to localStorage if direct parse fails
+                if (!data && localStorage.getItem('exportData')) {
+                    console.log('Falling back to localStorage data');
+                    data = attemptDataParsing(localStorage.getItem('exportData'));
+                }
+
+                // Final validation
+                if (!data || (typeof data !== 'object')) {
+                    throw new Error('Invalid data format: Expected an object');
+                }
+
+                // Attempt to parse receipts similarly
+                let receipts = null;
+                if (receiptsParam) {
+                    receipts = attemptDataParsing(receiptsParam);
+                } else if (localStorage.getItem('exportReceipts')) {
+                    receipts = attemptDataParsing(localStorage.getItem('exportReceipts'));
+                }
+
+                // Map old subcategories to new ones for backward compatibility
+                if (receipts) {
+                    // Map Supply to Supplies
+                    if (receipts['Supply']) {
+                        receipts['Supplies'] = receipts['Supply'];
+                        delete receipts['Supply'];
+                    }
+
+                    // Combine CA PIT/SDI and CA SUI/ETT into CA PIT/SDI/SUI/ETT
+                    const combinedCA = [];
+                    if (receipts['CA PIT/SDI']) {
+                        combinedCA.push(...receipts['CA PIT/SDI']);
+                        delete receipts['CA PIT/SDI'];
+                    }
+                    if (receipts['CA SUI/ETT']) {
+                        combinedCA.push(...receipts['CA SUI/ETT']);
+                        delete receipts['CA SUI/ETT'];
+                    }
+                    if (combinedCA.length > 0) {
+                        receipts['CA PIT/SDI/SUI/ETT'] = combinedCA;
+                    }
+
+                    // Map Auto/Mileage (no space) to Auto / Mileage (with space)
+                    if (receipts['Auto/Mileage']) {
+                        if (!receipts['Auto / Mileage']) {
+                            receipts['Auto / Mileage'] = [];
+                        }
+                        receipts['Auto / Mileage'].push(...receipts['Auto/Mileage']);
+                        delete receipts['Auto/Mileage'];
+                    }
+                }
+
+                // Safe rendering
+                safeRenderReport(data, receipts);
+            } catch (error) {
+                console.error('Report generation error:', error);
+                document.getElementById('reportBody').innerHTML = `
+                    <tr>
+                        <td colspan="14" style="text-align:center; color:red; padding:20px;">
+                            Unable to generate report: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        } else {
+            // Comprehensive logging for no data scenario
+            console.group('No Data Scenario');
+            console.error('No dataParam found');
+            console.log('Full URL:', window.location.href);
+            console.log('URL Parameters:', Object.fromEntries(new URLSearchParams(window.location.search)));
+            console.log('Session Storage:', {
+                exportData: localStorage.getItem('exportData'),
+                exportReceipts: localStorage.getItem('exportReceipts')
+            });
+            console.groupEnd();
+
+            // Show no data message
+            document.getElementById('reportBody').innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#999;">No data available. Please export from the Budget page.</td></tr>';
+        }
+    </script>
+</body>
+</html>

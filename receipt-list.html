@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>K&T Nails - Saved Receipts</title>
+    <title>K&T Nails - Business Receipts</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #ec4899;
@@ -191,25 +193,140 @@
             <h2>K&T NAILS</h2>
         </div>
         <nav class="nav-menu">
-            <a href="index.html" class="nav-item">🏠 Receipt Home</a>
-            <a href="daily-entry.html" class="nav-item">💰 Enter Sales</a>
-            <a href="business-budget.html" class="nav-item">📈 Budget & Expenses</a>
+            <a href="index.html" class="nav-item">🏠 Dashboard</a>
+            <a href="dashboard.html" class="nav-item">💰 Enter Sales</a>
+            <a href="business-budget.html" class="nav-item">📈 Budget</a>
+            <a href="receipt-list.html" class="nav-item active">📋 Business Receipts</a>
             <a href="receipt-scanner.html" class="nav-item">📸 Receipt Scanner</a>
-            <a href="receipt-list.html" class="nav-item active">📋 View Receipts</a>
         </nav>
     </div>
 
     <main class="main-content">
         <div class="header">
             <div>
-                <h1>Saved Receipts</h1>
-                <p style="color: var(--text-muted)">Historical record of all scanned expenses</p>
+                <h1>Business Receipts</h1>
+                <p style="color: var(--text-muted)">Track and manage your business receipts</p>
             </div>
-            <a href="receipt-scanner.html" class="btn btn-primary">Scan New Receipt</a>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <button id="syncBtn" onclick="syncToCloud()" class="btn" style="display: none; background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;">
+                    <i class="fas fa-cloud-upload-alt"></i> Sync (<span id="pendingCount">0</span>) to Cloud
+                </button>
+                <select id="yearFilter" onchange="loadReceipts()" style="padding: 8px 16px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-weight: 600;">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                </select>
+                <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(this)">
+                <button onclick="document.getElementById('excelUpload').click()" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); padding: 12px 24px;">
+                    <i class="fas fa-file-excel"></i> Upload Excel
+                </button>
+                <button onclick="window.location.href='receipt-scanner.html'" class="btn btn-primary" style="padding: 12px 24px;">
+                    <i class="fas fa-camera"></i> Scan New Receipt
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Entry Form (Always Visible) -->
+        <div id="manualEntryCard" class="card" style="display: block; margin-bottom: 24px; border: 2px solid var(--primary); animation: slideDown 0.3s ease-out;">
+            <h3 style="margin-bottom: 20px; color: var(--primary);">Manual Receipt Entry</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="form-group">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Date</label>
+                    <input type="text" id="mDate" placeholder="mm/dd/yyyy" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit;">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Store/Company</label>
+                    <input type="text" id="mMerchant" list="storeList" placeholder="e.g. Amazon, Home Depot, Costco" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit;">
+                    <datalist id="storeList">
+                        <!-- Populated dynamically -->
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Type</label>
+                    <select id="mType" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit;">
+                        <!-- Occupancy -->
+                        <optgroup label="Occupancy">
+                            <option value="Rent">Rent</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Business License & Tax">Business License & Tax</option>
+                            <option value="Electricity & Gas">Electricity & Gas</option>
+                            <option value="Water & Waste">Water & Waste</option>
+                            <option value="Internet & Phone">Internet & Phone</option>
+                            <option value="Salon Equipments">Salon Equipments</option>
+                            <option value="Supplies">Supplies</option>
+                        </optgroup>
+                        <!-- Marketing & Professional -->
+                        <optgroup label="Marketing & Professional">
+                            <option value="Advertising">Advertising</option>
+                            <option value="Subscriptions">Subscriptions</option>
+                            <option value="Accounting & Legal">Accounting & Legal</option>
+                        </optgroup>
+                        <!-- Admin / Bank -->
+                        <optgroup label="Admin / Bank">
+                            <option value="Merchant Fees">Merchant Fees</option>
+                            <option value="Bank Service Charges">Bank Service Charges</option>
+                        </optgroup>
+                        <!-- Travel / Auto -->
+                        <optgroup label="Travel / Auto">
+                            <option value="Business Meals">Business Meals</option>
+                            <option value="Auto / Mileage">Auto / Mileage</option>
+                        </optgroup>
+                        <!-- Employee Costs -->
+                        <optgroup label="Employee Costs">
+                            <option value="Wages">Wages</option>
+                            <option value="Other">Other</option>
+                        </optgroup>
+                         <!-- Income Sources -->
+                        <optgroup label="Income Sources">
+                            <option value="Venmo">Venmo</option>
+                            <option value="Zelle">Zelle</option>
+                            <option value="Credit Card Deposit">Credit Card Deposit</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Total Amount</label>
+                    <input type="number" id="mTotal" step="0.01" placeholder="0.00" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit;">
+                </div>
+            </div>
+            <div style="margin-top: 16px;">
+                <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Items/Description</label>
+                <textarea id="mItems" placeholder="List items or add a description..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; min-height: 80px;"></textarea>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;">
+                <button id="cancelBtn" onclick="resetForm()" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; display: none;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button id="saveBtn" onclick="saveManualEntry()" class="btn btn-primary" style="background: #10b981; border-color: #059669;">
+                    <i class="fas fa-save"></i> Save to Table
+                </button>
+            </div>
         </div>
 
         <div class="card">
             <div id="loading" class="loading">Loading receipts...</div>
+            <!-- Filters -->
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center;">
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Filter by Store</label>
+                    <select id="storeFilter" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;">
+                        <option value="">All Stores</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Filter by Type</label>
+                    <select id="typeFilter" onchange="applyFilters()" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit;">
+                        <option value="">All Types</option>
+                    </select>
+                </div>
+                <div style="flex: 0 0 auto; align-self: flex-end;">
+                    <button onclick="clearFilters()" class="btn" style="padding: 8px 16px; background: #f1f5f9; color: var(--text-main); border: 1px solid var(--border);">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
             <table id="receiptsTable" style="display: none;">
                 <thead>
                     <tr>
@@ -218,11 +335,75 @@
                         <th>Type</th>
                         <th>Items</th>
                         <th>Total</th>
+                        <th style="width: 100px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="receiptsBody">
                 </tbody>
             </table>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" onclick="if(event.target === this) closeDeleteModal()" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 24px; padding: 32px; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); animation: modalSlideIn 0.2s ease-out;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="width: 64px; height: 64px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 32px; color: #dc2626;"></i>
+                    </div>
+                    <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Delete Receipt?</h3>
+                    <p style="color: var(--text-muted); font-size: 14px;">This action cannot be undone. Are you sure you want to delete this receipt?</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="closeDeleteModal()" class="btn" style="flex: 1; background: #f1f5f9; color: var(--text-main); padding: 12px;">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDelete()" class="btn btn-primary" style="flex: 1; background: #dc2626; padding: 12px;">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel Preview Modal -->
+        <div id="excelPreviewModal" onclick="if(event.target === this) closeExcelPreview()" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+            <div style="background: white; border-radius: 24px; padding: 32px; max-width: 90vw; max-height: 90vh; overflow: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); animation: modalSlideIn 0.2s ease-out;">
+                <div style="margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                        <div style="width: 64px; height: 64px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-excel" style="font-size: 32px; color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Preview Excel Import</h3>
+                            <p style="color: var(--text-muted); font-size: 14px;">Review the data before saving to cloud</p>
+                        </div>
+                    </div>
+                    <div id="excelPreviewStats" style="background: #f8fafc; padding: 16px; border-radius: 12px; margin-bottom: 16px;"></div>
+                </div>
+                <div style="overflow-x: auto; margin-bottom: 24px; max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px;">
+                    <table id="excelPreviewTable" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
+                            <tr>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">#</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Date</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Store/Company</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Type</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700;">Items</th>
+                                <th style="padding: 12px; text-align: right; border-bottom: 2px solid var(--border); font-weight: 700;">Total</th>
+                                <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--border); font-weight: 700;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="excelPreviewBody"></tbody>
+                    </table>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button onclick="closeExcelPreview()" class="btn" style="flex: 0; background: #f1f5f9; color: var(--text-main); padding: 12px 24px;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button onclick="confirmExcelImport()" class="btn btn-primary" style="flex: 0; background: #10b981; padding: 12px 24px;">
+                        <i class="fas fa-cloud-upload-alt"></i> Confirm & Save to Cloud
+                    </button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -231,39 +412,118 @@
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY3hkZHVscXN4d2ZhcWZ6bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MjE2MjgsImV4cCI6MjA4Mzk5NzYyOH0.hQeRBk_08FHpc731rimX8KcEapIr5HrezVsJt9onow8";
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
+        let editingState = { type: null, index: null, id: null };
+        let deleteState = { type: null, id: null };
+        let excelPreviewData = [];
+
         const fmt = (num) => new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD'
         }).format(num);
 
         async function loadReceipts() {
-            const { data, error } = await supabaseClient
-                .from('receipts')
-                .select('*')
-                .order('date', { ascending: false });
+            const selectedYear = document.getElementById('yearFilter').value;
+            const startDate = `${selectedYear}-01-01`;
+            const endDate = `${selectedYear}-12-31`;
 
-            if (error) {
-                console.error('Error fetching receipts:', error);
-                document.getElementById('loading').textContent = 'Failed to load receipts.';
-                return;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').textContent = 'Loading receipts...';
+            document.getElementById('receiptsTable').style.display = 'none';
+
+            // 1. Load from Cloud
+            let cloudData = [];
+            try {
+                const { data, error } = await supabaseClient
+                    .from('receipts')
+                    .select('*')
+                    .gte('date', startDate)
+                    .lte('date', endDate)
+                    .order('date', { ascending: false });
+                if (!error) cloudData = data || [];
+            } catch (err) { console.error('Cloud load fail:', err); }
+
+            // 2. Load from Local Storage
+            const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+
+            // 3. Update autocomplete list with unique store names
+            updateStoreAutocomplete(cloudData, pending);
+            
+            // 4. Populate filter dropdowns
+            populateFilters(cloudData, pending);
+
+            // Filter to selected year but keep track of original indices
+            const localDataWithOriginalIndices = [];
+            pending.forEach((r, originalIndex) => {
+                if (r.date && r.date.startsWith(selectedYear)) {
+                    localDataWithOriginalIndices.push({
+                        ...r,
+                        isPending: true,
+                        originalLocalIndex: originalIndex
+                    });
+                }
+            });
+
+            // Update Sync Button
+            const syncBtn = document.getElementById('syncBtn');
+            const pendingCount = document.getElementById('pendingCount');
+            if (pending.length > 0) {
+                syncBtn.style.display = 'inline-block';
+                pendingCount.textContent = pending.length;
+            } else {
+                syncBtn.style.display = 'none';
             }
 
             const body = document.getElementById('receiptsBody');
             body.innerHTML = '';
 
-            if (data.length === 0) {
-                document.getElementById('loading').textContent = 'No receipts found.';
+            // Combine cloud and local data
+            const combinedData = [...localDataWithOriginalIndices, ...cloudData.map(r => ({...r, isPending: false}))];
+            combinedData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (combinedData.length === 0) {
+                document.getElementById('loading').textContent = `No receipts found for ${selectedYear}.`;
                 return;
             }
 
-            data.forEach(r => {
+            combinedData.forEach((r, idx) => {
                 const tr = document.createElement('tr');
+                if (r.isPending) tr.style.background = 'rgba(251, 191, 36, 0.05)';
+
+                // Use the original index for local records, database ID for cloud records
+                const recordType = r.isPending ? 'local' : 'cloud';
+                const recordId = r.isPending ? r.originalLocalIndex : r.id;
+
+                // Map DB columns (lowercase) to UI fields if coming from cloud
+                const store = r.isPending ? r.companyStore : (r.companystore || r.companyStore); 
+                const type = r.isPending ? r.transactionType : (r.transactiontype || r.transactionType);
+                
+                // Format date as MM/DD/YYYY
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return 'N/A';
+                    const [year, month, day] = dateStr.split('-');
+                    return `${month}/${day}/${year}`;
+                };
+                
+                const statusBadge = r.isPending 
+                    ? '<span style="font-size: 10px; background: #fbbf24; color: #78350f; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-left: 6px;">PENDING</span>'
+                    : '<span style="font-size: 10px; background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-left: 6px;">SYNCED</span>';
+
                 tr.innerHTML = `
-                    <td>${r.date || 'N/A'}</td>
-                    <td style="font-weight: 600;">${r.companyStore || 'Unknown'}</td>
-                    <td><span class="type-tag">${r.transactionType || 'Expense'}</span></td>
+                    <td>${formatDate(r.date)}${statusBadge}</td>
+                    <td style="font-weight: 600;">${store || 'Unknown'}</td>
+                    <td><span class="type-tag">${type || 'Expense'}</span></td>
                     <td style="color: var(--text-muted); font-size: 12px; max-width: 300px;">${r.items || 'None'}</td>
                     <td class="amount">${fmt(r.total || 0)}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="editReceipt('${recordType}', '${recordId}')" class="btn" style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border: none; cursor: pointer;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteReceipt('${recordType}', '${recordId}')" class="btn" style="padding: 4px 8px; background: #fee2e2; color: #b91c1c; border: none; cursor: pointer;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
                 `;
                 body.appendChild(tr);
             });
@@ -272,7 +532,738 @@
             document.getElementById('receiptsTable').style.display = 'table';
         }
 
+        function updateStoreAutocomplete(cloudData, pendingData) {
+            // Collect all unique store names
+            const stores = new Set();
+            
+            // Add from cloud data
+            cloudData.forEach(r => {
+                const store = r.companystore || r.companyStore;
+                if (store && store.trim()) stores.add(store.trim());
+            });
+            
+            // Add from pending data
+            pendingData.forEach(r => {
+                const store = r.companyStore || r.companystore;
+                if (store && store.trim()) stores.add(store.trim());
+            });
+            
+            // Add common stores
+            const commonStores = ['Costco', 'Amazon', 'Home Depot', 'Target', 'Walmart', 'Office Depot', 'Staples'];
+            commonStores.forEach(s => stores.add(s));
+            
+            // Populate datalist
+            const datalist = document.getElementById('storeList');
+            datalist.innerHTML = Array.from(stores)
+                .sort()
+                .map(store => `<option value="${store}">`)
+                .join('');
+        }
+
+        function populateFilters(cloudData, pendingData) {
+            // Collect unique stores and types
+            const stores = new Set();
+            const types = new Set();
+            
+            // Add from cloud data
+            cloudData.forEach(r => {
+                const store = r.companystore || r.companyStore;
+                const type = r.transactiontype || r.transactionType;
+                if (store && store.trim()) stores.add(store.trim());
+                if (type && type.trim()) types.add(type.trim());
+            });
+            
+            // Add from pending data
+            pendingData.forEach(r => {
+                const store = r.companyStore || r.companystore;
+                const type = r.transactionType || r.transactiontype;
+                if (store && store.trim()) stores.add(store.trim());
+                if (type && type.trim()) types.add(type.trim());
+            });
+            
+            // Populate store filter
+            const storeFilter = document.getElementById('storeFilter');
+            const currentStoreValue = storeFilter.value;
+            storeFilter.innerHTML = '<option value="">All Stores</option>' + 
+                Array.from(stores)
+                    .sort()
+                    .map(store => `<option value="${store}">${store}</option>`)
+                    .join('');
+            storeFilter.value = currentStoreValue; // Preserve selection
+            
+            // Populate type filter
+            const typeFilter = document.getElementById('typeFilter');
+            const currentTypeValue = typeFilter.value;
+            typeFilter.innerHTML = '<option value="">All Types</option>' + 
+                Array.from(types)
+                    .sort()
+                    .map(type => `<option value="${type}">${type}</option>`)
+                    .join('');
+            typeFilter.value = currentTypeValue; // Preserve selection
+        }
+
+        function applyFilters() {
+            const storeFilter = document.getElementById('storeFilter').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
+            
+            const rows = document.querySelectorAll('#receiptsTable tbody tr');
+            rows.forEach(row => {
+                const store = row.cells[1].textContent.toLowerCase();
+                const type = row.cells[2].textContent.toLowerCase();
+                
+                const storeMatch = !storeFilter || store.includes(storeFilter);
+                const typeMatch = !typeFilter || type.includes(typeFilter);
+                
+                row.style.display = (storeMatch && typeMatch) ? '' : 'none';
+            });
+        }
+
+        function clearFilters() {
+            document.getElementById('storeFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            applyFilters();
+        }
+
+        async function handleExcelUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (rows.length === 0) {
+                    alert('No data found in Excel file');
+                    input.value = '';
+                    return;
+                }
+
+                console.log('Parsed Excel data:', rows);
+
+                // Load existing receipts from database to check for duplicates
+                let existingReceipts = [];
+                try {
+                    const { data: receipts, error } = await supabaseClient
+                        .from('receipts')
+                        .select('date, companystore, transactiontype, total');
+                    if (!error && receipts) {
+                        existingReceipts = receipts;
+                    }
+                } catch (err) {
+                    console.error('Failed to load existing receipts:', err);
+                }
+
+                // Parse and validate all rows
+                excelPreviewData = [];
+                let validCount = 0;
+                let errorCount = 0;
+                let duplicateCount = 0;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+
+                    // Map Excel columns (flexible column names)
+                    const date = row['Date'] || row['date'] || row['DATE'] || row['date '] || row[' date'];
+                    const type = row['transactiontype'] || row['Transaction Type'] || row['Type'] || row['type'] || row['TransactionType'];
+                    const store = row['companystore'] || row['Company/Store'] || row['Store'] || row['Company'] || row['store'];
+                    const items = row['Items'] || row['items'] || row['Description'] || row['description'] || '';
+                    const total = parseFloat(row['Total'] || row['total'] || row['Amount'] || row['amount'] || 0);
+
+                    console.log(`Row ${i + 1}:`, { date, type, store, items, total, rawRow: row });
+
+                    let formattedDate = null;
+                    let error = null;
+                    let isDuplicate = false;
+
+                    // Validate required fields with specific error messages
+                    const missingFields = [];
+                    if (!date && date !== 0) missingFields.push('Date');
+                    if (!type) missingFields.push('Type');
+                    if (!store) missingFields.push('Store');
+                    if (isNaN(total) || total === 0) missingFields.push('Total');
+
+                    if (missingFields.length > 0) {
+                        error = 'Missing: ' + missingFields.join(', ');
+                        errorCount++;
+                    } else {
+                        // Format date to YYYY-MM-DD
+                        try {
+                            if (typeof date === 'number') {
+                                // Excel serial date
+                                const excelDate = XLSX.SSF.parse_date_code(date);
+                                formattedDate = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+                            } else {
+                                // String date - try to parse
+                                const d = new Date(date);
+                                if (isNaN(d.getTime())) throw new Error('Invalid date');
+                                formattedDate = d.toISOString().split('T')[0];
+                            }
+
+                            // Check for duplicates
+                            const duplicate = existingReceipts.find(r =>
+                                r.date === formattedDate &&
+                                r.companystore?.toLowerCase() === store.toLowerCase() &&
+                                r.transactiontype?.toLowerCase() === type.toLowerCase() &&
+                                Math.abs(parseFloat(r.total) - total) < 0.01
+                            );
+
+                            if (duplicate) {
+                                error = 'Duplicate (already exists)';
+                                isDuplicate = true;
+                                duplicateCount++;
+                            } else {
+                                validCount++;
+                            }
+                        } catch (e) {
+                            error = 'Invalid date format';
+                            errorCount++;
+                        }
+                    }
+
+                    excelPreviewData.push({
+                        rowNumber: i + 2,
+                        date: formattedDate,
+                        store: store || '',
+                        type: type || '',
+                        items: items || '',
+                        total: total || 0,
+                        error: error,
+                        valid: !error && !isDuplicate,
+                        isDuplicate: isDuplicate
+                    });
+                }
+
+                // Show preview modal
+                showExcelPreview(validCount, errorCount, duplicateCount);
+
+                // Clear file input
+                input.value = '';
+            } catch (err) {
+                console.error('Excel upload error:', err);
+                alert('Failed to process Excel file: ' + err.message);
+                input.value = '';
+            }
+        }
+
+        function showExcelPreview(validCount, errorCount, duplicateCount) {
+            const modal = document.getElementById('excelPreviewModal');
+            const stats = document.getElementById('excelPreviewStats');
+            const tbody = document.getElementById('excelPreviewBody');
+
+            // Update stats
+            stats.innerHTML = `
+                <div style="display: flex; gap: 24px; align-items: center;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Total Rows</div>
+                        <div style="font-size: 24px; font-weight: 800; color: var(--text-main);">${excelPreviewData.length}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase; margin-bottom: 4px;">New</div>
+                        <div style="font-size: 24px; font-weight: 800; color: #10b981;">${validCount}</div>
+                    </div>
+                    ${duplicateCount > 0 ? `
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #f59e0b; text-transform: uppercase; margin-bottom: 4px;">Duplicates</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #f59e0b;">${duplicateCount}</div>
+                        </div>
+                    ` : ''}
+                    ${errorCount > 0 ? `
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #dc2626; text-transform: uppercase; margin-bottom: 4px;">Errors</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #dc2626;">${errorCount}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Populate table
+            tbody.innerHTML = excelPreviewData.map(row => `
+                <tr style="border-bottom: 1px solid var(--border); ${row.valid ? '' : 'background: #fef2f2;'}">
+                    <td style="padding: 12px; font-weight: 600; color: var(--text-muted);">${row.rowNumber}</td>
+                    <td style="padding: 12px;">${row.date || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px;">${row.store || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px;">${row.type || '<span style="color: #dc2626;">—</span>'}</td>
+                    <td style="padding: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${row.items || '—'}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 700;">$${row.total.toFixed(2)}</td>
+                    <td style="padding: 12px; text-align: center;">
+                        ${row.valid
+                            ? '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Valid</span>'
+                            : `<span style="color: #dc2626;"><i class="fas fa-exclamation-circle"></i> ${row.error}</span>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+
+            // Show modal
+            modal.style.display = 'flex';
+        }
+
+        function closeExcelPreview() {
+            document.getElementById('excelPreviewModal').style.display = 'none';
+            excelPreviewData = [];
+        }
+
+        async function confirmExcelImport() {
+            const validRows = excelPreviewData.filter(row => row.valid);
+
+            if (validRows.length === 0) {
+                alert('No valid rows to import');
+                return;
+            }
+
+            const confirmBtn = event.target;
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                for (const row of validRows) {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('receipts')
+                            .insert([{
+                                date: row.date,
+                                companystore: row.store,
+                                total: row.total,
+                                transactiontype: row.type,
+                                items: row.items
+                            }]);
+
+                        if (error) throw error;
+                        successCount++;
+                    } catch (err) {
+                        errors.push(`Row ${row.rowNumber}: ${err.message}`);
+                        errorCount++;
+                    }
+                }
+
+                // Close modal
+                closeExcelPreview();
+
+                // Show results
+                let message = `Import complete!\n✅ ${successCount} receipts saved to cloud`;
+                if (errorCount > 0) {
+                    message += `\n❌ ${errorCount} rows failed`;
+                    if (errors.length > 0) {
+                        message += `\n\nErrors:\n${errors.slice(0, 5).join('\n')}`;
+                        if (errors.length > 5) message += `\n... and ${errors.length - 5} more errors`;
+                    }
+                }
+                alert(message);
+
+                // Reload receipts
+                await loadReceipts();
+            } catch (err) {
+                console.error('Import error:', err);
+                alert('Failed to save to cloud: ' + err.message);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            }
+        }
+
+        function resetForm() {
+            const card = document.getElementById('manualEntryCard');
+            const btn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            
+            // Ensure always visible
+            card.style.display = 'block';
+            
+            // Reset state
+            editingState = { type: null, index: null, id: null };
+            btn.style.background = '#10b981';
+            btn.innerHTML = '<i class="fas fa-save"></i> Save to Table';
+            btn.disabled = false;
+            cancelBtn.style.display = 'none';
+            
+            // Set default date to today in MM/DD/YYYY format
+            const today = new Date();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            document.getElementById('mDate').value = `${mm}/${dd}/${yyyy}`;
+            document.getElementById('mMerchant').value = '';
+            document.getElementById('mTotal').value = '';
+            document.getElementById('mItems').value = '';
+            // Don't reset Type as user might want to add multiple of same type
+        }
+
+        async function editReceipt(type, id) {
+            const card = document.getElementById('manualEntryCard');
+            const btn = document.getElementById('saveBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            let data = null;
+
+            if (type === 'local') {
+                const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+                const index = parseInt(id);
+                data = pending[index];
+                editingState = { type: 'local', index: index, id: null };
+            } else {
+                // Fetch from cloud
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').textContent = 'Fetching record...';
+                const { data: cloudRec, error } = await supabaseClient
+                    .from('receipts')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                document.getElementById('loading').style.display = 'none';
+                if (error) {
+                    alert('Failed to fetch: ' + error.message);
+                    return;
+                }
+                data = cloudRec;
+                editingState = { type: 'cloud', index: null, id: id };
+            }
+
+            if (data) {
+                card.style.display = 'block';
+                
+                // Convert YYYY-MM-DD to MM/DD/YYYY if coming from cloud
+                let dateVal = data.date;
+                if (dateVal && dateVal.includes('-')) {
+                    const parts = dateVal.split('-');
+                    dateVal = `${parts[1]}/${parts[2]}/${parts[0]}`;
+                }
+
+                // Handle both local (camelCase) and cloud (lowercase) field names
+                const store = data.companyStore || data.companystore || '';
+                const transType = data.transactionType || data.transactiontype || data.subcategory || 'Expense';
+                
+                document.getElementById('mDate').value = dateVal || '';
+                document.getElementById('mMerchant').value = store;
+                document.getElementById('mType').value = transType;
+                document.getElementById('mTotal').value = data.total || '';
+                document.getElementById('mItems').value = data.items || '';
+                
+                btn.style.background = '#f59e0b';
+                btn.innerHTML = '<i class="fas fa-save"></i> Update Record';
+                cancelBtn.style.display = 'inline-block';
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function deleteReceipt(type, id) {
+            // Store the delete info and show modal
+            deleteState = { type: type, id: id };
+            const modal = document.getElementById('deleteModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.style.display = 'none';
+            deleteState = { type: null, id: null };
+        }
+
+        async function confirmDelete() {
+            const { type, id } = deleteState;
+
+            try {
+                if (type === 'local') {
+                    const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+                    const index = parseInt(id);
+                    pending.splice(index, 1);
+                    localStorage.setItem('pendingReceipts', JSON.stringify(pending));
+                } else {
+                    const { error } = await supabaseClient
+                        .from('receipts')
+                        .delete()
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+
+                closeDeleteModal();
+                loadReceipts();
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+                closeDeleteModal();
+            }
+        }
+
+        // Auto-format date input as mm/dd/yyyy and handle Enter key for navigation
+        document.getElementById('mDate').addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (v.length > 8) v = v.substring(0, 8);
+            
+            let formatted = v;
+            if (v.length > 2 && v.length <= 4) {
+                formatted = v.substring(0, 2) + '/' + v.substring(2);
+            } else if (v.length > 4) {
+                formatted = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
+            }
+            
+            e.target.value = formatted;
+        });
+
+        // Add Enter key listeners to all fields for streamlining
+        const manualFields = ['mDate', 'mMerchant', 'mType', 'mTotal', 'mItems'];
+        manualFields.forEach(id => {
+            document.getElementById(id).addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    if (id === 'mItems') {
+                        e.preventDefault();
+                        saveManualEntry();
+                    } else {
+                        // Move to next field on Enter (optional, behavior defined by browser usually, but we want to streamline)
+                    }
+                }
+            });
+        });
+
+        async function saveManualEntry() {
+            const btn = document.getElementById('saveBtn');
+            const dateStr = document.getElementById('mDate').value;
+            
+            // Parse MM/DD/YYYY to YYYY-MM-DD
+            let formattedDate = null;
+            if (dateStr && dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const mm = parts[0].padStart(2, '0');
+                    const dd = parts[1].padStart(2, '0');
+                    const yyyy = parts[2];
+                    if (yyyy.length === 4) {
+                        formattedDate = `${yyyy}-${mm}-${dd}`;
+                    }
+                }
+            }
+
+            const expense = {
+                date: formattedDate,
+                companyStore: document.getElementById('mMerchant').value,
+                total: parseFloat(document.getElementById('mTotal').value),
+                transactionType: document.getElementById('mType').value,
+                items: document.getElementById('mItems').value
+            };
+
+            if (!expense.date || !expense.companyStore || isNaN(expense.total)) {
+                alert('Please fill in Date (MM/DD/YYYY), Store, and Total Amount.');
+                return;
+            }
+
+            if (editingState.type === 'local') {
+                // Update local record
+                const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+                pending[editingState.index] = expense;
+                localStorage.setItem('pendingReceipts', JSON.stringify(pending));
+                resetForm();
+                await loadReceipts();
+            } else if (editingState.type === 'cloud') {
+                // Update cloud record
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                try {
+                    const { error } = await supabaseClient
+                        .from('receipts')
+                        .update({
+                            date: expense.date,
+                            companystore: expense.companyStore, // Lowercase key for DB
+                            total: expense.total,
+                            transactiontype: expense.transactionType, // Lowercase key for DB
+                            subcategory: expense.transactionType, // Keep subcategory in sync
+                            items: expense.items
+                        })
+                        .eq('id', editingState.id);
+                    if (error) throw error;
+                    
+                    resetForm();
+                    await loadReceipts();
+                } catch (err) {
+                    alert('Update failed: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Update Record';
+                    return;
+                }
+            } else {
+                // Save New (Try Cloud First, Fallback to Local)
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'Saving to Cloud...';
+                    
+                    // 1. Insert into Receipts (Let DB auto-generate ID)
+                    const { data: insertedData, error } = await supabaseClient
+                        .from('receipts')
+                        .insert([{
+                            date: expense.date,
+                            companystore: expense.companyStore, 
+                            total: expense.total,
+                            transactiontype: expense.transactionType,
+                            subcategory: expense.transactionType,
+                            items: expense.items
+                        }])
+                        .select();
+
+                    if (error) {
+                         console.error('Supabase Error (Receipts):', error);
+                         throw new Error('Receipts Table Error: ' + error.message);
+                    }
+
+                    // 2. Insert into Budget Expenses
+                    // Generating String ID for expenses table (assuming it is Text based on business-budget.html)
+                    try {
+                        const budgetExpense = {
+                            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            date: expense.date,
+                            amount: expense.total,
+                            subcategory: expense.transactionType,
+                            category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'].includes(expense.transactionType) 
+                                      ? 'Employee Costs' 
+                                      : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(expense.transactionType) ? 'Income Sources' : 'Operating Expenses'),
+                            description: `${expense.companyStore} - ${expense.items || 'Synced Receipt'}`
+                        };
+                        
+                        console.log('Inserting to expenses table:', budgetExpense);
+                        
+                        const { data: budgetData, error: budgetError } = await supabaseClient
+                            .from('expenses')
+                            .insert([budgetExpense])
+                            .select();
+                            
+                        if(budgetError) {
+                            console.error('Budget sync error:', budgetError);
+                            alert('Receipt saved, but Budget update failed: ' + budgetError.message);
+                        } else {
+                            console.log('Budget expense saved successfully:', budgetData);
+                        }
+                    } catch (bErr) {
+                        console.error('Budget sync fail:', bErr);
+                    }
+
+                    // Success Feedback
+                    btn.style.background = '#059669';
+                    btn.textContent = 'Saved to Cloud!';
+                    setTimeout(() => {
+                        btn.style.background = '#10b981';
+                        btn.textContent = 'Save to Table';
+                        btn.disabled = false;
+                    }, 1000);
+
+                    // Clear Form
+                    document.getElementById('mMerchant').value = '';
+                    document.getElementById('mTotal').value = '';
+                    document.getElementById('mItems').value = '';
+                    document.getElementById('mMerchant').focus();
+
+                } catch (err) {
+                    console.warn('Cloud save failed, falling back to local:', err);
+                    alert('Cloud Save Failed (Saving Offline): ' + (err.message || 'Unknown error'));
+                    
+                    // Fallback to Local Storage
+                    const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+                    pending.push(expense);
+                    localStorage.setItem('pendingReceipts', JSON.stringify(pending));
+                    
+                    btn.style.background = '#f59e0b';
+                    btn.textContent = 'Saved Locally (Offline)';
+                    setTimeout(() => {
+                        btn.style.background = '#10b981';
+                        btn.textContent = 'Save to Table';
+                        btn.disabled = false;
+                    }, 1500);
+
+                    // Clear Form
+                    document.getElementById('mMerchant').value = '';
+                    document.getElementById('mTotal').value = '';
+                    document.getElementById('mItems').value = '';
+                }
+            }
+
+
+            loadReceipts();
+        }
+
+        async function syncToCloud() {
+            const btn = document.getElementById('syncBtn');
+            const pending = JSON.parse(localStorage.getItem('pendingReceipts') || '[]');
+            if (pending.length === 0) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+
+            try {
+                // 1. Prepare Payload for Receipts (Map camelCase -> lowercase, Let DB generate ID)
+                const receiptsPayload = pending.map((r, i) => ({
+                    date: r.date,
+                    companystore: r.companyStore || r.companystore,
+                    total: r.total,
+                    transactiontype: r.transactionType || r.transactiontype,
+                    items: r.items
+                }));
+
+                const { error } = await supabaseClient
+                    .from('receipts')
+                    .insert(receiptsPayload)
+                    .select();
+
+                if (error) {
+                     throw new Error('Receipts Sync Error: ' + error.message);
+                }
+
+                // 2. Insert into Budget Expenses Table (Sync)
+                try {
+                    const budgetExpenses = pending.map((r, i) => ({
+                        id: `${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`, // Unique String ID
+                        date: r.date,
+                        amount: r.total,
+                        subcategory: r.transactionType || r.transactiontype,
+                        // Determine Category based on Subcategory
+                        category: ['Wages', 'CA PIT/SDI', 'CA SUI/ETT', 'Federal Taxes (941/943/944)', 'Payroll Tax'].includes(r.transactionType || r.transactiontype) 
+                                  ? 'Employee Costs' 
+                                  : (['Venmo', 'Zelle', 'Credit Card Deposit'].includes(r.transactionType || r.transactiontype) ? 'Income Sources' : 'Operating Expenses'),
+                        description: `${r.companyStore || r.companystore} - ${r.items || 'Synced Receipt'}`
+                    }));
+                    
+                    const { error: budgetError } = await supabaseClient
+                        .from('expenses')
+                        .insert(budgetExpenses);
+                        
+                    if(budgetError) {
+                        console.error('Budget sync error:', budgetError);
+                        alert('Receipts synced, but failed to update budget: ' + budgetError.message);
+                    }
+                    
+                } catch(bErr) {
+                    console.error('Budget sync fail:', bErr);
+                    // Don't throw here, partial success is better than loop
+                }
+
+
+                // Clear local
+                localStorage.setItem('pendingReceipts', JSON.stringify([]));
+                alert('Success! All receipts synced to cloud.');
+                loadReceipts();
+            } catch (err) {
+                alert('Sync failed: ' + err.message);
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                loadReceipts(); // Will hide btn and refresh
+            }
+        }
+
+        // Set default year to 2026 for now
+        document.getElementById('yearFilter').value = '2026';
         loadReceipts();
     </script>
+    <style>
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
 </body>
 </html>

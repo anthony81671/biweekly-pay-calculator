@@ -18,6 +18,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
       :root {
         --primary: #ec4899;
@@ -271,13 +272,13 @@
         <img src="kntlogo2026.png" alt="K&T Nails" />
         <h2>K&T NAILS</h2>
       </div>
-      <nav class="nav-menu">
-        <a href="index.html" class="nav-item">🏠 Receipt Home</a>
-        <a href="daily-entry.html" class="nav-item">💰 Enter Sales</a>
-        <a href="business-budget.html" class="nav-item">📈 Budget & Expenses</a>
-        <a href="receipt-scanner.html" class="nav-item active">📸 Receipt Scanner</a>
-        <a href="receipt-list.html" class="nav-item">📋 View Receipts</a>
-      </nav>
+        <nav class="nav-menu">
+          <a href="index.html" class="nav-item">🏠 Dashboard</a>
+          <a href="dashboard.html" class="nav-item">💰 Enter Sales</a>
+          <a href="business-budget.html" class="nav-item">📈 Budget</a>
+          <a href="receipt-list.html" class="nav-item">📋 Business Receipts</a>
+          <a href="receipt-scanner.html" class="nav-item active">📸 Receipt Scanner</a>
+        </nav>
     </div>
 
     <main class="main-content">
@@ -300,6 +301,11 @@
           >
             TAP TO CAPTURE
           </p>
+          <p style="margin: 10px 0; color: var(--text-muted); font-weight: 600;">OR</p>
+          <label for="fileUpload" class="btn btn-secondary" style="cursor: pointer; display: inline-block; text-align: center;">
+            📁 Upload from Gallery
+          </label>
+          <input type="file" id="fileUpload" accept="image/*" style="display: none;">
         </div>
       </div>
 
@@ -337,9 +343,8 @@
           />
         </div>
         <div class="result-row">
-          <span class="result-label">Transaction Type:</span>
-          <input
-            type="text"
+          <span class="result-label">Category:</span>
+          <select
             id="resType"
             class="btn"
             style="
@@ -350,7 +355,36 @@
               padding: 4px 8px;
               font-size: 14px;
             "
-          />
+          >
+            <!-- Utilities -->
+            <optgroup label="Utilities">
+              <option value="Electricity & Gas">Electricity & Gas</option>
+              <option value="Water & Waste">Water & Waste</option>
+              <option value="Internet & Phone">Internet & Phone</option>
+              <option value="Supplies">Supplies</option>
+            </optgroup>
+            <!-- Marketing & Professional -->
+            <optgroup label="Marketing & Professional">
+              <option value="Advertising">Advertising</option>
+              <option value="Subscriptions">Subscriptions</option>
+              <option value="Accounting & Legal">Accounting & Legal</option>
+            </optgroup>
+            <!-- Admin / Bank -->
+            <optgroup label="Admin / Bank">
+              <option value="Merchant Fees">Merchant Fees</option>
+              <option value="Bank Service Charges">Bank Service Charges</option>
+            </optgroup>
+             <!-- Travel / Auto -->
+            <optgroup label="Travel / Auto">
+              <option value="Business Meals">Business Meals</option>
+              <option value="Auto / Mileage">Auto / Mileage</option>
+            </optgroup>
+             <!-- Employee Costs -->
+            <optgroup label="Employee Costs">
+              <option value="Wages">Wages</option>
+              <option value="Other">Other</option>
+            </optgroup>
+          </select>
         </div>
         <div class="result-row">
           <span class="result-label">Company/Store:</span>
@@ -413,6 +447,65 @@
           </button>
         </div>
       </div>
+      </div>
+
+      <div class="camera-card" id="manualEntryCard" style="margin-top: 32px;">
+        <h3 style="margin-bottom: 20px; color: var(--text-main)">📝 Manual Entry</h3>
+        
+        <div class="result-row">
+            <span class="result-label">Date:</span>
+            <input type="date" id="manDate" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+        </div>
+        
+        <div class="result-row">
+            <span class="result-label">Category:</span>
+            <select id="manCategory" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+                <optgroup label="Utilities">
+                  <option value="Electricity & Gas">Electricity & Gas</option>
+                  <option value="Water & Waste">Water & Waste</option>
+                  <option value="Internet & Phone">Internet & Phone</option>
+                  <option value="Supplies" selected>Supplies</option>
+                </optgroup>
+                <optgroup label="Marketing & Professional">
+                  <option value="Advertising">Advertising</option>
+                  <option value="Subscriptions">Subscriptions</option>
+                  <option value="Accounting & Legal">Accounting & Legal</option>
+                </optgroup>
+                <optgroup label="Admin / Bank">
+                  <option value="Merchant Fees">Merchant Fees</option>
+                  <option value="Bank Service Charges">Bank Service Charges</option>
+                </optgroup>
+                <optgroup label="Travel / Auto">
+                  <option value="Business Meals">Business Meals</option>
+                  <option value="Auto / Mileage">Auto / Mileage</option>
+                </optgroup>
+                <optgroup label="Employee Costs">
+                  <option value="Wages">Wages</option>
+                  <option value="Other">Other</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="result-row">
+            <span class="result-label">Store/Company:</span>
+            <input type="text" id="manMerchant" placeholder="e.g. Home Depot" class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1;">
+        </div>
+
+        <div class="result-row">
+            <span class="result-label">Items:</span>
+            <textarea id="manItems" placeholder="Description..." class="btn" style="text-align: right; background: #f8fafc; width:auto; flex:1; min-height:60px;"></textarea>
+        </div>
+
+        <div class="result-row" style="margin-top:12px; border-top:2px solid #f1f5f9; padding-top:12px;">
+            <span class="result-label" style="font-size:18px;">Total:</span>
+            <input type="number" id="manTotal" step="0.01" placeholder="0.00" class="btn" style="text-align: right; background: #f1f5f9; width:auto; flex:1; font-size:20px; font-weight:800; color:var(--primary);">
+        </div>
+
+        <button class="btn btn-primary" onclick="saveManual()" style="width:100%; margin-top:20px;">
+            Save Receipt
+        </button>
+      </div>
+
     </main>
 
     <div class="loading-overlay" id="loadingOverlay">
@@ -439,21 +532,146 @@
       const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
       let stream = null;
+      let knownStores = []; // Cache of known store names
+
+      // Load known stores from Supabase on page load
+      async function loadKnownStores() {
+        try {
+          const { data, error } = await supabaseClient
+            .from('receipts')
+            .select('companyStore')
+            .not('companyStore', 'is', null);
+          
+          if (!error && data) {
+            // Get unique store names
+            knownStores = [...new Set(data.map(r => r.companyStore).filter(s => s && s !== 'Unknown Store'))];
+            console.log('📋 Loaded', knownStores.length, 'known stores:', knownStores);
+          }
+        } catch (err) {
+          console.warn('Could not load known stores:', err);
+        }
+      }
+
+      // Fuzzy match store name against known stores
+      function matchKnownStore(ocrStoreName) {
+        if (!ocrStoreName || ocrStoreName === 'Unknown Store') return null;
+        
+        // Normalize function to handle common OCR errors
+        const normalize = (s) => s.toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/[0]/g, 'o')  // 0 → o
+          .replace(/[1]/g, 'i')  // 1 → i  
+          .replace(/[5]/g, 's')  // 5 → s
+          .trim();
+        
+        const cleanOCR = normalize(ocrStoreName);
+        
+        // Try exact match first
+        for (const known of knownStores) {
+          if (known.toLowerCase() === ocrStoreName.toLowerCase()) {
+            return known;
+          }
+        }
+        
+        // Try fuzzy match with normalization
+        for (const known of knownStores) {
+          const cleanKnown = normalize(known);
+          
+          // If normalized OCR text contains most of the known store name
+          if (cleanOCR.includes(cleanKnown) || cleanKnown.includes(cleanOCR)) {
+            // Calculate similarity on raw (non-normalized) text
+            const raw1 = ocrStoreName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const raw2 = known.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+            const similarity = raw1.length > raw2.length ? 
+              raw2.length / raw1.length : 
+              raw1.length / raw2.length;
+            
+            if (similarity > 0.5) { // 50% similarity threshold
+              console.log('🎯 Matched "' + ocrStoreName + '" to known store "' + known + '"');
+              return known;
+            }
+          }
+        }
+        
+        return null; // No match found
+      }
 
       async function startCamera() {
         try {
+          // Try environment (back) camera first (for mobile)
           stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "environment" },
             audio: false,
           });
           video.srcObject = stream;
+          console.log('✅ Camera started (environment/back camera)');
         } catch (err) {
-          alert("Could not access camera: " + err.message);
+          console.warn('Environment camera not available, trying any camera...', err.message);
+          try {
+            // Fallback: try any camera (for desktop)
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+            video.srcObject = stream;
+            console.log('✅ Camera started (any available camera)');
+          } catch (err2) {
+            console.warn('Any camera failed, trying user (front) camera...', err2.message);
+            try {
+              // Last resort: try front camera explicitly
+              stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user" },
+                audio: false,
+              });
+              video.srcObject = stream;
+              console.log('✅ Camera started (user/front camera)');
+            } catch (err3) {
+              alert("Could not access camera: " + err3.message + "\n\nYou can use the 'Upload from Gallery' option instead.");
+              console.error('All camera attempts failed:', err3);
+            }
+          }
         }
       }
 
       function stopCamera() {
         if (stream) stream.getTracks().forEach((t) => t.stop());
+      }
+
+      // Image preprocessing for better OCR
+      function preprocessImage(imageData) {
+        const tempCanvas = document.createElement('canvas');
+        const img = new Image();
+        img.src = imageData;
+        
+        return new Promise((resolve) => {
+          img.onload = () => {
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const ctx = tempCanvas.getContext('2d');
+            
+            // Draw original image
+            ctx.drawImage(img, 0, 0);
+            
+            // Get image data
+            const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+            
+            // Convert to grayscale and increase contrast
+            for (let i = 0; i < data.length; i += 4) {
+              const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+              // Increase contrast
+              const contrast = 1.5;
+              const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+              let value = factor * (avg - 128) + 128;
+              value = Math.max(0, Math.min(255, value));
+              
+              data[i] = data[i + 1] = data[i + 2] = value;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            resolve(tempCanvas.toDataURL('image/jpeg', 0.95));
+          };
+        });
       }
 
       captureBtn.onclick = () => {
@@ -466,6 +684,21 @@
         stopCamera();
       };
 
+      // File upload handler
+      document.getElementById('fileUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            capturedImg.src = event.target.result;
+            cameraCard.style.display = "none";
+            previewContainer.style.display = "block";
+            stopCamera();
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
       function retake() {
         cameraCard.style.display = "block";
         previewContainer.style.display = "none";
@@ -473,29 +706,285 @@
         startCamera();
       }
 
+        // Enhanced categorization with more keywords
+        function smartCategorize(text) {
+          const t = text.toLowerCase();
+          
+          // Utilities - with word boundaries
+          if (t.match(/\b(pg&e|pge|electric|electricity|water|waste|sewer|trash|gas|power|utilities|att|verizon|t-mobile|tmobile|comcast|xfinity|internet|phone|cable|spectrum)\b/)) return 'Utilities';
+          
+          // Marketing & Professional subcategories - with word boundaries
+          if (t.match(/\b(google|facebook|meta|instagram|ads|advertising|marketing|print|flyer|promo|promotion|adwords)\b|social media/)) return 'Advertising';
+          if (t.match(/\b(attorney|lawyer|cpa|accountant|legal)\b|law firm|accounting firm|tax service|tax preparation/)) return 'Accounting & Legal';
+          if (t.match(/\b(subscription|software|adobe|microsoft|intuit|quickbooks|turbotax)\b/)) return 'Subscriptions';
+
+          // Admin / Bank - with word boundaries (FIXED: prevents 'chase' matching 'purchase')
+          if (t.match(/\b(bank|banking|fee|charge|interest|merchant|square|stripe|paypal|wells fargo|bofa|citibank|chase bank)\b|service charge/)) return 'Admin / Bank';
+          
+          // Travel / Auto - with word boundaries
+          if (t.match(/\b(chevron|shell|mobil|exxon|texaco|arco|gasoline|parking|uber|lyft|taxi|airline|hotel|motel|airbnb|travel|hertz|enterprise)\b|gas station|fuel|flight|rental car/)) return 'Travel / Auto';
+          
+          // Business Meals - with word boundaries
+          if (t.match(/\b(cafe|coffee|starbucks|peet|dunkin|mcdonald|subway|kfc|domino|restaurant|pho|noodle|sushi|ramen|thai|chinese|vietnamese|korean|mexican|italian|bistro|grill|diner|bakery|bar|pub|dining|lunch|dinner|breakfast|eatery)\b|burger king|wendy|in-n-out|taco bell|chipotle|pizza hut|papa john/)) return 'Business Meals';
+          
+          // Supplies - with word boundaries (nail salon specific)
+          if (t.match(/\b(nail|nails|beauty|salon|spa|supply|supplies|cosmo|cosmetic|professional|prof|sally|ulta|sephora|polish|gel|acrylic|powder|monomer|lamp|drill|file|buffer|store|market|wholesale|distributor|amazon|target|walmart|costco|staples)\b|sally beauty|uv|led|home depot|lowes|office depot/)) return 'Supplies';
+          
+          return 'Other';
+        }
+
+        function parseReceiptText(text) {
+          // Handle single-line OCR by splitting on common delimiters
+          let normalizedText = text.replace(/\s+(TOTAL|SUBTOTAL|TAX|DATE|ITEM|AMOUNT|DESCRIPTION)/gi, '\n$1');
+          const lines = normalizedText.split('\n').map(l => l.trim()).filter(Boolean);
+          
+          let companyStore = null; 
+          let total = null;
+          let category = 'Other'; 
+          let items = [];
+
+          // IMPROVED: Better total detection for invoices without "TOTAL" keyword
+          const totalPatterns = [
+            // Standard patterns
+            /\bTOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\$\s*([\d,]+\.\d{2})\s*\bTOTAL\b/i,
+            /\b(?:GRAND TOTAL|FINAL TOTAL)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\b(?:AMOUNT DUE|BALANCE DUE|BALANCE)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            /\b(?:YOU PAID|PAYMENT|CHARGED)[:\s]*\$?\s*([\d,]+\.\d{2})/i,
+            // Invoice patterns (AMOUNT column)
+            /\bAMOUNT[:\s]*\$?\s*([\d,]+\.?\d{0,2})/i,
+            /(?<!SUB)TOTAL[:\s]*\$?\s*([\d,]+\.\d{2})/i
+          ];
+
+          // Search from bottom up for total
+          for (const line of [...lines].reverse()) {
+            if (line.toUpperCase().includes('SUBTOTAL')) continue;
+            
+            if (total !== null) break;
+            for (const pattern of totalPatterns) {
+              const match = line.match(pattern);
+              if (match) {
+                const num = parseFloat(match[1].replace(/,/g, ''));
+                if (!isNaN(num) && num > 0 && num < 100000) {
+                  total = num;
+                  console.log('✅ Found TOTAL:', num, 'from line:', line);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // IMPROVED: Better fallback for invoices - look for amounts in AMOUNT column
+          if (total === null) {
+              // First try to find amounts near "AMOUNT" keyword
+              const amountMatch = text.match(/AMOUNT[\s\S]{0,50}\$?\s*([\d,]+\.?\d{0,2})/i);
+              if (amountMatch) {
+                const num = parseFloat(amountMatch[1].replace(/,/g, ''));
+                if (!isNaN(num) && num > 0 && num < 100000) {
+                  total = num;
+                  console.log('💰 Found amount from AMOUNT column:', total);
+                }
+              }
+          }
+          
+          // Last resort: find largest reasonable number
+          if (total === null) {
+              const numbers = text.match(/\$?\s*([\d,]+\.?\d{0,2})/g);
+              if (numbers) {
+                  const validNums = numbers
+                    .map(n => parseFloat(n.replace(/[^\d.]/g, '')))
+                    .filter(n => n > 1 && n < 100000);
+                  if (validNums.length > 0) {
+                    total = Math.max(...validNums);
+                    console.log('⚠️ Using fallback (largest number):', total);
+                  }
+              }
+          }
+
+          // Enhanced date detection
+          let date = null;
+          const datePatterns = [
+            /\b(\d{4}-\d{2}-\d{2})\b/,
+            /\b(\d{1,2}\/\d{1,2}\/\d{4})\b/,
+            /\b(\d{1,2}\/\d{1,2}\/\d{2})\b/,
+            /\b(\d{1,2}-\d{1,2}-\d{2,4})\b/,
+            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s,]+\d{1,2}[\s,]+\d{4})/i,
+            /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b/i
+          ];
+
+          for (const line of lines) {
+            for (const pattern of datePatterns) {
+              const match = line.match(pattern);
+              if (match) {
+                date = match[1];
+                try {
+                  let parsed = new Date(date);
+                  // Handle 2-digit years
+                  if (date.match(/\/\d{2}$/)) {
+                    const year = parsed.getFullYear();
+                    if (year < 2000) parsed.setFullYear(year + 100); // Convert 1925 to 2025
+                  }
+                  if (!isNaN(parsed.getTime())) {
+                    date = parsed.toISOString().split('T')[0];
+                  }
+                } catch (e) {
+                  // Keep original if parsing fails
+                }
+                break;
+              }
+            }
+            if (date) break;
+          }
+          
+          // IMPROVED: Better merchant name detection with fuzzy matching
+          for (const line of lines.slice(0, 10)) {
+              const cleaned = line.replace(/[^\w\s'&.-]/g, '').trim();
+              if (cleaned.length > 3 && 
+                  !line.match(/\d{1,2}[\/\-]\d{1,2}/) && 
+                  !line.match(/^\d+$/) &&
+                  !line.toLowerCase().match(/^(total|subtotal|tax|receipt|invoice|thank you|visit|store|location|qty|description|unit|amount|date|sold|to)$/)) {
+                  companyStore = cleaned;
+                  break;
+              }
+          }
+          
+          // Try to match against known stores
+          if (companyStore) {
+            const matched = matchKnownStore(companyStore);
+            if (matched) {
+              companyStore = matched; // Use the known store name
+            }
+          }
+
+          // IMPROVED: Extract only item descriptions (not prices)
+          const descLines = lines.filter(l => {
+            const lowerLine = l.toLowerCase();
+            return !lowerLine.includes('total') &&
+                   !lowerLine.includes('subtotal') &&
+                   !lowerLine.includes('tax') &&
+                   !lowerLine.includes('amount') &&
+                   !lowerLine.includes('qty') &&
+                   !lowerLine.includes('unit') &&
+                   !lowerLine.includes('description') &&
+                   !lowerLine.includes('date') &&
+                   !lowerLine.match(/\d{1,2}[\/\-]\d{1,2}/) &&  // No dates
+                   !lowerLine.match(/\b\d{5}\b/) &&  // No zip codes
+                   !lowerLine.match(/\b(st|ave|rd|blvd|hwy|lane|suite|ste|dr)\b/i) &&  // No addresses
+                   (!date || !l.includes(date)) &&
+                   l !== companyStore &&
+                   l.length > 2 &&
+                   l.length < 50 &&  // Descriptions are usually short
+                   !l.match(/^[\d\s\$\.,]+$/);  // Skip lines with only numbers
+          });
+          
+          // Clean up descriptions - remove prices and quantities from the end
+          const cleanedDescs = descLines.map(line => {
+            let cleaned = line
+              .replace(/^\d+\s+/, '')  // Remove leading quantity
+              .replace(/\s*\$?\s*[\d,]+\.\d{2}\s*$/g, '')  // Remove trailing price with decimals
+              .replace(/\s*\$?\s*[\d,]+\.?\d{0,2}\s*$/g, '')  // Remove trailing price without decimals
+              .replace(/[#:]\s*$/, '')  // Remove trailing # or :
+              .trim();
+            return cleaned;
+          }).filter(d => {
+            if (d.length < 3) return false;
+            if (d.match(/^[A-Z]{2}\s\d{5}/)) return false;  // Skip state + zip
+            if (d.match(/\d{1,2}:\d{2}/)) return false;  // Skip timestamps
+            
+            // Filter out store name using normalized matching
+            if (companyStore) {
+              const normalize = (s) => s.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/[0]/g, 'o')
+                .replace(/[1]/g, 'i')
+                .replace(/[5]/g, 's')
+                .trim();
+              
+              const normalizedDesc = normalize(d);
+              const normalizedStore = normalize(companyStore);
+              
+              // Don't include if it's the store name
+              if (normalizedStore.includes(normalizedDesc) || normalizedDesc.includes(normalizedStore)) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
+          
+          const descText = cleanedDescs.slice(0, 5).join(', ');
+          category = smartCategorize(text + " " + (companyStore || ''));
+
+          return { 
+            date: date || new Date().toISOString().split('T')[0], 
+            companyStore: companyStore || 'Unknown Store', 
+            total: total || 0, 
+            transactionType: category,
+            items: descText, 
+            raw_text: text 
+          };
+        }
+
         async function process() {
             loadingOverlay.style.display = 'flex';
+            const statusText = loadingOverlay.querySelector('p');
+            statusText.textContent = "Enhancing image...";
+
             try {
-                const res = await fetch('http://localhost:3001/api/receipt-ocr-base64', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: capturedImg.src })
-                });
-                const data = await res.json();
+                // Preprocess image for better OCR
+                const processedImage = await preprocessImage(capturedImg.src);
                 
+                statusText.textContent = "Loading AI Brain...";
+                
+                // Client-side OCR using Tesseract.js
+                const { data: { text } } = await Tesseract.recognize(
+                  processedImage,
+                  'eng',
+                  {
+                    logger: m => {
+                        if(m.status === 'recognizing text') {
+                           statusText.textContent = `Reading Receipt... ${Math.round(m.progress * 100)}%`;
+                        } else {
+                           statusText.textContent = m.status;
+                        }
+                    }
+                  }
+                );
+
+                console.log("OCR Output:", text);
+                statusText.textContent = "Analyzing data...";
+                
+                const data = parseReceiptText(text);
+
                 document.getElementById('resMerchant').value = data.companyStore || '';
                 document.getElementById('resTotal').value = (data.total || 0).toFixed(2);
                 document.getElementById('resDate').value = data.date || '';
-                document.getElementById('resType').value = data.transactionType || 'Expense';
-                document.getElementById('resItems').value = data.items || '';
+                
+                const select = document.getElementById('resType');
+                if (data.transactionType && data.transactionType !== 'Other') {
+                     for(let i=0; i<select.options.length; i++) {
+                         if(select.options[i].value === data.transactionType) {
+                             select.selectedIndex = i;
+                             break;
+                         }
+                     }
+                }
+                
+                // Show items with raw text for debugging
+                const itemsText = data.items || '';
+                const debugInfo = itemsText ? itemsText : `[Raw OCR: ${text.substring(0, 100)}...]`;
+                document.getElementById('resItems').value = debugInfo;
                 
                 resultCard.style.display = 'block';
                 previewContainer.style.display = 'none';
             } catch (err) {
-                console.error('OCR Error:', err);
-                alert('Analysis failed: ' + err.message);
+                alert('Analysis failed: ' + err.message + '\n\nTry taking a clearer photo or use manual entry below.');
+                console.error(err);
+                // Show preview again so user can retake
+                previewContainer.style.display = 'block';
             } finally {
                 loadingOverlay.style.display = 'none';
+                statusText.textContent = "AI is analyzing receipt...";
             }
         }
 
@@ -505,22 +994,55 @@
                 companyStore: document.getElementById('resMerchant').value,
                 total: parseFloat(document.getElementById('resTotal').value),
                 transactionType: document.getElementById('resType').value,
+                subcategory: document.getElementById('resType').value,
                 items: document.getElementById('resItems').value
             };
+            await saveExpense(expense, () => {
+                // On success for scan
+                resultCard.style.display = "none";
+                cameraCard.style.display = "block";
+                startCamera();
+            });
+        }
+        
+        async function saveManual() {
+            const expense = {
+                date: document.getElementById('manDate').value,
+                companyStore: document.getElementById('manMerchant').value,
+                total: parseFloat(document.getElementById('manTotal').value),
+                transactionType: document.getElementById('manCategory').value,
+                subcategory: document.getElementById('manCategory').value,
+                items: document.getElementById('manItems').value
+            };
             
+            if(!expense.total || !expense.companyStore) {
+                alert("Please enter at least a Company Name and Total.");
+                return;
+            }
+
+            await saveExpense(expense, () => {
+                // Reset form
+                document.getElementById('manMerchant').value = '';
+                document.getElementById('manTotal').value = '';
+                document.getElementById('manItems').value = '';
+                document.getElementById('manCategory').value = 'Supplies';
+            });
+        }
+
+        async function saveExpense(expense, onSuccess) {
             loadingOverlay.style.display = 'flex';
             try {
-                // Save to Supabase 'receipts' table
                 const { data, error } = await supabaseClient
                     .from('receipts')
                     .insert([expense]);
 
                 if (error) throw error;
 
-                // Also optionally save to the business budget expenses table if needed
-                // For now, we follow the user's request to see it in a table (receipt-list.html)
+                // Success
+                alert("✅ Receipt Saved Successfully!");
                 
-                location.href = 'receipt-list.html';
+                if(onSuccess) onSuccess();
+
             } catch (err) {
                 alert('Save failed: ' + err.message);
             } finally {
@@ -529,6 +1051,7 @@
         }
 
       startCamera();
+      loadKnownStores(); // Load known stores on page load
     </script>
   </body>
 </html>

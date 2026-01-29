@@ -6,73 +6,151 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Pay Calculator Cloud Pro</title>
+    <title>Sales Entry</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
       :root {
-        --primary: #5856d6;
-        --secondary: #007aff;
-        --success: #34c759;
-        --danger: #ff3b30;
-        --background: #f2f2f7;
-        --card-bg: #ffffff;
-        --text-main: #1a1a1a;
-        --text-muted: #4a4a4a;
-        --border: #d1d1d6;
-        --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        /* Premium Spa Palette - Warm Stone & Sophisticated Rose */
+        --primary: #BE185D;       /* Pink-700 */
+        --primary-soft: #FBCFE8;  /* Pink-200 */
+        --secondary: #F472B6;     /* Pink-400 */
+        --success: #059669;       /* Emerald-600 */
+        --danger: #E11D48;        /* Rose-600 */
+        --warning: #D97706;       /* Amber-600 */
+        
+        --background: #FAFAF9;    /* Warm Stone-50 */
+        --sidebar-bg: #FFFFFF;    /* Clean White */
+        --card-bg: #FFFFFF;
+        
+        --text-main: #1C1917;     /* Stone-900 */
+        --text-muted: #57534E;    /* Stone-600 */
+        --border: #E7E5E4;        /* Stone-200 */
+        
+        --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.05), 0 2px 4px -1px rgba(28, 25, 23, 0.03);
+        --shadow-lg: 0 10px 15px -3px rgba(190, 24, 93, 0.05), 0 4px 6px -2px rgba(190, 24, 93, 0.025);
+        --radius-lg: 16px;
+        --radius-xl: 24px;
       }
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
       }
       body {
-        font-family: "Inter", -apple-system, sans-serif;
-        margin: 0;
-        padding: 0;
+        font-family: 'Inter', sans-serif;
         background-color: var(--background);
         color: var(--text-main);
-        line-height: 1.5;
-      }
-      .container {
-        max-width: 650px;
-        margin: 0 auto;
-        padding: 20px 16px 120px;
-      }
-      header {
-        padding: 20px 0;
-        text-align: center;
-        position: relative;
-      }
-      h1 {
-        font-size: 26px;
-        font-weight: 800;
+        display: flex;
+        min-height: 100vh;
         margin: 0;
+      }
+      
+      /* Sidebar */
+      .sidebar {
+        width: 280px;
+        background: var(--sidebar-bg);
+        padding: 32px 24px;
+        position: fixed;
+        height: 100vh;
+        border-right: 1px solid var(--border);
+      }
+      .logo-section {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .logo-section img {
+        width: 120px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+      }
+      .logo-section h2 {
+          font-family: "Playfair Display", serif;
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--primary);
+          margin-bottom: 4px;
+          letter-spacing: -0.01em;
+      }
+      .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .nav-item {
+        padding: 14px 20px;
+        border-radius: 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .nav-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--primary);
+      }
+      .nav-item.active {
         background: linear-gradient(135deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: white;
+      }
+
+      .container {
+        margin-left: 280px;
+        padding: 40px;
+        flex: 1;
+        max-width: calc(100% - 280px);
+      }
+      
+      header {
+        text-align: left;
+        margin-bottom: 32px;
+        padding: 0;
+      }
+      
+      h1 {
+        font-family: "Playfair Display", serif;
+        font-size: 32px;
+        font-weight: 700;
+        text-align: left;
+        background: none;
+        -webkit-text-fill-color: initial;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+      }
+
+      @media (max-width: 768px) {
+        .sidebar { display: none; }
+        .container { margin-left: 0; padding: 20px; max-width: 100%; }
       }
       .card {
         background: var(--card-bg);
-        backdrop-filter: blur(15px);
-        border-radius: 20px;
+        border-radius: var(--radius-xl);
         padding: 24px;
         margin-bottom: 24px;
         border: 1px solid var(--border);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow-md);
         position: relative;
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-soft);
       }
       h2 {
-        font-size: 19px;
-        font-weight: 700;
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 600;
         margin-top: 0;
         margin-bottom: 18px;
+        color: var(--primary);
       }
       label {
         display: block;
@@ -287,17 +365,24 @@
     </style>
   </head>
   <body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <img src="kntlogo2026.png" alt="K&T Nails">
+            <h2>K&T NAILS</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-item">🏠 Dashboard</a>
+            <a href="dashboard.html" class="nav-item active">💰 Enter Sales</a>
+            <a href="business-budget.html" class="nav-item">📈 Budget</a>
+            <a href="receipt-list.html" class="nav-item">📋 Business Receipts</a>
+            <a href="receipt-scanner.html" class="nav-item">📸 Receipt Scanner</a>
+        </nav>
+    </div>
+
     <div class="container">
       <header>
-        <h1>Pay Calculator Cloud</h1>
-        <div class="sync-status">● Cloud Sync Connected</div>
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-          <a href="index.html" style="padding: 8px 16px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: 2px solid var(--primary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 8px rgba(88, 86, 214, 0.3);">🏠 Receipt Home</a>
-          <a href="daily-entry.html" style="padding: 8px 16px; background: white; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📅 Quick Entry</a>
-          <a href="business-budget.html" style="padding: 8px 16px; background: white; border: 2px solid var(--success); color: var(--success); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">💰 Budget</a>
-          <a href="receipt-scanner.html" style="padding: 8px 16px; background: white; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📸 Scanner</a>
-          <a href="receipt-list.html" style="padding: 8px 16px; background: white; border: 2px solid var(--secondary); color: var(--secondary); border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s;">📋 Receipts</a>
-        </div>
+        <h1>Sales Entry</h1>
+        <div class="sync-status" style="text-align: left; margin-top: 4px;">● Cloud Sync Connected</div>
       </header>
 
       <div class="card">
@@ -443,6 +528,20 @@
           <div id="workerListManage" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
         </div>
 
+        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
+            <label>Bulk Upload (Excel)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display: none;" onchange="handleExcelUpload(this)">
+                <button class="btn-secondary btn-small" onclick="document.getElementById('excelUpload').click()">
+                    📂 Upload Excel
+                </button>
+                <span id="uploadStatus" style="font-size: 12px; align-self: center; color: var(--text-muted);"></span>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                Format: Column A = Date, Column B = Amount
+            </div>
+        </div>
+
         <label>Select Worker</label
         ><select id="workerSelect" onchange="loadWorkerBatch()"></select>
         <div
@@ -548,6 +647,27 @@
         >
           Generate Final Report
         </button>
+      </div>
+
+      <!-- EXCEL PREVIEW MODAL -->
+      <div id="excelPreviewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
+          <div class="card" style="width: 95%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
+              <h2>📋 Preview Import</h2>
+              <div style="margin-bottom: 10px; font-size: 12px; color: var(--text-muted);">
+                  Showing all columns found in the file. Only <b>Date</b> and <b>Amount</b> (auto-detected) will be saved.
+              </div>
+              <div style="flex: 1; overflow: auto; border: 1px solid var(--border); border-radius: 8px;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 400px;">
+                      <thead style="background: #f5f5f5; position: sticky; top: 0;" id="previewTableHead">
+                      </thead>
+                      <tbody id="previewTableBody"></tbody>
+                  </table>
+              </div>
+              <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                  <button class="btn-outline" onclick="closePreviewModal()">Cancel</button>
+                  <button class="btn-success" onclick="confirmExcelUpload()">Confirm & Save</button>
+              </div>
+          </div>
       </div>
 
       <div id="summarySection" class="card" style="display: none">
@@ -831,8 +951,8 @@
         "Tammy",
         "Linh",
         "Van",
-        "ThuyLee",
-        "Tuyen",
+        "Thuy (Lee)",
+        "Tuyen (Bella)",
         "Kim",
       ];
       let workers =
@@ -863,6 +983,10 @@
       window.onload = () => {
         refreshWorkerUI();
 
+        // Check for date passed in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+
         // Auto-calculate current period on start
         let saved = localStorage.getItem("periodStart");
         if (saved) {
@@ -872,7 +996,13 @@
           resetToCurrentPeriod();
         }
         generatePeriod();
-        switchTab("worker");
+        switchTab("daily");
+
+        // If a specific date was passed, set it in the daily entry
+        if (dateParam) {
+          document.getElementById("dailyEntryDate").value = dateParam;
+          loadDailyData();
+        }
       };
 
       function resetToCurrentPeriod() {
@@ -1165,7 +1295,6 @@
         if (error) {
            alert("Error saving: " + error.message);
         } else {
-           showToast("Daily Entry Saved!");
            // Update cache if we are in the same period
            if(currentPeriodDates.includes(date)) {
                // Update cache manually
@@ -1176,6 +1305,26 @@
                    cloudCache[date].loyalty = r.loyalty_discount;
                });
            }
+
+           // Move to next day automatically
+           const d = new Date(date + "T00:00:00");
+           d.setDate(d.getDate() + 1);
+           const y = d.getFullYear();
+           const m = String(d.getMonth() + 1).padStart(2, '0');
+           const day = String(d.getDate()).padStart(2, '0');
+           const nextDate = `${y}-${m}-${day}`;
+
+           // Format date for display
+           const nextDateObj = new Date(nextDate + "T00:00:00");
+           const displayDate = nextDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+           showToast(`Saved! Moving to ${displayDate}...`);
+
+           // Small delay to show the message before advancing
+           setTimeout(() => {
+               document.getElementById("dailyEntryDate").value = nextDate;
+               loadDailyData();
+           }, 800);
         }
         document.getElementById("loading-daily").style.display = "none";
       }
@@ -1369,6 +1518,344 @@
         btn.disabled = false;
       }
 
+
+
+      /* EXCEL LOGIC */
+      let parsedExcelData = [];
+      let parsedHeaders = [];
+      let detectedMapping = { date: -1, amount: -1, worker: -1 };
+
+      function handleExcelUpload(input) {
+          const file = input.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              
+              // Get all data including headers
+              const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); // Array of Arrays
+              
+              if (!json || json.length === 0) {
+                  alert("File is empty");
+                  return;
+              }
+
+              parsedExcelData = [];
+              parsedHeaders = [];
+              
+              // Attempt to detect header row
+              let startIdx = 0;
+              let firstRow = json[0];
+              
+              // Simple Header Detection
+              if (firstRow && firstRow.some(c => typeof c === 'string')) {
+                  parsedHeaders = firstRow.map((h, i) => h || `Col ${i+1}`);
+                  startIdx = 1;
+              } else {
+                  parsedHeaders = firstRow.map((_, i) => `Col ${i+1}`);
+                  startIdx = 0;
+              }
+              
+              // Analyze columns for Date/Amount/Worker suggestions
+              detectedMapping = { date: 0, amount: 1, worker: -1 }; // Default defaults
+              
+              parsedHeaders.forEach((h, i) => {
+                  const lower = String(h).toLowerCase();
+                  if (lower.includes('date') || lower.includes('day')) detectedMapping.date = i;
+                  if (lower.includes('amount') || lower.includes('total') || lower.includes('cost') || lower.includes('price')) detectedMapping.amount = i;
+                  if (lower.includes('worker') || lower.includes('name') || lower.includes('employee') || lower.includes('staff')) detectedMapping.worker = i;
+              });
+
+              for (let i = startIdx; i < json.length; i++) {
+                  const row = json[i];
+                  if (!row || row.length === 0) continue;
+                  // Store raw row for later mapped parsing
+                  parsedExcelData.push({ _rawRow: row });
+              }
+              
+              if (parsedExcelData.length > 0) {
+                  showPreviewModal();
+              } else {
+                  alert("No data found to import.");
+              }
+              
+              input.value = ""; 
+          };
+          reader.readAsArrayBuffer(file);
+      }
+
+      function showPreviewModal() {
+          const contentDiv = document.querySelector("#excelPreviewModal .card");
+          
+          // Inject Column Mappers if not exists
+          let mapperDiv = document.getElementById("columnMappers");
+          if (!mapperDiv) {
+              mapperDiv = document.createElement("div");
+              mapperDiv.id = "columnMappers";
+              mapperDiv.style.marginBottom = "15px";
+              mapperDiv.style.padding = "10px";
+              mapperDiv.style.background = "#fff"; // bg
+              mapperDiv.style.border = "1px solid var(--primary)";
+              mapperDiv.style.borderRadius = "8px";
+              mapperDiv.style.display = "flex";
+              mapperDiv.style.gap = "15px";
+              mapperDiv.style.flexWrap = "wrap";
+              
+              // Insert after title
+              contentDiv.insertBefore(mapperDiv, contentDiv.children[2]); // After description
+          }
+          
+          // Render Mappers
+          const options = parsedHeaders.map((h, i) => `<option value="${i}">${h}</option>`).join("");
+          const noneOpt = `<option value="-1">-- None (Use Dropdown) --</option>`;
+          
+          mapperDiv.innerHTML = `
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Worker Column</label>
+               <select id="mapWorker" onchange="refreshPreviewTable()" style="width:100%">${noneOpt}${options}</select>
+             </div>
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Date Column</label>
+               <select id="mapDate" onchange="refreshPreviewTable()" style="width:100%">${options}</select>
+             </div>
+             <div style="flex: 1;">
+               <label style="font-size:10px; font-weight:700;">Amount Column</label>
+               <select id="mapAmount" onchange="refreshPreviewTable()" style="width:100%">${options}</select>
+             </div>
+          `;
+          
+          // Set Defaults
+          document.getElementById("mapWorker").value = detectedMapping.worker;
+          document.getElementById("mapDate").value = detectedMapping.date > -1 ? detectedMapping.date : 0;
+          document.getElementById("mapAmount").value = detectedMapping.amount > -1 ? detectedMapping.amount : 1;
+
+          refreshPreviewTable();
+          
+          document.getElementById("excelPreviewModal").style.display = "flex";
+      }
+
+      function refreshPreviewTable() {
+         const wIdx = parseInt(document.getElementById("mapWorker").value);
+         const dIdx = parseInt(document.getElementById("mapDate").value);
+         const aIdx = parseInt(document.getElementById("mapAmount").value);
+         
+         const thead = document.getElementById("previewTableHead");
+         const tbody = document.getElementById("previewTableBody");
+         thead.innerHTML = "";
+         tbody.innerHTML = "";
+         
+         // Headers
+         let hRow = document.createElement("tr");
+         parsedHeaders.forEach((h, i) => {
+             let th = document.createElement("th");
+             th.style.padding = "8px";
+             th.style.textAlign = "left";
+             th.style.borderBottom = "2px solid #ddd";
+             // Highlight mapped columns
+             if (i === wIdx) th.style.background = "#eef2ff"; // Indigo
+             if (i === dIdx) th.style.background = "#f0fdf4"; // Green
+             if (i === aIdx) th.style.background = "#fffbeb"; // Yellow
+             th.textContent = h;
+             hRow.appendChild(th);
+         });
+         thead.appendChild(hRow);
+
+         // Rows
+         let limit = 50; // Performance limit for preview
+         parsedExcelData.slice(0, limit).forEach(item => {
+             let row = item._rawRow;
+             let tr = document.createElement("tr");
+             
+             parsedHeaders.forEach((_, i) => {
+                  let val = row[i];
+                  let displayVal = val !== undefined ? val : "";
+                  
+                  // Format checks
+                  if (i === dIdx) {
+                      // Attempt parse date for preview
+                      displayVal = parseExcelDateSafe(val);
+                  }
+                  if (i === aIdx) {
+                      if(typeof val === 'number') displayVal = fmt(val);
+                  }
+                  
+                  let td = document.createElement("td");
+                  td.style.padding = "6px 8px";
+                  td.style.borderBottom = "1px solid #eee";
+                  if (i === aIdx) td.style.textAlign = "right";
+                  if (i === wIdx || i === dIdx || i === aIdx) td.style.fontWeight = "600";
+                  
+                  td.textContent = displayVal;
+                  tr.appendChild(td);
+             });
+             tbody.appendChild(tr);
+         });
+         
+         if(parsedExcelData.length > limit) {
+             let tr = document.createElement("tr");
+             tr.innerHTML = `<td colspan="${parsedHeaders.length}" style="padding:10px;text-align:center;color:#666;">... and ${parsedExcelData.length - limit} more rows</td>`;
+             tbody.appendChild(tr);
+         }
+      }
+
+      function parseExcelDateSafe(val) {
+          if (typeof val === 'number') {
+              const d = new Date(Math.round((val - 25569)*86400*1000));
+              d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+              return d.toISOString().split("T")[0];
+          } else if (typeof val === 'string') {
+              const d = new Date(val);
+              if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+          }
+          return val; // Fallback
+      }
+
+      async function confirmExcelUpload() {
+          const globalWorker = document.getElementById("workerSelect").value;
+          
+          const wIdx = parseInt(document.getElementById("mapWorker").value);
+          const dIdx = parseInt(document.getElementById("mapDate").value);
+          const aIdx = parseInt(document.getElementById("mapAmount").value);
+
+          // Validation
+          if (wIdx === -1 && !globalWorker) {
+              alert("Please either Select a Worker from the dropdown OR map a Worker Column!");
+              return;
+          }
+          
+          document.getElementById("excelPreviewModal").style.display = "none";
+          document.getElementById("loading-worker").style.display = "flex";
+          
+          let records = [];
+          let skipped = 0;
+          
+          parsedExcelData.forEach(item => {
+              const row = item._rawRow;
+              
+              // Get Worker Name
+              let wName = globalWorker;
+              if (wIdx !== -1 && row[wIdx]) {
+                  wName = String(row[wIdx]).trim();
+              }
+              
+              if (!wName) {
+                  skipped++;
+                  return; 
+              }
+              
+              // Get Date
+              let dateStr = parseExcelDateSafe(row[dIdx]);
+              // Basic date validation YYYY-MM-DD
+              if (!dateStr || dateStr.length !== 10) {
+                   // Try to see if it's already ISO string or fallback? handled by parseExcelDateSafe returning val
+                   // We strict check if it matches YYYY-MM-DD
+                   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                       skipped++;
+                       return;
+                   }
+              }
+              
+              // Get Amount
+              let amount = parseFloat(row[aIdx]);
+              if (!amount || isNaN(amount) || amount <= 0) {
+                  // Allow 0? usually sales > 0
+                  // skipped++; 
+                  // Let's skip invalid amounts
+                  return;
+              }
+              
+              records.push({
+                   entry_date: dateStr,
+                   worker_name: wName,
+                   amount: amount,
+                   discount: 0, 
+                   loyalty_discount: 0
+               });
+          });
+          
+          if (records.length === 0) {
+              alert("No valid records found to import. Check your column mappings.");
+              document.getElementById("loading-worker").style.display = "none";
+              return;
+          }
+
+          // Remove duplicates within the import data itself
+          // Keep only the last occurrence of each date+worker combination
+          const uniqueRecords = [];
+          const seen = new Map();
+
+          records.forEach(record => {
+              const key = `${record.entry_date}|${record.worker_name}`;
+              seen.set(key, record); // This will overwrite if duplicate
+          });
+
+          seen.forEach(record => uniqueRecords.push(record));
+
+          const duplicatesRemoved = records.length - uniqueRecords.length;
+
+          // Check if any of these records already exist in the database
+          const dateRange = [...new Set(uniqueRecords.map(r => r.entry_date))];
+          const { data: existingData } = await supabaseClient
+              .from("sales_records")
+              .select("entry_date, worker_name")
+              .in("entry_date", dateRange);
+
+          let overwriteCount = 0;
+          if (existingData && existingData.length > 0) {
+              const existingKeys = new Set(existingData.map(r => `${r.entry_date}|${r.worker_name}`));
+              overwriteCount = uniqueRecords.filter(r => existingKeys.has(`${r.entry_date}|${r.worker_name}`)).length;
+          }
+
+          // Show confirmation if there are duplicates or overwrites
+          if (duplicatesRemoved > 0 || overwriteCount > 0) {
+              let confirmMsg = "Import Summary:\n\n";
+              confirmMsg += `• ${uniqueRecords.length} records will be imported\n`;
+              if (duplicatesRemoved > 0) {
+                  confirmMsg += `• ${duplicatesRemoved} duplicate entries removed from Excel file\n`;
+              }
+              if (overwriteCount > 0) {
+                  confirmMsg += `• ${overwriteCount} existing records will be OVERWRITTEN\n`;
+              }
+              confirmMsg += "\nDo you want to proceed?";
+
+              if (!confirm(confirmMsg)) {
+                  document.getElementById("loading-worker").style.display = "none";
+                  return;
+              }
+          }
+
+          // Upsert to cloud
+         const { error } = await supabaseClient
+          .from("sales_records")
+          .upsert(uniqueRecords, { onConflict: "entry_date, worker_name" });
+
+         if (error) {
+           alert("Import Error: " + error.message);
+         } else {
+           let msg = `Imported ${uniqueRecords.length} entries!`;
+           if (skipped > 0) msg += ` (${skipped} skipped)`;
+           if (duplicatesRemoved > 0) msg += ` (${duplicatesRemoved} duplicates removed)`;
+           showToast(msg);
+
+           // Update cache (optimized)
+           uniqueRecords.forEach(r => {
+             if (!cloudCache[r.entry_date]) cloudCache[r.entry_date] = { incomes: {}, discount: 0, loyalty: 0 };
+             cloudCache[r.entry_date].incomes[r.worker_name] = r.amount;
+           });
+           
+           // Refresh View
+           if (document.getElementById("tabWorker").classList.contains("active")) {
+               loadWorkerBatch();
+           }
+         }
+         
+         document.getElementById("loading-worker").style.display = "none";
+      }
+
       let ytdData = [];
       async function generateReportFromSummary() {
         await prefetchPeriodData();
@@ -1421,7 +1908,7 @@
           let pay = isKim ? 0 : Math.round(s * SERVICE_RATE);
 
           // W2 Logic: Tuyen/ThuyLee $750, Tammy $675, Others $700, Kim $2500, Linh 100%
-          let is750 = ["tuyen", "thuylee"].includes(w.toLowerCase());
+          let is750 = ["tuyen", "thuylee", "tuyen (bella)", "thuy (lee)"].includes(w.toLowerCase());
           let isTammy = w.toLowerCase() === "tammy";
 
           let defaultW2 = 0;
