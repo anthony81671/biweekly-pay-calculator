@@ -539,6 +539,13 @@
                 </div>
             </div>
 
+            <div style="margin-top: 15px; padding: 10px; background: rgba(255, 59, 48, 0.05); border-radius: 10px; border: 1px dashed var(--danger); display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="overwriteDaily" style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="overwriteDaily" style="margin: 0; color: var(--danger); font-size: 13px; cursor: pointer;">
+                    <b>Overwrite Mode:</b> Wipe existing data for this day before saving.
+                </label>
+            </div>
+
             <button class="btn-primary" onclick="saveDailyBatch()" style="margin-top: 20px;">Save Daily Entry</button>
         </div>
       </div>
@@ -1015,7 +1022,10 @@
 
       const ANCHOR_DATE = new Date("2026-01-01T00:00:00");
 
-      window.onload = () => {
+      window.onload = async () => {
+        // Filter workers by current year active status
+        await filterActiveWorkers();
+        
         refreshWorkerUI();
 
         // Check for date passed in URL
@@ -1039,6 +1049,37 @@
           loadDailyData();
         }
       };
+
+      async function filterActiveWorkers() {
+        const currentYear = new Date().getFullYear();
+        const startOfYear = `${currentYear}-01-01`;
+        const endOfYear = `${currentYear}-12-31`;
+
+        try {
+          // Fetch all unique workers who have entries in the current year
+          const { data, error } = await supabaseClient
+            .from("sales_records")
+            .select("worker_name")
+            .gte("entry_date", startOfYear)
+            .lte("entry_date", endOfYear);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            const activeNames = [...new Set(data.map((r) => r.worker_name))];
+
+            // Filter the current workers list
+            // If a worker is in our list but has no entries this year, they get hidden
+            const filtered = workers.filter((w) => activeNames.includes(w));
+
+            if (filtered.length > 0) {
+              workers = filtered;
+            }
+          }
+        } catch (err) {
+          console.error("Error filtering workers:", err);
+        }
+      }
 
       function resetToCurrentPeriod() {
         const startStr = getAutoPeriodStart(new Date());
@@ -1288,82 +1329,98 @@
         const date = document.getElementById("dailyEntryDate").value;
         if (!date) return;
         
+        const overwrite = document.getElementById('overwriteDaily').checked;
+        
         document.getElementById("loading-daily").style.display = "flex";
         
-        let discount = parseFloat(document.getElementById('dailyDiscountTotal').value) || 0;
-        
-        // We need to preserve Loyalty if it exists!
-        // Fetch existing for this date to get loyalty?
-        // Or assume we just upsert and don't touch loyalty column? 
-        // Supabase upsert replaces the row. If we omit loyalty_discount, it might set to NULL or DEFAULT.
-        // We must fetch first to be safe, or use the data we already fetched in loadDailyData (but that might be stale).
-        // Best approach: Fetch current state, merge, then save.
-        
-        const { data: existingData } = await supabaseClient
-          .from("sales_records")
-          .select("worker_name, loyalty_discount")
-          .eq("entry_date", date);
-          
-        let loyaltyMap = {};
-        if(existingData) {
-            existingData.forEach(r => loyaltyMap[r.worker_name] = r.loyalty_discount);
-        }
+        try {
+          if (overwrite) {
+            // Wipe everything for this date first
+            const { error: deleteError } = await supabaseClient
+              .from("sales_records")
+              .delete()
+              .eq("entry_date", date);
+            if (deleteError) throw deleteError;
+          }
 
-        let records = [];
-        document.querySelectorAll('.income-input-daily').forEach(input => {
-            let wName = input.dataset.worker;
-            let amount = parseFloat(input.value) || 0;
-            // Only save if amount > 0 OR if there was previous data (to clear it)
-            // Actually better to save 0 to be explicit.
+          let discount = parseFloat(document.getElementById('dailyDiscountTotal').value) || 0;
+          
+          // Fetch existing records to preserve loyalty_discount if NOT overwriting
+          let loyaltyMap = {};
+          if (!overwrite) {
+            const { data: existingData } = await supabaseClient
+              .from("sales_records")
+              .select("worker_name, loyalty_discount")
+              .eq("entry_date", date);
             
-            records.push({
-                entry_date: date,
-                worker_name: wName,
-                amount: amount,
-                discount: discount,
-                loyalty_discount: loyaltyMap[wName] || 0
-            });
-        });
-        
-        const { error } = await supabaseClient
-          .from("sales_records")
-          .upsert(records, { onConflict: "entry_date, worker_name" });
+            if (existingData) {
+              existingData.forEach(r => loyaltyMap[r.worker_name] = r.loyalty_discount);
+            }
+          }
+
+          let records = [];
+          document.querySelectorAll('.income-input-daily').forEach(input => {
+              let wName = input.dataset.worker;
+              let amount = parseFloat(input.value) || 0;
+              
+              // Skip if 0 and overwriting
+              if (overwrite && amount === 0) return;
+              
+              records.push({
+                  entry_date: date,
+                  worker_name: wName,
+                  amount: amount,
+                  discount: discount,
+                  loyalty_discount: loyaltyMap[wName] || 0
+              });
+          });
           
-        if (error) {
-           alert("Error saving: " + error.message);
-        } else {
-           // Update cache if we are in the same period
-           if(currentPeriodDates.includes(date)) {
-               // Update cache manually
-               if (!cloudCache[date]) cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
-               records.forEach(r => {
-                   cloudCache[date].incomes[r.worker_name] = r.amount;
-                   cloudCache[date].discount = r.discount;
-                   cloudCache[date].loyalty = r.loyalty_discount;
-               });
-           }
+          if (records.length > 0) {
+            const { error } = await supabaseClient
+              .from("sales_records")
+              .upsert(records, { onConflict: "entry_date, worker_name" });
+              
+            if (error) throw error;
+          }
 
-           // Move to next day automatically
-           const d = new Date(date + "T00:00:00");
-           d.setDate(d.getDate() + 1);
-           const y = d.getFullYear();
-           const m = String(d.getMonth() + 1).padStart(2, '0');
-           const day = String(d.getDate()).padStart(2, '0');
-           const nextDate = `${y}-${m}-${day}`;
+          // Clear overwrite option after successful save
+          document.getElementById('overwriteDaily').checked = false;
+          // Update cache if we are in the same period
+          if(currentPeriodDates.includes(date)) {
+              // Update cache manually
+              if (!cloudCache[date]) cloudCache[date] = { incomes: {}, discount: 0, loyalty: 0 };
+              records.forEach(r => {
+                  cloudCache[date].incomes[r.worker_name] = r.amount;
+                  cloudCache[date].discount = r.discount;
+                  cloudCache[date].loyalty = r.loyalty_discount;
+              });
+          }
 
-           // Format date for display
-           const nextDateObj = new Date(nextDate + "T00:00:00");
-           const displayDate = nextDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          // Move to next day automatically
+          const d = new Date(date + "T00:00:00");
+          d.setDate(d.getDate() + 1);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const nextDate = `${y}-${m}-${day}`;
 
-           showToast(`Saved! Moving to ${displayDate}...`);
+          // Format date for display
+          const nextDateObj = new Date(nextDate + "T00:00:00");
+          const displayDate = nextDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-           // Small delay to show the message before advancing
-           setTimeout(() => {
-               document.getElementById("dailyEntryDate").value = nextDate;
-               loadDailyData();
-           }, 800);
+          showToast(`Saved! Moving to ${displayDate}...`);
+
+          // Small delay to show the message before advancing
+          setTimeout(() => {
+              document.getElementById("dailyEntryDate").value = nextDate;
+              loadDailyData();
+          }, 800);
+        } catch (error) {
+          console.error("Error saving daily batch:", error);
+          alert("Error saving: " + error.message);
+        } finally {
+          document.getElementById("loading-daily").style.display = "none";
         }
-        document.getElementById("loading-daily").style.display = "none";
       }
 
       async function loadDayFromCloud() {
@@ -1946,8 +2003,8 @@
           let isLinh = w.toLowerCase() === "linh";
           let pay = isKim ? 0 : Math.round(s * SERVICE_RATE);
 
-          // W2 Logic: Tuyen/ThuyLee $750, Tammy $675, Others $700, Kim $2500, Linh 100%
-          let is750 = ["tuyen", "thuylee", "tuyen (bella)", "thuy (lee)"].includes(w.toLowerCase());
+          // W2 Logic: Tuyen (Bella)/Thuy (Lee) $750, Tammy $675, Others $700, Kim $2500, Linh 100%
+          let is750 = ["tuyen (bella)", "thuy (lee)"].includes(w.toLowerCase());
           let isTammy = w.toLowerCase() === "tammy";
 
           let defaultW2 = 0;
